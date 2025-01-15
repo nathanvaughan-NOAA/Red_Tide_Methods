@@ -1,0 +1,101 @@
+---
+format: gfm
+editor: visual
+---
+
+# SSMSE Case Study - Red Tide
+
+This Quarto document contains the general ideas and set-up for an SSMSE project. The goal is to make this study replicable and organized.
+
+```{r, include = FALSE}
+
+# required packages and versions
+library(here)
+library(tidyverse)
+library(SSMSE)
+library(r4ss)
+
+# check r4ss version, it's not the most recent version  
+packageVersion("r4ss")   #1.49.3
+# we may need to use the branched version of SSMSE for biased estimates
+packageVersion("SSMSE")   #0.2.8
+
+```
+
+## General Variables
+
+```{r, include = FALSE}
+
+iters = 5 
+forecastyrs = 10 
+
+```
+
+We need to specify the number of iterations and forecast years. In this case study we will run `r iters` iterations and `r forecastyrs` forecast years.
+
+## Operating Models
+
+```{r, include = FALSE}
+
+# the red grouper SS3 run is stored in the project directory in the SS_models folder
+red_grouper_mod_path <- file.path(here(),
+                                  "SS_models",
+                                  "Red grouper",
+                                  "version_3.30.18_reverseTB_upfore_expdat")
+
+```
+
+The Operating Models (OMs) are the base models of the SSMSE comparisons. Additional OMs are base models with slight variations, for example changes in steepness.
+
+1.  Control - no effect of red tide (remove fleet 5?)
+
+2.  Red tide causes episodic mortality (the current model?)
+
+3.  Red tide causes changes in catchability (remove fleet 5 and change catchability of all other fleets?)
+
+The first OM is the base Stock Synthesis model for a given species.
+
+```{r, include = FALSE}
+
+# Import the base model
+
+```
+
+The following OMs are manipulated versions of the base model, either via develop_OMs() or through methods specified in the future_om_list.
+
+```{r, include = FALSE}
+
+# Use develop_OMs(), future_om_list, or r4ss to make additional OMs
+
+```
+
+## Uncertainties
+
+The uncertainties allow for more realistic characterization of uncertainty in the model. These can include:
+
+1.  Varying Magnitude of recreational catches (MRIP FES vs. biased high)
+2.  Varying bias in the Ecospace red tide index (unbiased vs. biased in certain years)
+3.  Varying coefficient of variability (CVs) on recreational catches (low vs. high)
+
+Uncertainties are incorporated by creating models with slight variations in the future_om_list. The same random numbers are used across the OM scenarios to ensure differences in performance are from the management strategies and not random choice.
+
+## Management Strategies or Estimated Models
+
+SSMSE runs can compare estimation models or management strategies. In this project we want to test some alternative methods for varying episodic red tide mortality so we aren't testing management strategies.
+
+1.  Pseudo fleet with flat selectivity across ages (current SS model)
+2.  Pseudo fleet with age-varying selectivity informed by the Ecospace model - would need to add selectivity to fleet 5
+3.  Annual blocks on natural mortality - would need to add blocking, and a red tide mortality index?
+4.  Annual blocks on catchability - would need to add blocking, and catchability modifier?
+
+## Performance Metrics
+
+### Long-term
+
+1.  Catch by year - TS
+2.  Standard deviation of catch across years
+
+### Short-term
+
+1.  Terminal year depletion
+2.  Average depletion over last 5 years
