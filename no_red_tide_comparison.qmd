@@ -59,8 +59,7 @@ no_red_tide_ss$dat$catch <- no_red_tide_ss$dat$catch %>%
 SS_write(no_red_tide_ss, dir = OM_no_red_tide_path, overwrite = TRUE)
 get_ss3_exe(dir = OM_no_red_tide_path, version = "v3.30.18")
 run(dir = OM_no_red_tide_path, skipfinished = FALSE)
-file.rename(from = file.path(OM_no_red_tide_path, "data.ss_new"), to = file.path(OM_no_red_tide_path, "data_echo.ss_new"))
-
+file.copy(file.path(OM_no_red_tide_path, "data.ss_new"), file.path(OM_no_red_tide_path, "data_echo.ss_new"))
 
 # make a copy of the OMs in their respective EM folders
 list_of_files <- list.files(OM_red_tide_path) 
@@ -79,12 +78,14 @@ First I grab the ctl and dat information from the base OM.
 ```{r}
 
 # to get the names of parameter values
-ctl<-r4ss::SS_readctl(file.path(OM_red_tide_path, "red_grouper_1986_2017_RedTideFleet.ctl"))
+#ctl<-r4ss::SS_readctl(file.path(OM_red_tide_path, "red_grouper_1986_2017_RedTideFleet.ctl"))
+ctl<-r4ss::SS_readctl(file.path(OM_no_red_tide_path, "red_grouper_1986_2017_RedTideFleet.ctl"))
 # str(ctl)
 # names(ctl)
 # rownames(ctl$SR_parms)
 
-dat<-r4ss::SS_readdat(file.path(OM_red_tide_path, "red_grouper_1986_2017_RedTideFleet.dat"))
+#dat<-r4ss::SS_readdat(file.path(OM_red_tide_path, "red_grouper_1986_2017_RedTideFleet.dat"))
+dat<-r4ss::SS_readdat(file.path(OM_no_red_tide_path, "red_grouper_1986_2017_RedTideFleet.dat"))
 # names(dat)
 
 ```
@@ -361,23 +362,26 @@ sample_struct$MeanSize_at_Age_obs
 ```{r}
 # Adjust sample structure for no_red_tide scenario
 sample_struct_no_red_tide <- sample_struct
-sample_struct_no_red_tide$catch <- sample_struct_no_red_tide$catch %>% 
+sample_struct_no_red_tide$catch <- sample_struct_no_red_tide$catch %>%
   filter(FltSvy != 5)
-sample_struct_no_red_tide$EM2OMcatch_bias <- sample_struct_no_red_tide$EM2OMcatch_bias %>% 
+sample_struct_no_red_tide$EM2OMcatch_bias <- sample_struct_no_red_tide$EM2OMcatch_bias %>%
   filter(FltSvy != 5)
-sample_struct_no_red_tide$CPUE <- sample_struct_no_red_tide$CPUE %>% 
+sample_struct_no_red_tide$CPUE <- sample_struct_no_red_tide$CPUE %>%
   filter(FltSvy != 5)
-sample_struct_no_red_tide$discard_data <- sample_struct_no_red_tide$discard_data %>% 
+sample_struct_no_red_tide$discard_data <- sample_struct_no_red_tide$discard_data %>%
   filter(FltSvy != 5)
-sample_struct_no_red_tide$EM2OMdiscard_bias <- sample_struct_no_red_tide$EM2OMdiscard_bias %>% 
+sample_struct_no_red_tide$EM2OMdiscard_bias <- sample_struct_no_red_tide$EM2OMdiscard_bias %>%
   filter(FltSvy != 5)
-sample_struct_no_red_tide$lencomp <- sample_struct_no_red_tide$lencomp %>% 
+sample_struct_no_red_tide$lencomp <- sample_struct_no_red_tide$lencomp %>%
   filter(FltSvy != 5)
-sample_struct_no_red_tide$agecomp <- sample_struct_no_red_tide$agecomp %>% 
+sample_struct_no_red_tide$agecomp <- sample_struct_no_red_tide$agecomp %>%
   filter(FltSvy != 5)
 
 # create a list of sample structures for each OM/MP run. 
-sample_struct_list_all <- list("no_red_tide" = sample_struct_no_red_tide)
+sample_struct_list_all <- list("no_red_tide_struct" = sample_struct_no_red_tide)
+#sample_struct_list_all <- list("no_red_tide" = sample_struct)
+#sample_struct_list_all <- list("red_tide" = sample_struct)
+
 ```
 
 ## Examine the management procedure used
@@ -390,7 +394,8 @@ Let's take a look at step 2 in the management procedure, which is implemented us
 
 ```{r}
 
-fore<-r4ss::SS_readforecast(file=file.path(OM_red_tide_path, "forecast.ss"), verbose=FALSE)
+#fore<-r4ss::SS_readforecast(file=file.path(OM_red_tide_path, "forecast.ss"), verbose=FALSE)
+fore<-r4ss::SS_readforecast(file=file.path(OM_no_red_tide_path, "forecast.ss"), verbose=FALSE)
 fore$Forecast
 #fore$Forecast = 1 means our forecasts from the assessment will use fishing 
 #mortality (F) to achieve an FSPR value. 
@@ -421,19 +426,19 @@ start_time <- Sys.time()
 run_res_path <- file.path(run_SSMSE_dir, "results")
  dir.create(run_res_path)
 res<-run_SSMSE(
-  scen_name_vec=c('red_tide', "no_red_tide"), # name of the scenario
+  scen_name_vec=c("no_red_tide_struct"), # name of the scenario
   out_dir_scen_vec = run_res_path, # directory in which to run the scenario
-  iter_vec = c(3,3), # run with 3 iterations each
+  iter_vec = c(2), # run with 3 iterations each
   OM_name_vec = NULL, # specify directories instead
-  OM_in_dir_vec = c(OM_red_tide_path, OM_no_red_tide_path), # OM files
+  OM_in_dir_vec = c(normalizePath(OM_no_red_tide_path)), # OM files
   EM_name_vec = NULL, # specify directories instead
-  EM_in_dir_vec = c(EM_red_tide_path, EM_no_red_tide_path), # EM files
+  EM_in_dir_vec = c(normalizePath(EM_no_red_tide_path)), # EM files
   run_EM_last_yr = TRUE,
-  MS_vec = c("EM", "EM"), # The management strategy is specified in the EM
-  nyrs_vec = c(projyrs, projyrs), # Years to project OM forward
-  nyrs_assess_vec = c(3, 3), # Years between assessments
+  MS_vec = c("EM"), # The management strategy is specified in the EM
+  nyrs_vec = c(projyrs), # Years to project OM forward
+  nyrs_assess_vec = c(3), # Years between assessments
   future_om_list = future_OM_list_recdevs,
-  run_parallel = TRUE, # Run iterations in parallel
+  run_parallel = FALSE, # Run iterations in parallel
   sample_struct_list = sample_struct_list_all, # How to sample data for running the EM.
   sample_struct_hist_list = NULL, # because this is null, will just use sampling
   # as in the current OM data file for the historical period.
@@ -444,6 +449,19 @@ end_time <- Sys.time()
 end_time - start_time
 
 ```
+
+```{r}
+dir <- "C:\\Users\\apn26\\Documents\\CIMAS\\Red_Tide_Methods\\run_SSMSE_no_red_tide\\results\\no_red_tide_struct\\5\\OM_no_red_tide_OM"
+bin <- "C:/Users/apn26/Documents/SSMSE/inst/bin/Windows64/ss.exe"
+admb_options <- "-maxfn 0 -phase 50 -nohess"
+setwd(dir)
+    system(paste0(paste0(bin, " "), admb_options),
+      invisible = TRUE, ignore.stdout = TRUE,
+      show.output.on.console = TRUE)
+```
+
+
+## Explore Results
 
 ```{r}
 summary <- SSMSE_summary_all(run_res_path)
