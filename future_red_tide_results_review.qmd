@@ -27,8 +27,16 @@ OM_name <- "default"
 run_SSMSE_dir <- file.path("C:/Users/apn26/Documents/CIMAS/Personal Notes/test_cloud_computing/testing_cloud")
 default <- file.path(run_SSMSE_dir, OM_name)
 
-summary <- readRDS(file = file.path("C:/Users/apn26/Documents/CIMAS/Personal Notes/cc_storage/", "results_summary_multirun_morality_cpuefix.rda"))
+results_name <- "_multirun_cpuefix_clean"
+
+cc_storage <- file.path("C:/Users/apn26/Documents/CIMAS/Personal Notes/cc_storage/")
+summary <- readRDS(file = file.path("C:/Users/apn26/Documents/CIMAS/Personal Notes/cc_storage/", paste0("results_summary", results_name, ".rda")))
 dat <- r4ss::SS_readdat(file.path(default, "red_grouper_1986_2017_RedTideFleet.dat"))
+
+summary$ts <- summary$ts %>%
+  filter(model_run != "", !str_detect(model_run, "Base"))
+OM_name <- "default"
+
 ```
 
 ## Reviewing time series plots
@@ -613,7 +621,7 @@ plot_fleet_terminal_ratio <- function(scen) {
   OM_mean <- summary$ts %>% 
     filter(year >= 2017, 
          scenario == scen, 
-         model_run == "default_OM") %>%
+         model_run == paste0(OM_name, "_OM")) %>%
     pivot_longer(c(F_1, F_2, F_3, F_4, F_5), names_to = "fleet", values_to = "OM_value") %>%
     select(fleet, year, OM_value, iteration) %>%
     group_by(fleet,year) %>% 
@@ -624,7 +632,7 @@ plot_fleet_terminal_ratio <- function(scen) {
 red_tide_years <- summary$ts %>% 
   filter(year >= 2017, 
          scenario == scen, 
-         model_run == "default_OM", 
+         model_run == paste0(OM_name, "_OM"), 
          iteration == 1) %>% 
           pull(year)
 
@@ -697,7 +705,7 @@ plot_rt_terminal_ratio <- function(scen) {
   OM_mean <- summary$ts %>% 
   filter(year >= 2017, 
          scenario == scen, 
-         model_run == "default_OM", 
+         model_run == paste0(OM_name, "_OM"), 
          F_5 > 0,
          iteration == 1) %>%
   pull(F_5) %>%
@@ -708,7 +716,7 @@ plot_rt_terminal_ratio <- function(scen) {
 red_tide_years <- summary$ts %>% 
   filter(year >= 2017, 
          scenario == scen, 
-         model_run == "default_OM", 
+         model_run == paste0(OM_name, "_OM"), 
          F_5 > 0,
          iteration == 1) %>% 
           pull(year)
@@ -801,7 +809,7 @@ plot_fleet_terminal_ratio <- function(scen) {
   OM_mean <- summary$ts %>% 
     filter(year >= 2017, 
          scenario == scen, 
-         model_run == "default_OM") %>%
+         model_run == paste0(OM_name, "_OM")) %>%
     pivot_longer(c(F_1, F_2, F_3, F_4, F_5), names_to = "fleet", values_to = "OM_value") %>%
     select(fleet, year, OM_value, iteration) %>%
     group_by(fleet,year) %>% 
@@ -813,7 +821,7 @@ red_tide_years <- summary$ts %>%
   filter(year >= 2017, 
          scenario == scen, 
          F_5 > 0,
-         model_run == "default_OM", 
+         model_run == paste0(OM_name, "_OM"), 
          iteration == 1) %>% 
           pull(year)
 
@@ -905,7 +913,7 @@ plot_fleet_terminal_ratio <- function(scen) {
   OM_mean <- summary$ts %>% 
     filter(year >= 2017, 
          scenario == scen, 
-         model_run == "default_OM") %>%
+         model_run == paste0(OM_name, "_OM")) %>%
     pivot_longer(c(F_1, F_2, F_3, F_4, F_5), names_to = "fleet", values_to = "OM_value") %>%
     select(fleet, year, OM_value, iteration) %>%
     group_by(fleet,year) %>% 
@@ -925,7 +933,7 @@ plot_fleet_terminal_ratio <- function(scen) {
 red_tide_years <- summary$ts %>% 
   filter(year >= 2017, 
          scenario == scen, 
-         model_run == "default_OM", 
+         model_run == paste0(OM_name, "_OM"), 
          iteration == 1) %>% 
           pull(year)
 
@@ -999,7 +1007,7 @@ scen = "red_tide_random_10"
 OM_mean <- summary$ts %>% 
     filter(year >= 2017, 
          scenario == scen, 
-         model_run == "default_OM") %>%
+         model_run == paste0(OM_name, "_OM")) %>%
     pivot_longer(c(F_1, F_2, F_3, F_4, F_5), names_to = "fleet", values_to = "OM_value") %>%
     select(fleet, year, OM_value, iteration) %>%
     group_by(fleet,year) %>% 
@@ -1019,7 +1027,7 @@ OM_mean <- summary$ts %>%
 red_tide_years <- summary$ts %>% 
   filter(year >= 2017, 
          scenario == scen, 
-         model_run == "default_OM", 
+         model_run == paste0(OM_name, "_OM"), 
          iteration == 1) %>% 
           pull(year)
 
@@ -1066,7 +1074,7 @@ plot_fleet_terminal_ratio <- function(scen) {
   OM_mean <- summary$ts %>% 
     filter(year >= 2017, 
          scenario == scen, 
-         model_run == "default_OM") %>%
+         model_run == paste0(OM_name, "_OM")) %>%
     pivot_longer(c(retainB_1, retainB_2, retainB_3, retainB_4, deadB_5), names_to = "fleet", values_to = "OM_value") %>%
     select(fleet, year, OM_value, iteration) %>%
     group_by(fleet,year) %>% 
@@ -1077,7 +1085,7 @@ plot_fleet_terminal_ratio <- function(scen) {
 red_tide_years <- summary$ts %>% 
   filter(year >= 2017, 
          scenario == scen, 
-         model_run == "default_OM", 
+         model_run == paste0(OM_name, "_OM"), 
          iteration == 1) %>% 
           pull(year)
 
@@ -1170,7 +1178,7 @@ plot_fleet_terminal_ratio <- function(scen) {
   OM_mean <- summary$ts %>% 
     filter(year >= 2017, 
          scenario == scen, 
-         model_run == "default_OM") %>%
+         model_run == paste0(OM_name, "_OM")) %>%
   pivot_longer(c(retainB_1, retainB_2, retainB_3, retainB_4, deadB_5), names_to = "fleet", values_to = "OM_value") %>%
     select(fleet, year, OM_value, iteration) %>%
     group_by(fleet,year) %>% 
@@ -1182,7 +1190,7 @@ red_tide_years <- summary$ts %>%
   filter(year >= 2017, 
          F_5 > 0,
          scenario == scen, 
-         model_run == "default_OM", 
+         model_run == paste0(OM_name, "_OM"), 
          iteration == 1) %>% 
           pull(year)
 
@@ -1276,7 +1284,7 @@ plot_fleet_terminal_ratio <- function(scen) {
   OM_mean <- summary$ts %>% 
     filter(year >= 2017, 
          scenario == scen, 
-         model_run == "default_OM") %>%
+         model_run == paste0(OM_name, "_OM")) %>%
     pivot_longer(c(retainB_1, retainB_2, retainB_3, retainB_4, deadB_5, deadB_1, deadB_2, deadB_4), names_to = "fleet", values_to = "OM_value") %>%
     select(fleet, year, OM_value, iteration) %>%
     group_by(fleet,year) %>% 
@@ -1288,7 +1296,7 @@ red_tide_years <- summary$ts %>%
   filter(year >= 2017, 
          F_5 > 0,
          scenario == scen, 
-         model_run == "default_OM", 
+         model_run == paste0(OM_name, "_OM"), 
          iteration == 1) %>% 
           pull(year)
 
@@ -1411,7 +1419,7 @@ plot_recruitment <- function(scen) {
   OM_mean <- summary$ts %>% 
     filter(year >= 2017, 
          scenario == scen, 
-         model_run == "default_OM") %>%
+         model_run == paste0(OM_name, "_OM")) %>%
     select(year, Recruit_0, iteration) %>%
     group_by(year) %>% 
     reframe(OM_value = mean(Recruit_0))
@@ -1422,7 +1430,7 @@ red_tide_years <- summary$ts %>%
   filter(year >= 2017, 
          F_5 > 0,
          scenario == scen, 
-         model_run == "default_OM", 
+         model_run == paste0(OM_name, "_OM"), 
          iteration == 1) %>% 
           pull(year)
 
@@ -1539,7 +1547,7 @@ plot_recruitment <- function(scen) {
   OM_mean <- summary$ts %>% 
     filter(year >= 2017, 
          scenario == scen, 
-         model_run == "default_OM") %>%
+         model_run == paste0(OM_name, "_OM")) %>%
     select(year, Recruit_0, iteration) %>%
     group_by(year) %>% 
     reframe(OM_value = mean(Recruit_0))
@@ -1550,7 +1558,7 @@ red_tide_years <- summary$ts %>%
   filter(year >= 2017, 
          F_5 > 0,
          scenario == scen, 
-         model_run == "default_OM", 
+         model_run == paste0(OM_name, "_OM"), 
          iteration == 1) %>% 
           pull(year)
 
@@ -1640,7 +1648,7 @@ plot_recruitment <- function(scen) {
   OM_mean <- summary$ts %>% 
     filter(year >= 2017, 
          scenario == scen, 
-         model_run == "default_OM") %>%
+         model_run == paste0(OM_name, "_OM")) %>%
     select(year, Recruit_0, iteration) %>%
     group_by(year) %>% 
     reframe(OM_value = mean(Recruit_0))
@@ -1651,7 +1659,7 @@ red_tide_years <- summary$ts %>%
   filter(year >= 2017, 
          F_5 > 0,
          scenario == scen, 
-         model_run == "default_OM", 
+         model_run == paste0(OM_name, "_OM"), 
          iteration == 1) %>% 
           pull(year)
 
@@ -1742,7 +1750,7 @@ plot_recruitment <- function(scen) {
   OM_mean <- summary$ts %>% 
     filter(year >= 2017, 
          scenario == scen, 
-         model_run == "default_OM") %>%
+         model_run == paste0(OM_name, "_OM")) %>%
     select(year, SpawnBio, iteration) %>%
     group_by(year) %>% 
     reframe(OM_value = mean(SpawnBio))
@@ -1753,7 +1761,7 @@ red_tide_years <- summary$ts %>%
   filter(year >= 2017, 
          F_5 > 0,
          scenario == scen, 
-         model_run == "default_OM", 
+         model_run == paste0(OM_name, "_OM"), 
          iteration == 1) %>% 
           pull(year)
 
@@ -1851,7 +1859,7 @@ F_5, Recruit_0,
 ```{r}
 
 OM_means <- summary$ts %>%
-  filter(year >= 2017, model_run == "default_OM") %>%
+  filter(year >= 2017, model_run == paste0(OM_name, "_OM")) %>%
   select(year, Recruit_0, F_5, SpawnBio, iteration, retainB_1, retainB_2, retainB_4, deadB_5, F_1, F_2, F_4) %>%
   rowwise()%>%
   mutate(commercial = sum(retainB_1, retainB_2), recreational = retainB_4, com_f = sum(F_1, F_2), rec_f = F_4) %>%
@@ -2047,7 +2055,7 @@ plot_fleet_terminal_ratio <- function(scen) {
   OM_mean <- summary$ts %>% 
     filter(year >= 2017, 
          scenario == scen, 
-         model_run == "default_OM") %>%
+         model_run == paste0(OM_name, "_OM")) %>%
     pivot_longer(c(F_1, F_2, F_3, F_4, F_5), names_to = "fleet", values_to = "OM_value") %>%
     select(fleet, year, OM_value, iteration) %>%
     group_by(fleet,year) %>% 
@@ -2058,7 +2066,7 @@ plot_fleet_terminal_ratio <- function(scen) {
 red_tide_years <- summary$ts %>% 
   filter(year >= 2017, 
          scenario == scen, 
-         model_run == "default_OM", 
+         model_run == paste0(OM_name, "_OM"), 
          iteration == 1) %>% 
           pull(year)
 
@@ -2130,7 +2138,7 @@ plot_fleet_terminal_ratio <- function(scen) {
   OM_mean <- summary$ts %>% 
     filter(year >= 2017, 
          scenario == scen, 
-         model_run == "default_OM") %>%
+         model_run == paste0(OM_name, "_OM")) %>%
     pivot_longer(c(F_1, F_2, F_3, F_4, F_5), names_to = "fleet", values_to = "OM_value") %>%
     select(fleet, year, OM_value, iteration) %>%
     group_by(fleet,year) %>% 
@@ -2141,7 +2149,7 @@ plot_fleet_terminal_ratio <- function(scen) {
 red_tide_years <- summary$ts %>% 
   filter(year >= 2017, 
          scenario == scen, 
-         model_run == "default_OM", 
+         model_run == paste0(OM_name, "_OM"), 
          iteration == 1) %>% 
           pull(year)
 
@@ -2229,7 +2237,7 @@ plot_fleet_terminal_ratio <- function(scen) {
   OM_mean <- summary$ts %>% 
     filter(year >= 2017, 
          scenario == scen, 
-         model_run == "default_OM") %>%
+         model_run == paste0(OM_name, "_OM")) %>%
     pivot_longer(c(F_1, F_2, F_3, F_4, F_5), names_to = "fleet", values_to = "OM_value") %>%
     select(fleet, year, OM_value, iteration) %>%
     group_by(fleet,year) %>% 
@@ -2240,7 +2248,7 @@ plot_fleet_terminal_ratio <- function(scen) {
 red_tide_years <- summary$ts %>% 
   filter(year >= 2017, 
          scenario == scen, 
-         model_run == "default_OM", 
+         model_run == paste0(OM_name, "_OM"), 
          iteration == 1) %>% 
           pull(year)
 
@@ -2315,6 +2323,10 @@ fishing_terminal_plots[[5]]
 ```
 :::
 
+## Red Tide Magnitudes and Frequencies
+
+The sums and counts of each red tide treatment to see which are comparable.  
+
 ```{r}
 
 #calculate the "magnitude" of red tides
@@ -2330,7 +2342,7 @@ red_tide_magnitudes <- summary$ts %>%
 red_tide_years <- summary$ts %>% 
   filter(year >= 2017, 
          F_5 > 0,
-         model_run == "default_OM", 
+         model_run == paste0(OM_name, "_OM"), 
          iteration == 1) %>% 
   group_by(scenario) %>%
   reframe(n_years = n_distinct(year)) %>%
@@ -2338,4 +2350,113 @@ red_tide_years <- summary$ts %>%
   right_join(red_tide_magnitudes, join_by(scenario))
 
 red_tide_years
+```
+
+## Selectivity Exploration
+
+
+```{r}
+
+library(r4ss)
+
+# pull and plot a selectivity from every scenario
+scen <- "red_tide_random_10"
+
+size_sel_plots <- function(scen_list) {
+  map_dfr(scen_list, function(scen) {
+    selectivity_run <- file.path(cc_storage, paste0("results", results_name), scen, "1", paste0(OM_name, "_EM_2050"))
+
+    selectivity_res <- SS_output(selectivity_run, printstats = FALSE, verbose = FALSE)
+
+    selectivity_res$sizeselex %>%
+      filter(Label == "2050_4_Lsel") %>%
+      pivot_longer(
+        cols = matches("^\\d+$"),
+        names_to = "length",
+        values_to = "selex"
+      ) %>%
+      mutate(scenario = scen)
+  })
+}
+
+scen_dat <- size_sel_plots(scen_list)
+
+scen_dat %>%
+  ggplot(aes(as.numeric(length), selex)) + 
+  geom_line(aes(color = scenario, group = scenario), linewidth = 1) +
+  ggtitle("Length Selectivity")+
+  theme_bw() 
+
+
+age_sel_plots <- function(scen_list, iteration = 1, year = 2050) {
+  map_dfr(scen_list, function(scen) {
+    selectivity_run <- file.path(cc_storage, paste0("results", results_name), scen, iteration, paste0(OM_name, "_EM_", year))
+
+    selectivity_res <- SS_output(selectivity_run, printstats = FALSE, verbose = FALSE)
+
+    selectivity_res$ageselex %>%
+      filter(Label == "2050_4_Asel2") %>%
+      pivot_longer(
+        cols = matches("^\\d+$"),
+        names_to = "age",
+        values_to = "selex"
+      ) %>%
+      mutate(scenario = scen)
+  })
+}
+
+scen_dat <- age_sel_plots(scen_list)
+
+scen_dat %>%
+  ggplot(aes(as.numeric(age), selex)) + 
+  geom_line(aes(color = scenario, group = scenario), linewidth = 1) +
+  ggtitle("Age Selectivity")+
+  theme_bw() 
+
+```
+
+## Ro Exploration
+
+Extracted the R0 from SR_LN_R0 from the summary$scalar.  
+
+```{r}
+
+summary$scalar %>%
+  select(iteration, scenario, model_run, SR_LN_R0) %>%
+  mutate(r0 = exp(SR_LN_R0)) %>%
+  ggplot(aes(scenario, r0)) +
+  geom_boxplot() +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+
+summary$scalar %>%
+  select(iteration, scenario, model_run, SR_LN_R0) %>%
+  mutate(r0 = exp(SR_LN_R0)) %>%
+  ggplot(aes(scenario, r0)) +
+  geom_boxplot(aes(color = model_run)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+
+
+```
+
+```{r}
+
+ratio_R0 <- summary$scalar %>%
+  select(iteration, scenario, model_run, SR_LN_R0) %>%
+  mutate(r0 = exp(SR_LN_R0)) %>%
+  select(!SR_LN_R0) %>%
+  filter(model_run %in% c(paste0(OM_name, "_OM"), paste0(OM_name, "_EM_2065"))) %>%
+  pivot_wider(
+      names_from = model_run,  # this will create "OM" and "EM" columns
+      values_from = r0
+  ) %>%
+  rename("OM" = paste0(OM_name, "_OM") , "EM" = paste0(OM_name, "_EM_2065")) %>%
+  group_by(scenario, iteration) %>%
+  mutate(ratio_R0 = EM/OM)
+  
+ratio_R0 %>%
+  ggplot(aes(scenario, ratio_R0)) +
+  geom_boxplot()
+
 ```
