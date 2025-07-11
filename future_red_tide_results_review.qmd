@@ -22,6 +22,8 @@ Import the results and summary files from the cloud.
 library(tidyverse)
 library("nmfspalette")
 library(patchwork)
+library(knitr)
+library(kableExtra)
 
 OM_name <- "default"
 run_SSMSE_dir <- file.path("C:/Users/apn26/Documents/CIMAS/Personal Notes/test_cloud_computing/testing_cloud")
@@ -100,7 +102,7 @@ colnames(summary$ts)
 
 ```
 
-Here are the basic plots:
+Here are the time series plots:
 
 ::: panel-tabset
 ### Red tide mortality
@@ -109,6 +111,69 @@ Here are the basic plots:
 run_res_path <- file.path(run_SSMSE_dir, "results")
 
 ts_plot_variable(summary, F_5, run_res_path, save = TRUE)
+```
+
+Figure 1. The fishing mortality of fleet 5 over time.  This line plot demonstrates the frequency and magnitude of red tide events in the EM (black) and OM (orange) for each scenario. All 10 iterations of the OM and EM are plotted simultaneously so peaks are representative of the iteration with the highest value and not the overall trend.  The OMs have fixed magnitudes and the EMs estimate a F_5 that varies in magnitude but has a median close to the fixed value in the OM.  
+
+
+```{r, echo = FALSE, warning = FALSE}
+
+  max_sample_year <- suppressWarnings(  #suppress warning because max removes NAs
+    summary$ts$model_run %>% 
+      unique() %>% # get the list of unique model runs
+      str_sub(-4) %>% # select last 4 characters of EM names
+      {
+        ifelse(grepl("^\\d{4}$", .), as.numeric(.), NA)
+      } %>% # check the last 4 characters are numbers or make NA
+      max(na.rm = TRUE) # find the max EM year
+  )
+  
+  # make a list that includes the OM and all max_sample_year EMs  
+  key_models <- unique(summary$ts$model_run)
+  key_models <- key_models[grepl("OM", key_models) | grepl(as.character(max_sample_year), key_models)]
+  
+
+F_5_summary <- summary$ts %>%
+  filter(model_run %in% key_models, F_5 > 0, year > 2017) %>% #this might exclude 0's when there is supposed to be a red tide.  
+  group_by(model_run, scenario) %>%
+  reframe(mean_F_5 = round(mean(F_5), 3),
+          sd_F_5 = round(sd(F_5), 3),
+          median_F_5 = round(median(F_5),3))
+
+```
+
+Table 1. A summary of the Operating Model fleet 5 fishing mortality. These statistics only include values where F_5 > 0.   
+
+```{r, echo = FALSE, warning = FALSE}
+F_5_summary %>%
+  filter(str_detect(model_run, "OM")) %>%
+  select(!model_run) %>%
+  kable(
+    # Rename columns directly within kable
+    col.names = c("Scenario", "Mean", "Standard Dev", "Median"),
+    align = c("l", "c", "c", "c") # Align columns (left, center, center, center)
+  ) %>%
+  kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed"), # Add bootstrap styling
+    full_width = FALSE # Don't stretch table to full page width
+  )
+```
+
+
+Table 2. A summary of the Estimated Model fleet 5 fishing mortality. These statistics only include values where F_5 > 0.   
+```{r, echo = FALSE, warning = FALSE}
+F_5_summary %>%
+  filter(str_detect(model_run, "EM")) %>%
+  select(!model_run) %>%
+  kable(
+    # Rename columns directly within kable
+    col.names = c("Scenario", "Mean", "Standard Dev", "Median"),
+    align = c("l", "c", "c", "c") # Align columns (left, center, center, center)
+  ) %>%
+  kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed"), # Add bootstrap styling
+    full_width = FALSE # Don't stretch table to full page width
+  )
 ```
 
 ### Red tide dead biomass
