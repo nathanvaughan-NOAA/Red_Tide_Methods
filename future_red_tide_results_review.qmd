@@ -357,7 +357,7 @@ Figure 9. The total fishing mortality over time by scenario.  The default scenar
 
 :::
 
-# Time Series
+# Ratio Time Series
 
 ## Fishing mortalities
 
@@ -401,16 +401,6 @@ ratio_df <- left_join(EM_runs, OM_runs,
 ```{r}
 
 plot_f_ts <- function(scen) {
-  
-  red_tide_years <- summary$ts %>%
-    filter(
-      year >= 2017,
-      scenario == scen,
-      F_5 > 0,
-      model_run == paste0(OM_name, "_OM"),
-      iteration == 1
-    ) %>%
-    pull(year)
   
   fleet_ratios <- ratio_df %>%
     filter(
@@ -523,16 +513,6 @@ A zoomed in look at just F_5 from the previous plots.
 
 plot_f_ts <- function(scen) {
   
-  red_tide_years <- summary$ts %>%
-    filter(
-      year >= 2017,
-      scenario == scen,
-      F_5 > 0,
-      model_run == paste0(OM_name, "_OM"),
-      iteration == 1
-    ) %>%
-    pull(year)
-  
   fleet_ratios <- ratio_df %>%
     filter(
       # only looking at the projection
@@ -643,16 +623,6 @@ Figure 11. Red tide mortality ratio (EM:OM) over time by scenario.  The line ind
 ```{r}
 
 plot_biomass_ts <- function(scen) {
-  
-  red_tide_years <- summary$ts %>%
-    filter(
-      year >= 2017,
-      scenario == scen,
-      F_5 > 0,
-      model_run == paste0(OM_name, "_OM"),
-      iteration == 1
-    ) %>%
-    pull(year)
   
   fleet_ratios <- ratio_df %>%
     filter(
@@ -761,15 +731,6 @@ Figure 12. Biomass ratio (EM:OM) over time by scenario.  The line indicates the 
 ## Recruitment
 
 ```{r, warning=FALSE}
-
-  red_tide_years <- summary$ts %>%
-    filter(
-      year >= 2017,
-      F_5 > 0,
-      model_run == paste0(OM_name, "_OM"),
-      iteration == 1
-    ) %>%
-    pull(year)
   
   fleet_ratios <- ratio_df %>%
     filter(
@@ -836,15 +797,6 @@ Figure 13. Recruitment ratio (EM:OM) over time by scenario.  The line indicates 
 ## SSB
 
 ```{r, warning=FALSE}
-
-  red_tide_years <- summary$ts %>%
-    filter(
-      year >= 2017,
-      F_5 > 0,
-      model_run == paste0(OM_name, "_OM"),
-      iteration == 1
-    ) %>%
-    pull(year)
   
   fleet_ratios <- ratio_df %>%
     filter(
@@ -910,23 +862,13 @@ Figure 14. SSB ratio (EM:OM) over time by scenario.  The line indicates the medi
 
 # Terminal Year
 
-Plotting the same ratios as above but by the "time from the terminal year" instead of year.  
+Plotting the same ratios as above but by the "time from the terminal year" instead of year.  These plots use mean instead of median because there were too many "years until terminal" with no red tide which skewed to 1 and resulted in straight lines.  F_5 in all of these plots was a straight line when median was used.  
 
 ## Fishing Mortality
 
 ```{r}
 
 plot_f_ts <- function(scen) {
-  
-  red_tide_years <- summary$ts %>%
-    filter(
-      year >= 2017,
-      scenario == scen,
-      F_5 > 0,
-      model_run == paste0(OM_name, "_OM"),
-      iteration == 1
-    ) %>%
-    pull(year)
   
   fleet_ratios <- ratio_df %>%
     filter(
@@ -954,7 +896,7 @@ plot_f_ts <- function(scen) {
     group_by(years_until_terminal, fleet) %>%
     # Calculate the median and the 25th/75th percentiles for the ribbon
     reframe(
-      median_ratio = median(ratio_F, na.rm = TRUE),
+      median_ratio = mean(ratio_F, na.rm = TRUE),
       lower_quartile = quantile(ratio_F, 0.25, na.rm = TRUE),
       upper_quartile = quantile(ratio_F, 0.75, na.rm = TRUE)
     ) 
@@ -1031,7 +973,7 @@ f_ts_plots[[5]]
 ```
 :::
 
-Figure 10. Each fleet's fishing mortality ratio (EM:OM) over time by scenario.  The line indicates the median and the ribbon is the 25-75% quartiles.  F_5 is consistently underestimated, it is more underestimated in future years where there is less data.  
+Figure 15. Each fleet's fishing mortality ratio (EM:OM) over the years from terminal year by scenario.  The line indicates the mean and the ribbon is the 25-75% quartiles.  F_5 is consistently underestimated, there is higher variation where there is less data.  
 
 ## F_5
 
@@ -1040,16 +982,6 @@ A zoomed in look at just F_5 from the previous plots.
 ```{r}
 
 plot_f_ts <- function(scen) {
-  
-  red_tide_years <- summary$ts %>%
-    filter(
-      year >= 2017,
-      scenario == scen,
-      F_5 > 0,
-      model_run == paste0(OM_name, "_OM"),
-      iteration == 1
-    ) %>%
-    pull(year)
   
   fleet_ratios <- ratio_df %>%
     filter(
@@ -1077,7 +1009,7 @@ plot_f_ts <- function(scen) {
     group_by(years_until_terminal, fleet) %>%
     # Calculate the median and the 25th/75th percentiles for the ribbon
     reframe(
-      median_ratio = median(ratio_F, na.rm = TRUE),
+      median_ratio = mean(ratio_F, na.rm = TRUE),
       lower_quartile = quantile(ratio_F, 0.25, na.rm = TRUE),
       upper_quartile = quantile(ratio_F, 0.75, na.rm = TRUE)
     ) %>%
@@ -1155,118 +1087,7 @@ f_ts_plots[[5]]
 ```
 :::
 
-Figure 11. Red tide mortality ratio (EM:OM) over time by scenario.  The line indicates the median and the ribbon is the 25-75% quartiles.  Red tide mortality is consistently underestimated, it is more underestimated in future years where there is less data.  
-
-## F/Fmsy Ratio
-
-```{r}
-
-plot_fleet_terminal_ratio <- function(scen) {
-  
-  OM_mean <- summary$ts %>% 
-    filter(year >= 2017, 
-         scenario == scen, 
-         model_run == paste0(OM_name, "_OM")) %>%
-    pivot_longer(c(F_1, F_2, F_3, F_4, F_5), names_to = "fleet", values_to = "OM_value") %>%
-    select(fleet, year, OM_value, iteration) %>%
-    group_by(fleet,year) %>% 
-    reframe(OM_value = mean(OM_value))
-  
-  f_msy_OM <- 0.259
-  
-  f_msy_EM <- summary$scalar %>%
-    filter(scenario == scen, 
-           str_detect(model_run, "_EM"),
-           !str_detect(model_run, "init")) %>%
-    group_by(model_run) %>%
-    reframe(mean_Fmsy = mean(F_MSY)) 
-
-# In these cases, OM_mean is always going to be 0.2 or 0.5 because that is the designated expected F_5 for every red tide event
-  
-red_tide_years <- summary$ts %>% 
-  filter(year >= 2017, 
-         scenario == scen, 
-         model_run == paste0(OM_name, "_OM"), 
-         iteration == 1) %>% 
-          pull(year)
-
-red_tide_means <- summary$ts %>% 
-  filter(year >= 2017, 
-         scenario == scen, 
-         str_detect(model_run, "_EM"),
-         !str_detect(model_run, "init")) %>%
-  pivot_longer(c(F_1, F_2, F_3, F_4, F_5), names_to = "fleet") %>%
-  left_join(OM_mean, by = c("fleet", "year")) %>%
-  left_join(f_msy_EM, by = "model_run") %>%
-  mutate(ratio_F = (value/mean_Fmsy)/(OM_value/f_msy_OM), 
-         end_year = as.numeric(str_extract(model_run, "\\d{4}$")),
-         years_until_terminal = end_year - year)
-
-rt_summary <- red_tide_means %>%
-  filter(years_until_terminal > 0) %>%
-  group_by(fleet, years_until_terminal) %>%
-  reframe(
-    median_ratio = median(ratio_F, na.rm = TRUE),
-    sd_ratio = sd(ratio_F, na.rm = TRUE),
-    .groups = "drop"
-  ) %>%
-  mutate(
-    ymin = median_ratio - sd_ratio,
-    ymax = median_ratio + sd_ratio
-  )
-
-rt_terminal_ratio <- red_tide_means %>%
-  filter(years_until_terminal > 0) %>%
-  ggplot(aes(years_until_terminal, ratio_F)) +
-  geom_point(color = "grey") +
-  geom_hline(yintercept = 1, linetype = "dashed") +
-  geom_line(data = rt_summary, aes(years_until_terminal, median_ratio)) +
-  scale_color_nmfs(palette = "oceans", reverse = TRUE) +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
-  ggtitle(scen) +
-  ylab("Ratio of F/Fmsy (EM:OM)") + xlab("Years until terminal") + 
-  facet_wrap(~fleet) + 
-  theme_bw()
-
-rt_terminal_ratio
-  
-}
-
-fishing_terminal_plots <- map(scen_list, plot_fleet_terminal_ratio)
-
-```
-
-::: panel-tabset
-### 10 random red tides
-
-```{r, warning=FALSE}
-fishing_terminal_plots[[1]]
-```
-
-### 25 random red tides
-
-```{r, warning=FALSE}
-fishing_terminal_plots[[2]]
-```
-
-### Red tide every 3 years
-
-```{r, warning=FALSE}
-fishing_terminal_plots[[3]]
-```
-
-### Red tide every 5 years
-
-```{r, warning=FALSE}
-fishing_terminal_plots[[4]]
-```
-
-### Mortality = 0.5
-
-```{r, warning=FALSE}
-fishing_terminal_plots[[5]]
-```
-:::
+Figure 16. Red tide mortality ratio (EM:OM) over the years from terminal year by scenario.  The line indicates the mean and the ribbon is the 25-75% quartiles.  F_5 is consistently underestimated, there is higher variation where there is less data.  
 
 
 ## Biomass
@@ -1274,16 +1095,6 @@ fishing_terminal_plots[[5]]
 ```{r}
 
 plot_biomass_ts <- function(scen) {
-  
-  red_tide_years <- summary$ts %>%
-    filter(
-      year >= 2017,
-      scenario == scen,
-      F_5 > 0,
-      model_run == paste0(OM_name, "_OM"),
-      iteration == 1
-    ) %>%
-    pull(year)
   
   fleet_ratios <- ratio_df %>%
     filter(
@@ -1312,7 +1123,7 @@ plot_biomass_ts <- function(scen) {
     group_by(years_until_terminal, fleet) %>%
     # Calculate the median and the 25th/75th percentiles for the ribbon
     reframe(
-      median_ratio = median(ratio_Biomass, na.rm = TRUE),
+      median_ratio = mean(ratio_Biomass, na.rm = TRUE),
       lower_quartile = quantile(ratio_Biomass, 0.25, na.rm = TRUE),
       upper_quartile = quantile(ratio_Biomass, 0.75, na.rm = TRUE)
     ) 
@@ -1389,21 +1200,12 @@ biomass_ts_plots[[5]]
 ```
 :::
 
-Figure 12. Biomass ratio (EM:OM) over time by scenario.  The line indicates the median and the ribbon is the 25-75% quartiles.  Red tide mortality is consistently underestimated, it is more underestimated in future years where there is less data.  
+Figure 17. Biomass ratio (EM:OM) over the years from terminal year by scenario.  The line indicates the mean and the ribbon is the 25-75% quartiles.  Red tide mortality is consistently underestimated, it is more underestimated in years where there is less data.  
 
 ## Recruitment
 
 ```{r, warning=FALSE}
 
-  red_tide_years <- summary$ts %>%
-    filter(
-      year >= 2017,
-      F_5 > 0,
-      model_run == paste0(OM_name, "_OM"),
-      iteration == 1
-    ) %>%
-    pull(year)
-  
   fleet_ratios <- ratio_df %>%
     filter(
       # only looking at the projection
@@ -1425,7 +1227,7 @@ Figure 12. Biomass ratio (EM:OM) over time by scenario.  The line indicates the 
     group_by(years_until_terminal, scenario) %>%
     # Calculate the median and the 25th/75th percentiles for the ribbon
     reframe(
-      median_ratio = median(ratio_recruitment, na.rm = TRUE),
+      median_ratio = mean(ratio_recruitment, na.rm = TRUE),
       lower_quartile = quantile(ratio_recruitment, 0.25, na.rm = TRUE),
       upper_quartile = quantile(ratio_recruitment, 0.75, na.rm = TRUE)
     ) 
@@ -1466,7 +1268,7 @@ Figure 12. Biomass ratio (EM:OM) over time by scenario.  The line indicates the 
 
 ```
 
-Figure 13. Recruitment ratio (EM:OM) over time by scenario.  The line indicates the median and the ribbon is the 25-75% quartiles.  Recruitment is not over or underestimated, but there are a few outliers where the EM overestimated by 10x.   
+Figure 18. Recruitment ratio (EM:OM) over time by scenario.  The line indicates the mean and the ribbon is the 25-75% quartiles.  Recruitment is overestimated in the terminal year of the model run.  
 
 ## SSB
 
@@ -1493,7 +1295,7 @@ Figure 13. Recruitment ratio (EM:OM) over time by scenario.  The line indicates 
     group_by(years_until_terminal, scenario) %>%
     # Calculate the median and the 25th/75th percentiles for the ribbon
     reframe(
-      median_ratio = median(ratio_ssb, na.rm = TRUE),
+      median_ratio = mean(ratio_ssb, na.rm = TRUE),
       lower_quartile = quantile(ratio_ssb, 0.25, na.rm = TRUE),
       upper_quartile = quantile(ratio_ssb, 0.75, na.rm = TRUE)
     ) 
@@ -1534,7 +1336,7 @@ Figure 13. Recruitment ratio (EM:OM) over time by scenario.  The line indicates 
 
 ```
 
-Figure 14. SSB ratio (EM:OM) over time by scenario.  The line indicates the median and the ribbon is the 25-75% quartiles.  SSB is not over or underestimated, but it is more likely to be overestimated, the later years are overestimated.   SSB may spike in response to red tide events based on the red_tide_regular_5_mortality_5 scenario.  
+Figure 19. SSB ratio (EM:OM) over the years from the terminal year by scenario.  The line indicates the mean and the ribbon is the 25-75% quartiles.  SSB is underestimated when red tide is introduced, with higher variability in the terminal year of the default model.  
 
 # Management
 
@@ -1652,7 +1454,7 @@ all_term_plots[[6]]
 ```
 :::
 
-Figure 10. Term plots are meant to be a "short term" (2000-2030) and "long term" (1989-2067) look at a few key parameters from the time series dataset.  These plots demonstrate that red tide events correspond with SPR Ratio spikes, and can slowly decrease retained biomass or spawning biomass in the short term.  In the long term, there are no trends.  
+Figure 20. Term plots are meant to be a "short term" (2000-2030) and "long term" (1989-2067) look at a few key parameters from the time series dataset.  These plots demonstrate that red tide events correspond with SPR Ratio spikes, and can slowly decrease retained biomass or spawning biomass in the short term.  In the long term, there are no trends.  
 
 ## Management Term Plots
 
@@ -1770,7 +1572,7 @@ all_term_plots[[6]]
 ```
 :::
 
-Figure 11. Management Term plots are meant to be a "short term" (2000-2027) and "long term" (1989-2067) look at a few key parameters from the time series dataset.  These plots demonstrate that red tide events correspond with SPR Ratio spikes, and can slowly decrease retained biomass or spawning biomass in the short term.  In the long term, there are no trends.  I tried to add median trend lines for the OM and EM but they aren't very clear because of how the lines are colored.  
+Figure 21. Management Term plots are meant to be a "short term" (2000-2027) and "long term" (1989-2067) look at a few key parameters from the time series dataset.  These plots demonstrate that red tide events correspond with SPR Ratio spikes, and can slowly decrease retained biomass or spawning biomass in the short term.  In the long term, there are no trends.  I tried to add median trend lines for the OM and EM but they aren't very clear because of how the lines are colored.  
 
 
 
@@ -1782,10 +1584,6 @@ Inspired by Wetzel and Punt et al. 2011
 I am going to attempt to make their Relative Error Plots.
 
 RE = (E - T) / T
-
-Variables of interest:
-
-F_5, Recruit_0,
 
 ```{r}
 
@@ -1936,6 +1734,8 @@ rt_c
 ```
 :::
 
+Figure 21. Relative error plots for each variable of interest zoomed in.  
+
 ```{r}
 recruit <- recruit +
   theme(axis.text.y = element_blank()) 
@@ -1955,6 +1755,8 @@ com_c <- com_c  + ggtitle("Com catch")
 
 ```
 
+Figure 22. Relative error plots of each variable of interest on the same patchwork.   
+
 ```{r, warning = FALSE, message =FALSE}
 recruit <- recruit +
   theme(axis.text.y = element_blank()) + xlim(-2,5)
@@ -1973,6 +1775,8 @@ com_c <- com_c + xlim(-2,5) + ggtitle("Com catch")
 (spawn + recruit) / (f_com + f_rec + f5) / (com_c + rec_c + rt_c)
 
 ```
+
+Figure 23. Relative error plots of each variable of interest with fixed x-limits between -2 and 5.  
 
 ## Red Tide Magnitudes and Frequencies
 
@@ -2002,6 +1806,8 @@ red_tide_years <- summary$ts %>%
 
 red_tide_years
 ```
+
+Table 3. The magnitudes and frequencies of each scenario with the summarized catch to demonstrate scale differences.  
 
 # Other Explorations
 
@@ -2270,13 +2076,6 @@ plot_fleet_terminal_ratio <- function(scen) {
     reframe(OM_value = mean(OM_value))
 
 # In these cases, OM_mean is always going to be 0.2 or 0.5 because that is the designated expected F_5 for every red tide event
-  
-red_tide_years <- summary$ts %>% 
-  filter(year >= 2017, 
-         scenario == scen, 
-         model_run == paste0(OM_name, "_OM"), 
-         iteration == 1) %>% 
-          pull(year)
 
 red_tide_means <- summary$ts %>% 
   filter(year >= 2017, 
@@ -2354,4 +2153,433 @@ fishing_terminal_plots[[5]]
 :::
 
 
+## F/Fmsy Ratio
 
+```{r}
+
+plot_fleet_terminal_ratio <- function(scen) {
+  
+  OM_mean <- summary$ts %>% 
+    filter(year >= 2017, 
+         scenario == scen, 
+         model_run == paste0(OM_name, "_OM")) %>%
+    pivot_longer(c(F_1, F_2, F_3, F_4, F_5), names_to = "fleet", values_to = "OM_value") %>%
+    select(fleet, year, OM_value, iteration) %>%
+    group_by(fleet,year) %>% 
+    reframe(OM_value = mean(OM_value))
+  
+  f_msy_OM <- 0.259
+  
+  f_msy_EM <- summary$scalar %>%
+    filter(scenario == scen, 
+           str_detect(model_run, "_EM"),
+           !str_detect(model_run, "init")) %>%
+    group_by(model_run) %>%
+    reframe(mean_Fmsy = mean(F_MSY)) 
+
+# In these cases, OM_mean is always going to be 0.2 or 0.5 because that is the designated expected F_5 for every red tide event
+
+red_tide_means <- summary$ts %>% 
+  filter(year >= 2017, 
+         scenario == scen, 
+         str_detect(model_run, "_EM"),
+         !str_detect(model_run, "init")) %>%
+  pivot_longer(c(F_1, F_2, F_3, F_4, F_5), names_to = "fleet") %>%
+  left_join(OM_mean, by = c("fleet", "year")) %>%
+  left_join(f_msy_EM, by = "model_run") %>%
+  mutate(ratio_F = (value/mean_Fmsy)/(OM_value/f_msy_OM), 
+         end_year = as.numeric(str_extract(model_run, "\\d{4}$")),
+         years_until_terminal = end_year - year)
+
+rt_summary <- red_tide_means %>%
+  filter(years_until_terminal > 0) %>%
+  group_by(fleet, years_until_terminal) %>%
+  reframe(
+    median_ratio = median(ratio_F, na.rm = TRUE),
+    sd_ratio = sd(ratio_F, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    ymin = median_ratio - sd_ratio,
+    ymax = median_ratio + sd_ratio
+  )
+
+rt_terminal_ratio <- red_tide_means %>%
+  filter(years_until_terminal > 0) %>%
+  ggplot(aes(years_until_terminal, ratio_F)) +
+  geom_point(color = "grey") +
+  geom_hline(yintercept = 1, linetype = "dashed") +
+  geom_line(data = rt_summary, aes(years_until_terminal, median_ratio)) +
+  scale_color_nmfs(palette = "oceans", reverse = TRUE) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+  ggtitle(scen) +
+  ylab("Ratio of F/Fmsy (EM:OM)") + xlab("Years until terminal") + 
+  facet_wrap(~fleet) + 
+  theme_bw()
+
+rt_terminal_ratio
+  
+}
+
+fishing_terminal_plots <- map(scen_list, plot_fleet_terminal_ratio)
+
+```
+
+::: panel-tabset
+### 10 random red tides
+
+```{r, warning=FALSE}
+fishing_terminal_plots[[1]]
+```
+
+### 25 random red tides
+
+```{r, warning=FALSE}
+fishing_terminal_plots[[2]]
+```
+
+### Red tide every 3 years
+
+```{r, warning=FALSE}
+fishing_terminal_plots[[3]]
+```
+
+### Red tide every 5 years
+
+```{r, warning=FALSE}
+fishing_terminal_plots[[4]]
+```
+
+### Mortality = 0.5
+
+```{r, warning=FALSE}
+fishing_terminal_plots[[5]]
+```
+:::
+
+# Time Series
+
+## Fishing mortalities
+
+```{r}
+
+plot_f_ts <- function(scen) {
+  
+  fleet_ratios <- EM_runs %>%
+    filter(
+      # only looking at the projection
+      year >= 2017,
+      # one scenario at a time
+      scenario == scen,
+      # exclude init
+      !str_detect(model_run, "init")
+    ) %>% 
+    pivot_longer(c(F_1, F_2, F_3, F_4, F_5),
+                 names_to = "fleet",
+                 values_to = "ratio_F") %>%
+    mutate(fleet = str_sub(fleet, start = 1, end = 3)) %>%
+    select(fleet, year, ratio_F, iteration, model_run) %>%
+    mutate(
+      end_year = as.numeric(str_extract(model_run, "\\d{4}$")),
+      years_until_terminal = end_year - year
+    )
+  
+  rt_summary <- fleet_ratios %>%
+    # Group by year to calculate stats for each year
+    group_by(year, fleet) %>%
+    # Calculate the median and the 25th/75th percentiles for the ribbon
+    reframe(
+      median_ratio = median(ratio_F, na.rm = TRUE),
+      lower_quartile = quantile(ratio_F, 0.25, na.rm = TRUE),
+      upper_quartile = quantile(ratio_F, 0.75, na.rm = TRUE)
+    ) 
+  
+  
+  rt_terminal_ratio <- fleet_ratios %>%
+    ggplot() +
+    # Add the median line using the summary data
+    geom_line(
+      data = rt_summary,
+      aes(y = median_ratio, year, color = fleet),
+      linewidth = 1
+    ) +
+    theme(axis.text.x = element_text(
+      angle = 90,
+      vjust = 0.5,
+      hjust = 1
+    )) +
+    ggtitle(scen) +
+    ylab("F") + xlab("Years") +
+    theme_bw()
+  
+  rt_terminal_ratio
+  
+}
+
+f_ts_plots <- map(scen_list, plot_f_ts)
+
+```
+
+::: panel-tabset
+### 10 random red tides
+
+```{r, warning=FALSE}
+f_ts_plots[[1]]
+```
+
+### 25 random red tides
+
+```{r, warning=FALSE}
+f_ts_plots[[2]]
+```
+
+### Red tide every 3 years
+
+```{r, warning=FALSE}
+f_ts_plots[[3]]
+```
+
+### Red tide every 5 years
+
+```{r, warning=FALSE}
+f_ts_plots[[4]]
+```
+
+### Mortality = 0.5
+
+```{r, warning=FALSE}
+f_ts_plots[[5]]
+```
+
+:::
+
+Figure . F over time by scenario.  The line indicates the median for each fleet.  When a red tide event happens there is a simultaneous drop in F especially in fleet 4 and a increase in F_4 in the next year.  F_1 and F_2 follow a similar but less extreme pattern.  
+
+## Biomass
+
+```{r}
+
+plot_biomass_ts <- function(scen) {
+  
+  fleet_ratios <- EM_runs %>%
+    filter(
+      # only looking at the projection
+      year >= 2017,
+      # one scenario at a time
+      scenario == scen,
+      # exclude init
+      !str_detect(model_run, "init")
+    ) %>% 
+    pivot_longer(c(retainB_1, retainB_2, retainB_3, retainB_4, deadB_5),
+                 names_to = "fleet",
+                 values_to = "ratio_Biomass") %>%
+    mutate(fleet = str_sub(fleet, start = 9, end = 9)) %>%
+    select(fleet, year, ratio_Biomass, iteration, model_run) %>%
+    mutate(
+      end_year = as.numeric(str_extract(model_run, "\\d{4}$")),
+      years_until_terminal = end_year - year,
+      fleet = if_else(fleet == "", "5", fleet)
+    )
+  
+  rt_summary <- fleet_ratios %>%
+    # Group by year to calculate stats for each year
+    group_by(year, fleet) %>%
+    # Calculate the median and the 25th/75th percentiles for the ribbon
+    reframe(
+      median_ratio = median(ratio_Biomass, na.rm = TRUE),
+      lower_quartile = quantile(ratio_Biomass, 0.25, na.rm = TRUE),
+      upper_quartile = quantile(ratio_Biomass, 0.75, na.rm = TRUE)
+    ) 
+  
+  
+  rt_terminal_ratio <- fleet_ratios %>%
+    ggplot() +
+    # Add the median line using the summary data
+    geom_line(
+      data = rt_summary,
+      aes(y = median_ratio, year, color = fleet),
+      linewidth = 1
+    ) +
+    theme(axis.text.x = element_text(
+      angle = 90,
+      vjust = 0.5,
+      hjust = 1
+    )) +
+    ggtitle(scen) +
+    ylab("Biomass") + xlab("Years") +
+    theme_bw()
+  
+  rt_terminal_ratio
+  
+}
+
+biomass_ts_plots <- map(scen_list, plot_biomass_ts)
+
+```
+
+::: panel-tabset
+### 10 random red tides
+
+```{r, warning=FALSE}
+biomass_ts_plots[[1]]
+```
+
+### 25 random red tides
+
+```{r, warning=FALSE}
+biomass_ts_plots[[2]]
+```
+
+### Red tide every 3 years
+
+```{r, warning=FALSE}
+biomass_ts_plots[[3]]
+```
+
+### Red tide every 5 years
+
+```{r, warning=FALSE}
+biomass_ts_plots[[4]]
+```
+
+### Mortality = 0.5
+
+```{r, warning=FALSE}
+biomass_ts_plots[[5]]
+```
+:::
+
+Figure . Biomass over time by scenario.  The line indicates the median for each fleet.  When a red tide event happens there is a simultaneous drop in retained biomass and a increase in retained biomass in the next year.  
+
+
+## Recruitment
+
+```{r, warning=FALSE}
+  
+  fleet_ratios <- EM_runs %>%
+    filter(
+      # only looking at the projection
+      year >= 2017,
+      # exclude init
+      !str_detect(model_run, "init")
+    ) %>% 
+    select(year, Recruit_0, iteration, model_run, scenario) %>%
+    rename(ratio_recruitment = Recruit_0) %>%
+    mutate(
+      end_year = as.numeric(str_extract(model_run, "\\d{4}$")),
+      years_until_terminal = end_year - year
+    )
+  
+  red_tide_years <- summary$ts %>%
+    filter(
+      year >= 2017,
+      F_5 > 0,
+      model_run == paste0(OM_name, "_OM"),
+      iteration == 1
+    ) %>%
+    select(scenario, year)
+
+  rt_summary <- fleet_ratios %>%
+    # Group by year to calculate stats for each year
+    group_by(year, scenario) %>%
+    # Calculate the median and the 25th/75th percentiles for the ribbon
+    reframe(
+      median_ratio = median(ratio_recruitment, na.rm = TRUE),
+      lower_quartile = quantile(ratio_recruitment, 0.25, na.rm = TRUE),
+      upper_quartile = quantile(ratio_recruitment, 0.75, na.rm = TRUE)
+    ) 
+  
+  recruitment_ratio_plot <- fleet_ratios %>%
+    ggplot() +
+    geom_line(
+      data = rt_summary,
+      aes(y = median_ratio, year),
+      linewidth = 1,
+      color = "black"
+    ) +
+  geom_vline(
+    data = red_tide_years, 
+    aes(xintercept = year), 
+    color = "grey",          
+    linetype = "dashed"     
+  ) +
+    theme(axis.text.x = element_text(
+      angle = 90,
+      vjust = 0.5,
+      hjust = 1
+    )) +
+    ggtitle("Recruitment") +
+    ylab("Recruitment") + xlab("Years") +
+    facet_wrap(~scenario) +
+    theme_bw()
+  
+  recruitment_ratio_plot
+
+```
+
+Figure 13. Recruitment ratio (EM:OM) over time by scenario.  The line indicates the median and the ribbon is the 25-75% quartiles.  Recruitment is not over or underestimated, but there are a few outliers where the EM overestimated by 10x.   
+
+## SSB
+
+```{r, warning=FALSE}
+  
+  fleet_ratios <- EM_runs %>%
+    filter(
+      # only looking at the projection
+      year >= 2017,
+      # exclude init
+      !str_detect(model_run, "init")
+    ) %>% 
+    select(year, SpawnBio, iteration, model_run, scenario) %>%
+    rename(ratio_recruitment = SpawnBio) %>%
+    mutate(
+      end_year = as.numeric(str_extract(model_run, "\\d{4}$")),
+      years_until_terminal = end_year - year
+    )
+  
+  red_tide_years <- summary$ts %>%
+    filter(
+      year >= 2017,
+      F_5 > 0,
+      model_run == paste0(OM_name, "_OM"),
+      iteration == 1
+    ) %>%
+    select(scenario, year)
+
+  rt_summary <- fleet_ratios %>%
+    # Group by year to calculate stats for each year
+    group_by(year, scenario) %>%
+    # Calculate the median and the 25th/75th percentiles for the ribbon
+    reframe(
+      median_ratio = median(ratio_recruitment, na.rm = TRUE),
+      lower_quartile = quantile(ratio_recruitment, 0.25, na.rm = TRUE),
+      upper_quartile = quantile(ratio_recruitment, 0.75, na.rm = TRUE)
+    ) 
+  
+  recruitment_ratio_plot <- fleet_ratios %>%
+    ggplot() +
+    geom_line(
+      data = rt_summary,
+      aes(y = median_ratio, year),
+      linewidth = 1,
+      color = "black"
+    ) +
+  geom_vline(
+    data = red_tide_years, 
+    aes(xintercept = year), 
+    color = "grey",          
+    linetype = "dashed"     
+  ) +
+    theme(axis.text.x = element_text(
+      angle = 90,
+      vjust = 0.5,
+      hjust = 1
+    )) +
+    ggtitle("SSB") +
+    ylab("SSB") + xlab("Years") +
+    facet_wrap(~scenario) +
+    theme_bw()
+  
+  recruitment_ratio_plot
+
+```
