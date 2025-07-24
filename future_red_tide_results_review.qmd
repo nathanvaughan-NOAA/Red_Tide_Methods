@@ -253,6 +253,27 @@ Figure 4. The total retained biomass of the fishery over time.  This is the sum 
 
 :::
 
+::: panel-tabset
+
+### F_1
+```{r, echo = FALSE, warning = FALSE}
+ts_plot_variable(summary, F_1, run_res_path, save = TRUE)
+```
+
+
+### F_2
+```{r, echo = FALSE, warning = FALSE}
+ts_plot_variable(summary, F_2, run_res_path, save = TRUE)
+```
+
+### F_4
+
+```{r, echo = FALSE, warning = FALSE}
+ts_plot_variable(summary, F_4, run_res_path, save = TRUE)
+```
+
+:::
+
 ## Reviewing derived quantities
 
 Additional time series plots but derived quantities. Below is a list of all the derived quantity variables:
@@ -1853,30 +1874,56 @@ scen <- "red_tide_random_10"
 
 size_sel_plots <- function(scen_list) {
   map_dfr(scen_list, function(scen) {
-    selectivity_run <- file.path(cc_storage, paste0("results", results_name), scen, "1", paste0(OM_name, "_EM_2050"))
+      map_dfr(1:10, function(iter) {
+    selectivity_run <- file.path(cc_storage, paste0("results", results_name), scen, iter, paste0(OM_name, "_EM_2065"))
 
     selectivity_res <- SS_output(selectivity_run, printstats = FALSE, verbose = FALSE)
 
     selectivity_res$sizeselex %>%
-      filter(Label == "2050_4_Lsel") %>%
+      filter(Label == "2065_4_Lsel") %>%
       pivot_longer(
         cols = matches("^\\d+$"),
         names_to = "length",
         values_to = "selex"
       ) %>%
-      mutate(scenario = scen)
+      mutate(scenario = scen, iteration = iter)
+  })
   })
 }
 
 scen_dat <- size_sel_plots(scen_list)
 
+
+om_scen_dat <- map_dfr(1:10, function(iter) {
+    selectivity_run <- file.path(cc_storage, paste0("results", results_name), OM_name, iter, paste0(OM_name, "_EM_2065"))
+
+    selectivity_res <- SS_output(selectivity_run, printstats = FALSE, verbose = FALSE)
+
+    selectivity_res$sizeselex %>%
+      filter(Label == "2065_4_Lsel") %>%
+      pivot_longer(
+        cols = matches("^\\d+$"),
+        names_to = "length",
+        values_to = "selex"
+      ) %>%
+      mutate(scenario = OM_name, iteration = iter)
+  })
+
+scen_dat <- rbind(scen_dat, om_scen_dat)
+
 scen_dat %>%
   ggplot(aes(as.numeric(length), selex)) + 
-  geom_line(aes(color = scenario, group = scenario), linewidth = 1) +
+  geom_point(aes(color = scenario, group = scenario)) +
   ggtitle("Length Selectivity")+
   theme_bw() 
 
 
+```
+
+
+
+
+```{r}
 age_sel_plots <- function(scen_list, iteration = 1, year = 2050) {
   map_dfr(scen_list, function(scen) {
     selectivity_run <- file.path(cc_storage, paste0("results", results_name), scen, iteration, paste0(OM_name, "_EM_", year))
