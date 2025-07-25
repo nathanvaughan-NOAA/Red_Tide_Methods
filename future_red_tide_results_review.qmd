@@ -1911,17 +1911,224 @@ om_scen_dat <- map_dfr(1:10, function(iter) {
 
 scen_dat <- rbind(scen_dat, om_scen_dat)
 
+```
+
+::: panel-tabset
+
+### Selectivity at length (points)
+
+```{r}
 scen_dat %>%
   ggplot(aes(as.numeric(length), selex)) + 
   geom_point(aes(color = scenario, group = scenario)) +
   ggtitle("Length Selectivity")+
-  theme_bw() 
+  theme_bw()
+```
+
+### Selectivity at length (lines)
+
+```{r}
+scen_dat %>%
+  ggplot(aes(as.numeric(length), selex)) + 
+  stat_summary(fun = "median", geom = "line", aes(color = scenario), size = 1, alpha = 3) +
+  ggtitle("Length Selectivity")+
+  theme_bw()
+  
+```
+
+### Zoomed in Selectivity at length
+
+
+```{r}
+scen_dat <- scen_dat %>%
+  mutate(is_highlighted = ifelse(scenario %in% c(OM_name), "Highlighted", "Other"))
+
+
+scen_dat %>%
+  ggplot(aes(as.numeric(length), selex)) + 
+  stat_summary(fun = "median", geom = "line", aes(color = scenario), size = 1, alpha = 3) +
+  ggtitle("Length Selectivity") +
+  coord_cartesian(xlim = c(10, 25), ylim = c(0,0.4)) +
+  theme_bw()
+  
+scen_dat %>%
+  ggplot(aes(as.numeric(length), selex)) + 
+  stat_summary(fun = "median", geom = "line", aes(color = scenario), size = 1, alpha = 3) +
+  ggtitle("Length Selectivity")+
+  coord_cartesian(xlim = c(30, 52))+
+  theme_bw()
+
+scen_dat %>%
+  ggplot(aes(as.numeric(length), selex)) + 
+  stat_summary(fun = "median", geom = "line", aes(color = scenario), size = 1, alpha = 3) +
+  ggtitle("Length Selectivity")+
+  coord_cartesian(xlim = c(50, 65))+
+  theme_bw()
+
+```
+
+### Zoomed in Selectivity at length with highlighted line
+
+```{r}
+
+scen_dat %>%
+  ggplot(aes(as.numeric(length), selex)) + 
+  stat_summary(fun = "median", geom = "line", aes(color = scenario, size = is_highlighted), alpha = 3) +
+  scale_size_manual(values = c("Highlighted" = 2.0, "Other" = 0.5)) +
+  ggtitle("Length Selectivity") +
+  coord_cartesian(xlim = c(10, 25)) +
+  theme_bw()
+
+scen_dat %>%
+  ggplot(aes(as.numeric(length), selex)) + 
+  stat_summary(fun = "median", geom = "line", aes(color = scenario, size = is_highlighted), alpha = 3) +
+  scale_size_manual(values = c("Highlighted" = 2.0, "Other" = 0.5)) +  ggtitle("Length Selectivity")+
+  coord_cartesian(xlim = c(25, 60))+
+  theme_bw()
+
+scen_dat %>%
+  ggplot(aes(as.numeric(length), selex)) + 
+  stat_summary(fun = "median", geom = "line", aes(color = scenario, size = is_highlighted), alpha = 3) +
+  scale_size_manual(values = c("Highlighted" = 2.0, "Other" = 0.5)) +  ggtitle("Length Selectivity")+
+  coord_cartesian(xlim = c(50, 65))+
+  theme_bw()
 
 
 ```
 
+:::
 
 
+```{r}
+
+
+# pull and plot a selectivity from every scenario
+
+size_sel_plots <- function(scen_list) {
+  map_dfr(scen_list, function(scen) {
+      map_dfr(1:10, function(iter) {
+    selectivity_run <- file.path(cc_storage, paste0("results", results_name), scen, iter, paste0(OM_name, "_EM_2065"))
+
+    selectivity_res <- SS_output(selectivity_run, printstats = FALSE, verbose = FALSE)
+
+    selectivity_res$ageselex %>%
+      filter(Label == "2065_4_Asel2") %>% 
+      pivot_longer(
+        cols = matches("^\\d+$"),
+        names_to = "age",
+        values_to = "selex"
+      ) %>%
+      mutate(scenario = scen, iteration = iter)
+  })
+  })
+}
+
+scen_dat <- size_sel_plots(scen_list)
+
+
+om_scen_dat <- map_dfr(1:10, function(iter) {
+    selectivity_run <- file.path(cc_storage, paste0("results", results_name), OM_name, iter, paste0(OM_name, "_EM_2065"))
+
+    selectivity_res <- SS_output(selectivity_run, printstats = FALSE, verbose = FALSE)
+
+    selectivity_res$ageselex %>%
+      filter(Label == "2065_4_Asel2") %>%
+      pivot_longer(
+        cols = matches("^\\d+$"),
+        names_to = "age",
+        values_to = "selex"
+      ) %>%
+      mutate(scenario = OM_name, iteration = iter)
+  })
+
+scen_dat <- rbind(scen_dat, om_scen_dat)
+
+```
+
+::: panel-tabset
+
+### Selectivity at age (points)
+
+```{r}
+scen_dat %>%
+  ggplot(aes(as.numeric(age), selex)) + 
+  geom_point(aes(color = scenario, group = scenario)) +
+  ggtitle("age Selectivity")+
+  theme_bw()
+```
+
+### Selectivity at age (lines)
+
+```{r}
+scen_dat %>%
+  ggplot(aes(as.numeric(age), selex)) + 
+  stat_summary(fun = "median", geom = "line", aes(color = scenario), size = 1, alpha = 3) +
+  ggtitle("age Selectivity")+
+  theme_bw()
+  
+```
+
+### Zoomed in Selectivity at age
+
+
+```{r}
+scen_dat <- scen_dat %>%
+  mutate(is_highlighted = ifelse(scenario %in% c(OM_name), "Highlighted", "Other"))
+
+
+scen_dat %>%
+  ggplot(aes(as.numeric(age), selex)) + 
+  stat_summary(fun = "median", geom = "line", aes(color = scenario), size = 1, alpha = 3) +
+  ggtitle("age Selectivity") +
+  coord_cartesian(xlim = c(0, 5)) +
+  theme_bw()
+  
+scen_dat %>%
+  ggplot(aes(as.numeric(age), selex)) + 
+  stat_summary(fun = "median", geom = "line", aes(color = scenario), size = 1, alpha = 3) +
+  ggtitle("age Selectivity")+
+  coord_cartesian(xlim = c(5, 10))+
+  theme_bw()
+
+scen_dat %>%
+  ggplot(aes(as.numeric(age), selex)) + 
+  stat_summary(fun = "median", geom = "line", aes(color = scenario), size = 1, alpha = 3) +
+  ggtitle("age Selectivity")+
+  coord_cartesian(xlim = c(10, 20))+
+  theme_bw()
+
+```
+
+### Zoomed in Selectivity at age with highlighted line
+
+```{r}
+
+scen_dat %>%
+  ggplot(aes(as.numeric(age), selex)) + 
+  stat_summary(fun = "median", geom = "line", aes(color = scenario, size = is_highlighted), alpha = 3) +
+  scale_size_manual(values = c("Highlighted" = 2.0, "Other" = 0.5)) +
+  ggtitle("age Selectivity") +
+  coord_cartesian(xlim = c(0, 5)) +
+  theme_bw()
+
+scen_dat %>%
+  ggplot(aes(as.numeric(age), selex)) + 
+  stat_summary(fun = "median", geom = "line", aes(color = scenario, size = is_highlighted), alpha = 3) +
+  scale_size_manual(values = c("Highlighted" = 2.0, "Other" = 0.5)) +  ggtitle("age Selectivity")+
+  coord_cartesian(xlim = c(5, 10))+
+  theme_bw()
+
+scen_dat %>%
+  ggplot(aes(as.numeric(age), selex)) + 
+  stat_summary(fun = "median", geom = "line", aes(color = scenario, size = is_highlighted), alpha = 3) +
+  scale_size_manual(values = c("Highlighted" = 2.0, "Other" = 0.5)) +  ggtitle("age Selectivity")+
+  coord_cartesian(xlim = c(10, 20))+
+  theme_bw()
+
+
+```
+
+:::
 
 ```{r}
 age_sel_plots <- function(scen_list, iteration = 1, year = 2050) {
