@@ -2,7 +2,8 @@
 format:
   html:
     toc: true
-    toc_location: right
+    toc_location: right    
+    embed-resources: true
 editor: source
 execute:
   echo: false
