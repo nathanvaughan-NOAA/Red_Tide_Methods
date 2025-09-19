@@ -41,13 +41,27 @@ cc_storage <- file.path("C:/Users/apn26/Documents/CIMAS/Personal Notes/cc_storag
 summary <- readRDS(file = file.path(cc_storage, paste0("results_summary", results_name, ".rda")))
 dat <- r4ss::SS_readdat(file.path(default, "red_grouper_1986_2017_RedTideFleet.dat"))
 
+
 #remove "Base" model 
 summary$ts <- summary$ts %>%
-  filter(model_run != "", !str_detect(model_run, "Base"))
+  filter(model_run != "", !str_detect(model_run, "Base")) %>%
+  mutate(end_year = as.numeric(str_extract(model_run, "\\d{4}$")) + 3,
+         years_until_terminal = end_year - year) %>%
+  filter(case_when(
+    str_detect(model_run, "_EM") ~ years_until_terminal > 2,
+    TRUE ~ TRUE # Keep all other rows if no _EM
+  ))
+
 summary$dq <- summary$dq %>%
-  filter(model_run != "", !str_detect(model_run, "Base"))
+  filter(model_run != "", !str_detect(model_run, "Base")) %>%
+  mutate(end_year = as.numeric(str_extract(model_run, "\\d{4}$")) + 3,
+         years_until_terminal = end_year - year) %>%
+  filter(case_when(
+    str_detect(model_run, "_EM") ~ years_until_terminal > 2,
+    TRUE ~ TRUE # Keep all other rows if no _EM
+  ))
 summary$scalar <- summary$scalar %>%
-  filter(model_run != "", !str_detect(model_run, "Base"))
+  filter(model_run != "", !str_detect(model_run, "Base")) 
 
 #rename the OM if it's different from default
 OM_name <- "default_sigmaR"
@@ -436,10 +450,18 @@ plot_f_ts <- function(scen) {
     mutate(fleet = str_sub(fleet, start = 1, end = 3)) %>%
     select(fleet, year, ratio_F, iteration, model_run) %>%
     mutate(
-      end_year = as.numeric(str_extract(model_run, "\\d{4}$")),
+      end_year = as.numeric(str_extract(model_run, "\\d{4}$"))+3,
       years_until_terminal = end_year - year,
       ratio_F = if_else(fleet == "F_3", 1, ratio_F)
+    ) %>%
+  mutate( #used to color by final 3 or 6 years.  
+    years_group = case_when(
+      years_until_terminal <= 3 ~ "0-3",
+      years_until_terminal > 3 & years_until_terminal <= 6 ~ "3-6",
+      years_until_terminal > 6 ~ "6+",
+      TRUE ~ "Other" # This catch-all is good practice
     )
+  )
   
   rt_summary <- fleet_ratios %>%
     # Group by year to calculate stats for each year
@@ -517,6 +539,7 @@ f_ts_plots[[4]]
 
 :::
 
+
 Figure 10. Each fleet's fishing mortality ratio (EM:OM) over time by scenario.  The line indicates the median and the ribbon is the 25-75% quartiles.  F_5 is consistently underestimated, it is more underestimated in future years where there is less data.  
 
 ## F_5
@@ -542,7 +565,7 @@ plot_f_ts <- function(scen) {
     mutate(fleet = str_sub(fleet, start = 1, end = 3)) %>%
     select(fleet, year, ratio_F, iteration, model_run) %>%
     mutate(
-      end_year = as.numeric(str_extract(model_run, "\\d{4}$")),
+      end_year = as.numeric(str_extract(model_run, "\\d{4}$"))+3,
       years_until_terminal = end_year - year,
       ratio_F = if_else(fleet == "F_3", 1, ratio_F)
     )
@@ -648,7 +671,7 @@ plot_biomass_ts <- function(scen) {
     mutate(fleet = str_sub(fleet, start = 9, end = 9)) %>%
     select(fleet, year, ratio_Biomass, iteration, model_run) %>%
     mutate(
-      end_year = as.numeric(str_extract(model_run, "\\d{4}$")),
+      end_year = as.numeric(str_extract(model_run, "\\d{4}$"))+3,
       years_until_terminal = end_year - year,
       ratio_Biomass = if_else(fleet == "3", 1, ratio_Biomass), 
       fleet = if_else(fleet == "r", "5", fleet)
@@ -747,7 +770,7 @@ Figure 12. Biomass ratio (EM:OM) over time by scenario.  The line indicates the 
     select(year, Recruit_0_ratio, iteration, model_run, scenario) %>%
     rename(ratio_recruitment = Recruit_0_ratio) %>%
     mutate(
-      end_year = as.numeric(str_extract(model_run, "\\d{4}$")),
+      end_year = as.numeric(str_extract(model_run, "\\d{4}$"))+3,
       years_until_terminal = end_year - year
     )
   
@@ -814,7 +837,7 @@ Figure 13. Recruitment ratio (EM:OM) over time by scenario.  The line indicates 
     select(year, SpawnBio_ratio, iteration, model_run, scenario) %>%
     rename(ratio_ssb = SpawnBio_ratio) %>%
     mutate(
-      end_year = as.numeric(str_extract(model_run, "\\d{4}$")),
+      end_year = as.numeric(str_extract(model_run, "\\d{4}$"))+3,
       years_until_terminal = end_year - year
     )
   
@@ -890,7 +913,7 @@ plot_f_ts <- function(scen) {
     mutate(fleet = str_sub(fleet, start = 1, end = 3)) %>%
     select(fleet, year, ratio_F, iteration, model_run) %>%
     mutate(
-      end_year = as.numeric(str_extract(model_run, "\\d{4}$")),
+      end_year = as.numeric(str_extract(model_run, "\\d{4}$"))+3,
       years_until_terminal = end_year - year,
       ratio_F = if_else(fleet == "F_3", 1, ratio_F)
     )
@@ -998,7 +1021,7 @@ plot_f_ts <- function(scen) {
     mutate(fleet = str_sub(fleet, start = 1, end = 3)) %>%
     select(fleet, year, ratio_F, iteration, model_run) %>%
     mutate(
-      end_year = as.numeric(str_extract(model_run, "\\d{4}$")),
+      end_year = as.numeric(str_extract(model_run, "\\d{4}$"))+3,
       years_until_terminal = end_year - year,
       ratio_F = if_else(fleet == "F_3", 1, ratio_F)
     )
@@ -1107,7 +1130,7 @@ plot_biomass_ts <- function(scen) {
     mutate(fleet = str_sub(fleet, start = 9, end = 9)) %>%
     select(fleet, year, ratio_Biomass, iteration, model_run) %>%
     mutate(
-      end_year = as.numeric(str_extract(model_run, "\\d{4}$")),
+      end_year = as.numeric(str_extract(model_run, "\\d{4}$"))+3,
       years_until_terminal = end_year - year,
       ratio_Biomass = if_else(fleet == "3", 1, ratio_Biomass), 
       fleet = if_else(fleet == "r", "5", fleet)
@@ -1209,7 +1232,7 @@ Figure 17. Biomass ratio (EM:OM) over the years from terminal year by scenario. 
     select(year, Recruit_0_ratio, iteration, model_run, scenario) %>%
     rename(ratio_recruitment = Recruit_0_ratio) %>%
     mutate(
-      end_year = as.numeric(str_extract(model_run, "\\d{4}$")),
+      end_year = as.numeric(str_extract(model_run, "\\d{4}$"))+3,
       years_until_terminal = end_year - year
     )
   
@@ -1277,7 +1300,7 @@ Figure 18. Recruitment ratio (EM:OM) over time by scenario.  The line indicates 
     select(year, SpawnBio_ratio, iteration, model_run, scenario) %>%
     rename(ratio_ssb = SpawnBio_ratio) %>%
     mutate(
-      end_year = as.numeric(str_extract(model_run, "\\d{4}$")),
+      end_year = as.numeric(str_extract(model_run, "\\d{4}$"))+3,
       years_until_terminal = end_year - year
     )
   
@@ -1597,7 +1620,7 @@ EM_means <- summary$ts %>%
                       OM_com_f),
         re_rec_f = ifelse(is.na((rec_f - OM_rec_f) / OM_rec_f), 0, (rec_f - OM_rec_f) /
                       OM_rec_f),
-    end_year = as.numeric(str_extract(model_run, "\\d{4}$")),
+    end_year = as.numeric(str_extract(model_run, "\\d{4}$"))+3,
     years_until_terminal = end_year - year
   )
 
@@ -1836,7 +1859,7 @@ EM_means_re <- summary$ts %>%
                       OM_rec_f),        
         re_abundance = ifelse(is.na((Bio_smry - OM_abundance) / OM_abundance), 0, (Bio_smry - OM_abundance) /
                       OM_abundance),
-    end_year = as.numeric(str_extract(model_run, "\\d{4}$")),
+    end_year = as.numeric(str_extract(model_run, "\\d{4}$"))+3,
     years_until_terminal = end_year - year
   )
 
@@ -1870,7 +1893,7 @@ EM_means <- summary$ts %>%
                       OM_rec_f))*100,        
         re_abundance = ifelse(is.na((Bio_smry - OM_abundance) / OM_abundance), 0, abs(Bio_smry - OM_abundance) /
                       OM_abundance)*100,
-    end_year = as.numeric(str_extract(model_run, "\\d{4}$")),
+    end_year = as.numeric(str_extract(model_run, "\\d{4}$"))+3,
     years_until_terminal = end_year - year
   )
 
@@ -3149,7 +3172,7 @@ dq_EM <- summary$dq %>%
                       OM_F))*100,
     re_bratio = ifelse(is.na((Value.Bratio - OM_bratio) / OM_bratio), 0, abs((Value.Bratio - OM_bratio) /
                       OM_bratio))*100,
-    end_year = as.numeric(str_extract(model_run, "\\d{4}$")),
+    end_year = as.numeric(str_extract(model_run, "\\d{4}$"))+3,
     years_until_terminal = end_year - year
   )
 
@@ -3218,7 +3241,7 @@ dq_EM <- summary$dq %>%
                       OM_F),
     re_bratio = ifelse(is.na((Value.Bratio - OM_bratio) / OM_bratio), 0, (Value.Bratio - OM_bratio) /
                       OM_bratio),
-    end_year = as.numeric(str_extract(model_run, "\\d{4}$")),
+    end_year = as.numeric(str_extract(model_run, "\\d{4}$"))+3,
     years_until_terminal = end_year - year
   )
 
@@ -3286,7 +3309,7 @@ dq_EM <- summary$dq %>%
   mutate(
     re_F = ifelse(is.na(Value.F/ OM_F), 0, (Value.F/OM_F)),
     re_bratio = ifelse(is.na(Value.Bratio/OM_bratio), 0, (Value.Bratio/OM_bratio)),
-    end_year = as.numeric(str_extract(model_run, "\\d{4}$")),
+    end_year = as.numeric(str_extract(model_run, "\\d{4}$"))+3,
     years_until_terminal = end_year - year
     )
 
@@ -3384,7 +3407,8 @@ EM_means_re <- summary$ts %>%
                       OM_rec_f),        
         re_abundance = ifelse(is.na((Bio_smry - OM_abundance) / OM_abundance), 0, (Bio_smry - OM_abundance) /
                       OM_abundance),
-    end_year = as.numeric(str_extract(model_run, "\\d{4}$")),
+        re_removals = sum(re_com, re_rec, re_dead_5),
+    end_year = as.numeric(str_extract(model_run, "\\d{4}$"))+3,
     years_until_terminal = end_year - year
   )
 
@@ -3398,7 +3422,7 @@ dq_EM <- summary$dq %>%
                       OM_F))*100,
     re_bratio = ifelse(is.na((Value.Bratio - OM_bratio) / OM_bratio), 0, abs((Value.Bratio - OM_bratio) /
                       OM_bratio))*100,
-    end_year = as.numeric(str_extract(model_run, "\\d{4}$")),
+    end_year = as.numeric(str_extract(model_run, "\\d{4}$"))+3,
     years_until_terminal = end_year - year
   )
 
@@ -3433,7 +3457,7 @@ EM_means <- summary$ts %>%
         re_abundance = ifelse(is.na((Bio_smry - OM_abundance) / OM_abundance), 0, abs(Bio_smry - OM_abundance) /
                       OM_abundance)*100,
     re_removals = sum(re_com, re_rec, re_dead_5),
-    end_year = as.numeric(str_extract(model_run, "\\d{4}$")),
+    end_year = as.numeric(str_extract(model_run, "\\d{4}$"))+3,
     years_until_terminal = end_year - year
   ) %>% 
   left_join(dq_EM, join_by(year, iteration, scenario))
@@ -3606,5 +3630,476 @@ rt_joined %>%
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
+## Testing more plots
+
+::: panel-tabset
+
+### Relative error
+
+```{r}
+
+EM_means_re %>%
+mutate(
+    em_model = ifelse(
+      scenario %in% c("no_rt", "rt_2_x_no_rt", "rt_2_x_no_rt_high"),
+      "No Red Tide",
+      ifelse(
+        grepl("high", scenario),
+        "2 Years High Red Tide",
+        "2 Years Red Tide"
+      )
+    ),
+    om_model = ifelse(
+      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_rt_2_high"),
+      "No Red Tide",
+      ifelse(
+        grepl("high", scenario),
+        "2 Years High Red Tide",
+        "2 Years Red Tide"
+      )
+    )
+  )%>%
+  # Pivot the data longer
+  pivot_longer(
+    cols = c(re_com, re_rec, re_dead_5, re_removals),
+    names_to = "variable",
+    values_to = "value",
+    names_transform = list(
+      variable = ~recode(
+        .x,
+        "re_com" = "Commercial Catch",
+        "re_rec" = "Recreational Catch",
+        "re_dead_5" = "Red Tide Dead",
+        "re_removals" = "Total Removals"
+      )
+  )) %>%
+  ggplot(aes(year, value)) +
+  geom_vline(xintercept = c(2005, 2014, 2018, 2021), linetype = "dashed", color = "gray") +
+  stat_summary(fun = mean, geom = "line") +
+  stat_summary(fun.data = mean_cl_normal, geom = "ribbon", alpha = 0.3) +
+  facet_grid(variable~scenario, scales = "free") +
+  theme_bw()+ 
+  #coord_cartesian(xlim = c(2017, 2025)) +
+  labs(color = "EM", fill = "EM", x = "Year", y = "Relative Error")
+
+```
+
+### Ratio
+
+```{r}
+
+EM_means_ratio <- summary$ts %>%
+  filter(
+    str_detect(model_run, "_EM_2047")) %>%
+  rowwise()%>%
+  mutate(commercial = sum(retainB_1, retainB_2), recreational = retainB_4, com_f = sum(F_1, F_2), rec_f = F_4) %>%
+  left_join(OM_means, by = c("year", "scenario", "iteration")) %>%
+  group_by(scenario, iteration, year) %>%
+  mutate(
+    re_Recruit_0 = ifelse(
+      is.na(Recruit_0 / OM_Recruit_0),
+      0,
+    Recruit_0/OM_Recruit_0
+    ),
+    #this put zeros back in.
+    re_F_5 = ifelse(is.na((F_5) / OM_F_5), 1, (F_5) /
+                      OM_F_5),
+    re_SpawnBio = ifelse(is.na((SpawnBio) / OM_SpawnBio), 1, (SpawnBio) /
+                      OM_SpawnBio),
+        re_com = ifelse(is.na((commercial) / OM_com), 1, (commercial) /
+                      OM_com),
+        re_rec = ifelse(is.na((recreational) / OM_rec), 1, (recreational) /
+                      OM_rec),
+        re_dead_5 = ifelse(is.na((deadB_5) / OM_dead_5), 1, (deadB_5) /
+                      OM_dead_5),
+        re_com_f = ifelse(is.na((com_f) / OM_com_f), 1, (com_f) /
+                      OM_com_f),
+        re_rec_f = ifelse(is.na((rec_f) / OM_rec_f), 1, (rec_f) /
+                      OM_rec_f),        
+        re_abundance = ifelse(is.na((Bio_smry) / OM_abundance), 1, (Bio_smry) /
+                      OM_abundance),
+        re_removals = sum(re_com, re_rec, re_dead_5),
+    end_year = as.numeric(str_extract(model_run, "\\d{4}$"))+3,
+    years_until_terminal = end_year - year
+  )
+
+EM_means_ratio %>%
+mutate(
+    em_model = ifelse(
+      scenario %in% c("no_rt", "rt_2_x_no_rt", "rt_2_x_no_rt_high"),
+      "No Red Tide",
+      ifelse(
+        grepl("high", scenario),
+        "2 Years High Red Tide",
+        "2 Years Red Tide"
+      )
+    ),
+    om_model = ifelse(
+      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_rt_2_high"),
+      "No Red Tide",
+      ifelse(
+        grepl("high", scenario),
+        "2 Years High Red Tide",
+        "2 Years Red Tide"
+      )
+    )
+  )%>%
+  # Pivot the data longer
+  pivot_longer(
+    cols = c(re_com, re_rec, re_dead_5),
+    names_to = "variable",
+    values_to = "value",
+    names_transform = list(
+      variable = ~recode(
+        .x,
+        "re_com" = "Commercial Catch",
+        "re_rec" = "Recreational Catch",
+        "re_dead_5" = "Red Tide Dead"
+      )
+  )) %>%
+  ggplot(aes(year, value)) +
+  geom_vline(xintercept = c(2005, 2014, 2018, 2021), linetype = "dashed", color = "gray") +
+  stat_summary(fun = mean, geom = "line") +
+  stat_summary(fun.data = mean_cl_normal, geom = "ribbon", alpha = 0.3) +
+  facet_grid(variable~scenario, scales = "free") +
+  theme_bw()+ 
+  coord_cartesian(ylim = c(0,3)) +
+  #coord_cartesian(xlim = c(2017, 2025)) +
+  labs(color = "EM", fill = "EM", x = "Year", y = "Ratio EM:OM")
+
+```
+
+### grey lines for iteration, mean black
+
+```{r}
+EM_means_ratio %>%
+mutate(
+    em_model = ifelse(
+      scenario %in% c("no_rt", "rt_2_x_no_rt", "rt_2_x_no_rt_high"),
+      "No Red Tide",
+      ifelse(
+        grepl("high", scenario),
+        "2 Years High Red Tide",
+        "2 Years Red Tide"
+      )
+    ),
+    om_model = ifelse(
+      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_rt_2_high"),
+      "No Red Tide",
+      ifelse(
+        grepl("high", scenario),
+        "2 Years High Red Tide",
+        "2 Years Red Tide"
+      )
+    )
+  )%>%
+  # Pivot the data longer
+  pivot_longer(
+    cols = c(re_com, re_rec, re_dead_5),
+    names_to = "variable",
+    values_to = "value",
+    names_transform = list(
+      variable = ~recode(
+        .x,
+        "re_com" = "Commercial Catch",
+        "re_rec" = "Recreational Catch",
+        "re_dead_5" = "Red Tide Dead"
+      )
+  )) %>%
+  ggplot(aes(year, value)) +
+  geom_vline(xintercept = c(2005, 2014, 2018, 2021), linetype = "dashed", color = "gray") +
+  geom_line(aes(year, value, group = iteration), color = "grey") + 
+  stat_summary(fun = mean, geom = "line") +
+  #stat_summary(fun.data = mean_cl_normal, geom = "ribbon", alpha = 0.3) +
+  geom_hline(yintercept = 1) + 
+  facet_grid(variable~scenario, scales = "free") +
+  theme_bw()+ 
+  coord_cartesian(ylim = c(0,3)) +
+  #coord_cartesian(xlim = c(2017, 2025)) +
+  labs(color = "EM", fill = "EM", x = "Year", y = "Ratio EM:OM")
+
+```
+
+### zoom in 
+
+```{r}
+EM_means_ratio %>%
+mutate(
+    em_model = ifelse(
+      scenario %in% c("no_rt", "rt_2_x_no_rt", "rt_2_x_no_rt_high"),
+      "No Red Tide",
+      ifelse(
+        grepl("high", scenario),
+        "2 Years High Red Tide",
+        "2 Years Red Tide"
+      )
+    ),
+    om_model = ifelse(
+      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_rt_2_high"),
+      "No Red Tide",
+      ifelse(
+        grepl("high", scenario),
+        "2 Years High Red Tide",
+        "2 Years Red Tide"
+      )
+    )
+  )%>%
+  # Pivot the data longer
+  pivot_longer(
+    cols = c(re_com, re_rec, re_dead_5),
+    names_to = "variable",
+    values_to = "value",
+    names_transform = list(
+      variable = ~recode(
+        .x,
+        "re_com" = "Commercial Catch",
+        "re_rec" = "Recreational Catch",
+        "re_dead_5" = "Red Tide Dead"
+      )
+  )) %>%
+  ggplot(aes(year, value)) +
+  geom_vline(xintercept = c(2005, 2014, 2018, 2021), linetype = "dashed", color = "gray") +
+  geom_line(aes(year, value, group = iteration), color = "grey") + 
+  stat_summary(fun = mean, geom = "line") +
+  #stat_summary(fun.data = mean_cl_normal, geom = "ribbon", alpha = 0.3) +
+  geom_hline(yintercept = 1, linetype = "dashed") + 
+  facet_grid(variable~scenario, scales = "free") +
+  theme_bw()+ 
+  coord_cartesian(ylim = c(0,3)) +
+  coord_cartesian(xlim = c(2017, 2025)) +
+  labs(color = "EM", fill = "EM", x = "Year", y = "Ratio EM:OM")
+
+```
+
+### other parameters
+
+```{r}
+EM_means_ratio %>%
+mutate(
+    em_model = ifelse(
+      scenario %in% c("no_rt", "rt_2_x_no_rt", "rt_2_x_no_rt_high"),
+      "No Red Tide",
+      ifelse(
+        grepl("high", scenario),
+        "2 Years High Red Tide",
+        "2 Years Red Tide"
+      )
+    ),
+    om_model = ifelse(
+      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_rt_2_high"),
+      "No Red Tide",
+      ifelse(
+        grepl("high", scenario),
+        "2 Years High Red Tide",
+        "2 Years Red Tide"
+      )
+    )
+  )%>%
+  # Pivot the data longer
+  pivot_longer(
+    cols = c(re_SpawnBio, re_Recruit_0, re_abundance),
+    names_to = "variable",
+    values_to = "value",
+    names_transform = list(
+      variable = ~recode(
+        .x,
+        "re_SpawnBio" = "SSB",
+        "re_Recruit_0" = "Recruits",
+        "re_abundance" = "Abundance"
+      )
+  )) %>%
+  ggplot(aes(year, value)) +
+  geom_vline(xintercept = c(2005, 2014, 2018, 2021), linetype = "dashed", color = "gray") +
+  geom_line(aes(year, value, group = iteration), color = "grey") + 
+  stat_summary(fun = mean, geom = "line") +
+  #stat_summary(fun.data = mean_cl_normal, geom = "ribbon", alpha = 0.3) +
+  geom_hline(yintercept = 1, linetype = "dashed") + 
+  facet_grid(variable~scenario, scales = "free") +
+  theme_bw()+ 
+  coord_cartesian(ylim = c(0,3)) +
+  #coord_cartesian(xlim = c(2017, 2025)) +
+  labs(color = "EM", fill = "EM", x = "Year", y = "Ratio EM:OM")
+
+```
+
+### zoom in, other parameters
+
+```{r}
+EM_means_ratio %>%
+mutate(
+    em_model = ifelse(
+      scenario %in% c("no_rt", "rt_2_x_no_rt", "rt_2_x_no_rt_high"),
+      "No Red Tide",
+      ifelse(
+        grepl("high", scenario),
+        "2 Years High Red Tide",
+        "2 Years Red Tide"
+      )
+    ),
+    om_model = ifelse(
+      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_rt_2_high"),
+      "No Red Tide",
+      ifelse(
+        grepl("high", scenario),
+        "2 Years High Red Tide",
+        "2 Years Red Tide"
+      )
+    )
+  )%>%
+  # Pivot the data longer
+  pivot_longer(
+    cols = c(re_SpawnBio, re_Recruit_0, re_abundance),
+    names_to = "variable",
+    values_to = "value",
+    names_transform = list(
+      variable = ~recode(
+        .x,
+        "re_SpawnBio" = "SSB",
+        "re_Recruit_0" = "Recruits",
+        "re_abundance" = "Abundance"
+      )
+  )) %>%
+  ggplot(aes(year, value)) +
+  geom_vline(xintercept = c(2005, 2014, 2018, 2021), linetype = "dashed", color = "gray") +
+  geom_line(aes(year, value, group = iteration), color = "grey") + 
+  stat_summary(fun = mean, geom = "line") +
+  #stat_summary(fun.data = mean_cl_normal, geom = "ribbon", alpha = 0.3) +
+  geom_hline(yintercept = 1, linetype = "dashed") + 
+  facet_grid(variable~scenario, scales = "free") +
+  theme_bw()+ 
+  coord_cartesian(ylim = c(0,3)) +
+  coord_cartesian(xlim = c(2000, 2025)) +
+  labs(color = "EM", fill = "EM", x = "Year", y = "Ratio EM:OM")
+
+```
+
+:::
 
 
+## Testing ratios
+
+I think something is off about the EM:OM ratio in the previous plots so I'm going to try using the ratio_df from earlier.  
+
+::: panel-tabset
+
+### Misc. TS Variables
+
+
+```{r}
+
+ratio_df %>%
+  filter(str_detect(model_run, "_EM_2047") | str_detect(model_run, "_OM")) %>%
+  mutate(
+    em_model = ifelse(
+      scenario %in% c("no_rt", "rt_2_x_no_rt", "rt_2_x_no_rt_high"),
+      "No Red Tide",
+      ifelse(grepl("high", scenario), "2 Years High Red Tide", "2 Years Red Tide")
+    ),
+    om_model = ifelse(
+      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_rt_2_high"),
+      "No Red Tide",
+      ifelse(grepl("high", scenario), "2 Years High Red Tide", "2 Years Red Tide")
+    )
+  ) %>% 
+  # Pivot the data longer
+  pivot_longer(
+    cols = c(
+      SpawnBio_ratio,
+      Recruit_0_ratio,
+      SPRratio_ratio,
+      rec_dev_ratio
+    ),
+    names_to = "variable",
+    values_to = "value",
+    names_transform = list(
+      variable = ~ recode(
+        .x,
+        "SpawnBio_ratio" = "SSB",
+        "Recruit_0_ratio" = "Recruits",
+        "SPRratio_ratio" = "SPR Ratio",
+        "rec_dev_ratio" = "Rec. Devs."
+      )
+    )
+  ) %>%
+  ggplot(aes(year, value)) +
+  geom_vline(
+    xintercept = c(2005, 2014, 2018, 2021),
+    linetype = "dashed",
+    color = "gray"
+  ) +
+  geom_line(aes(year, value, group = iteration), color = "grey") +
+  stat_summary(fun = median, geom = "line") +
+  #stat_summary(fun.data = mean_cl_normal, geom = "ribbon", alpha = 0.3) +
+  geom_hline(yintercept = 1, linetype = "dashed") +
+  facet_grid(variable ~ scenario, scales = "free") +
+  theme_bw() +
+  coord_cartesian(xlim = c(2000, 2025)) +
+  labs(color = "EM",
+       fill = "EM",
+       x = "Year",
+       y = "Ratio EM:OM")
+
+```
+
+
+### TS F
+
+
+```{r}
+
+ratio_df %>%
+  filter(str_detect(model_run, "_EM_2047") | str_detect(model_run, "_OM")) %>%
+  mutate(
+    em_model = ifelse(
+      scenario %in% c("no_rt", "rt_2_x_no_rt", "rt_2_x_no_rt_high"),
+      "No Red Tide",
+      ifelse(grepl("high", scenario), "2 Years High Red Tide", "2 Years Red Tide")
+    ),
+    om_model = ifelse(
+      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_rt_2_high"),
+      "No Red Tide",
+      ifelse(grepl("high", scenario), "2 Years High Red Tide", "2 Years Red Tide")
+    )
+  ) %>% 
+  # Pivot the data longer
+  pivot_longer(
+    cols = c(
+      F_1_ratio,
+      F_2_ratio,
+      F_4_ratio,
+      F_5_ratio
+    ),
+    names_to = "variable",
+    values_to = "value",
+    names_transform = list(
+      variable = ~ recode(
+        .x,
+        "F_1_ratio" = "F_1",
+        "F_2_ratio" = "F_2",
+        "F_4_ratio" = "F_4",
+        "F_5_ratio" = "F_5"
+      )
+    )
+  ) %>%
+  ggplot(aes(year, value)) +
+  geom_vline(
+    xintercept = c(2005, 2014, 2018, 2021),
+    linetype = "dashed",
+    color = "gray"
+  ) +
+  geom_line(aes(year, value, group = iteration), color = "grey") +
+  stat_summary(fun = median, geom = "line") +
+  #stat_summary(fun.data = mean_cl_normal, geom = "ribbon", alpha = 0.3) +
+  geom_hline(yintercept = 1, linetype = "dashed") +
+  facet_grid(variable ~ scenario, scales = "free") +
+  theme_bw() +
+  coord_cartesian(xlim = c(2000, 2025)) +
+  labs(color = "EM",
+       fill = "EM",
+       x = "Year",
+       y = "Ratio EM:OM")
+
+```
+
+
+:::
