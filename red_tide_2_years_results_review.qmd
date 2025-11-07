@@ -16,7 +16,11 @@ For this test run, I took the SEDAR Red Grouper stock assessment and used SSMSE 
 1.  No red tide X no red tide: the base stock assessment with red tide events in 2005 and 2014.\
 2.  No red tide X 2 red tide: red tide in 2018 and 2021 in the EM.\
 3.  2 red tide X 2 red tide: red tide in 2018 and 2021 in the OM and EM.\
-4.  2 red tide X no red tide: red tide in 2018 and 2021 in the OM, but not in the EM.
+4.  2 red tide X no red tide: red tide in 2018 and 2021 in the OM, but not in the EM.\
+5.  2 red tide X no red tide: red tide in 2018 and 2021 in the OM and fixed in the EM.\
+6.  No red tide X all years red tide: no red tide in OM, all years red tide in EM.
+7.  2 red tide X all years red tide: red tide in 2018 and 2021 in OM, all years red tide in EM.
+8.  red tide every 3 years X all years red tide: red tide every 3 years in OM starting in 2018, all years red tide in EM.
 
 
 Import the results and summary files from the cloud.
@@ -34,23 +38,33 @@ run_SSMSE_dir <- file.path("C:/Users/apn26/Documents/CIMAS/Personal Notes/test_c
 default <- file.path(run_SSMSE_dir, OM_name)
 
 #name of the results files
-results_name <- "_rt_2_rerun_om"
+results_name <- "_rt_2_uncertainty"
 
 #pull the summary and dat files, the dat file isn't actually that important.  
 cc_storage <- file.path("C:/Users/apn26/Documents/CIMAS/Personal Notes/cc_storage")
 summary <- readRDS(file = file.path(cc_storage, paste0("results_summary", results_name, ".rda")))
 dat <- r4ss::SS_readdat(file.path(default, "red_grouper_1986_2017_RedTideFleet.dat"))
+res <- readRDS(file = file.path(cc_storage, paste0("results", results_name, ".rda")))
 
 
-#remove "Base" model 
 summary$ts <- summary$ts %>%
-  filter(model_run != "", !str_detect(model_run, "Base")) %>%
-  mutate(end_year = as.numeric(str_extract(model_run, "\\d{4}$")) + 3,
+  filter(model_run != "", !str_detect(model_run, "Base")) %>% #remove "Base" model 
+  mutate(end_year = as.numeric(str_extract(model_run, "\\d{4}$")) + 3, 
          years_until_terminal = end_year - year) %>%
   filter(case_when(
     str_detect(model_run, "_EM") ~ years_until_terminal > 2,
     TRUE ~ TRUE # Keep all other rows if no _EM
-  ))
+  )) %>%
+  mutate(
+    scenario = factor(scenario, 
+                      levels = c("no_rt", 
+                                 "no_rt_x_rt_2", 
+                                 "rt_2_x_no_rt", 
+                                 "rt_2_x_rt_2", "rt_2_x_rt_2_fixed",
+                                 "no_rt_x_all_yrs", 
+                                 "rt_2_x_all_yrs",
+                                 "rep_3_x_all_yrs"))
+  )
 
 summary$dq <- summary$dq %>%
   filter(model_run != "", !str_detect(model_run, "Base")) %>%
@@ -59,7 +73,17 @@ summary$dq <- summary$dq %>%
   filter(case_when(
     str_detect(model_run, "_EM") ~ years_until_terminal > 2,
     TRUE ~ TRUE # Keep all other rows if no _EM
-  ))
+  )) %>%
+  mutate(
+    scenario = factor(scenario, 
+                      levels = c("no_rt", 
+                                 "no_rt_x_rt_2", 
+                                 "rt_2_x_no_rt", 
+                                 "rt_2_x_rt_2", "rt_2_x_rt_2_fixed",
+                                 "no_rt_x_all_yrs", 
+                                 "rt_2_x_all_yrs",
+                                 "rep_3_x_all_yrs"))
+  )
 summary$scalar <- summary$scalar %>%
   filter(model_run != "", !str_detect(model_run, "Base")) 
 
@@ -69,8 +93,12 @@ OM_name <- "default_sigmaR"
 ```
 
 ```{r}
-
-scen_list <- unique(summary$ts$scenario)
+#create a list of scenarios for plot generation, usually the default order is fine.  
+#scen_list <- unique(summary$ts$scenario)
+#hard coded in a specific order.  
+scen_list <- c("no_rt", "no_rt_x_rt_2", "rt_2_x_no_rt", "rt_2_x_rt_2", "rt_2_x_rt_2_fixed", "no_rt_x_all_yrs", 
+                                 "rt_2_x_all_yrs",
+                                 "rep_3_x_all_yrs")
 
 ```
 
@@ -433,6 +461,8 @@ ratio_df <- left_join(EM_runs, OM_runs,
 
 ```{r}
 
+scen = "no_rt_x_all_yrs"
+
 plot_f_ts <- function(scen) {
   
   fleet_ratios <- ratio_df %>%
@@ -535,6 +565,29 @@ f_ts_plots[[3]]
 
 ```{r, warning=FALSE}
 f_ts_plots[[4]]
+```
+### 2 years red tide OM X 2 years red tide EM  Fixed
+
+```{r, warning=FALSE}
+f_ts_plots[[5]]
+```
+
+### No red tide OM x all years red tide EM 
+
+```{r, warning=FALSE}
+f_ts_plots[[6]]
+```
+
+### 2 years red tide OM x all years red tide EM 
+
+```{r, warning=FALSE}
+f_ts_plots[[7]]
+```
+
+### Every 3 years red tide OM x all years red tide EM 
+
+```{r, warning=FALSE}
+f_ts_plots[[8]]
 ```
 
 :::
@@ -644,11 +697,332 @@ f_ts_plots[[3]]
 ```{r, warning=FALSE}
 f_ts_plots[[4]]
 ```
+### 2 years red tide OM X 2 years red tide EM Fixed
+
+```{r, warning=FALSE}
+f_ts_plots[[5]]
+```
+
+### No red tide OM x all years red tide EM 
+
+```{r, warning=FALSE}
+f_ts_plots[[6]]
+```
+### 2 years red tide OM x all years red tide EM 
+
+```{r, warning=FALSE}
+f_ts_plots[[7]]
+```
+
+### Every 3 years red tide OM x all years red tide EM 
+
+```{r, warning=FALSE}
+f_ts_plots[[8]]
+```
 
 :::
 
 Figure 11. Red tide mortality ratio (EM:OM) over time by scenario.  The line indicates the median and the ribbon is the 25-75% quartiles.  Red tide mortality is consistently underestimated, it is more underestimated in future years where there is less data.  
 
+## F
+
+All the F's added together from the previous plots.  
+
+```{r}
+
+ratio_df <- 
+  left_join(EM_runs, OM_runs,
+                      by = c("year", "scenario", "iteration"),
+                      suffix = c("_em", "_om")) %>%
+  mutate(F_om = F_1_om + F_2_om + F_3_om + F_4_om + F_5_om, 
+         F_em = F_1_em + F_2_em + F_3_em + F_4_em + F_5_em) %>%
+  mutate(across(
+    .cols = where(is.numeric) & ends_with("_om"),
+    .fns = ~ {
+      # Get the name of the corresponding '_em' column
+      em_col_name <- str_replace(cur_column(), "_om", "_em")
+      # Get the value from the '_em' column for the current row
+      em_value <- get(em_col_name)
+      # Get the value from the current '_om' column (represented by .x)
+      om_value <- .x
+
+      # Conditional logic:
+      # If both '_em' and '_om' values are 0, set the ratio to 1.
+      # Otherwise, perform the division.
+      if_else(em_value == 0 & om_value == 0, 1, em_value / om_value)
+    },
+    .names = "{str_remove(.col, '_om')}_ratio"
+  )) %>%
+  select(year, scenario, iteration, model_run = model_run_em, ends_with("_ratio"))
+
+plot_f_ts <- function(scen) {
+  
+  fleet_ratios <- ratio_df %>%
+    filter(
+      # only looking at the projection
+      year >= 2017,
+      # one scenario at a time
+      scenario == scen,
+      # exclude init
+      !str_detect(model_run, "init")
+    ) %>% 
+    mutate(
+      end_year = as.numeric(str_extract(model_run, "\\d{4}$"))+3,
+      years_until_terminal = end_year - year
+    )
+  
+  rt_summary <- fleet_ratios %>%
+    # Group by year to calculate stats for each year
+    group_by(year) %>%
+    # Calculate the median and the 25th/75th percentiles for the ribbon
+    reframe(
+      median_ratio = median(F_ratio, na.rm = TRUE),
+      lower_quartile = quantile(F_ratio, 0.25, na.rm = TRUE),
+      upper_quartile = quantile(F_ratio, 0.75, na.rm = TRUE)
+    )
+  
+  
+  rt_terminal_ratio <- fleet_ratios %>%
+    ggplot() +
+    geom_point(aes(y = F_ratio, year),
+               color = "grey",
+               alpha = 0.5) + # Individual points
+    # Add the error ribbon using the summary data
+    geom_ribbon(
+      data = rt_summary,
+      aes(year, ymin = lower_quartile, ymax = upper_quartile),
+      fill = "lightblue",
+      alpha = 0.7
+    ) +
+    # Add the median line using the summary data
+    geom_line(
+      data = rt_summary,
+      aes(y = median_ratio, year),
+      linewidth = 1,
+      color = "black"
+    ) +
+    geom_hline(yintercept = 1, linetype = "dashed") +
+    theme(axis.text.x = element_text(
+      angle = 90,
+      vjust = 0.5,
+      hjust = 1
+    )) +
+    ggtitle(scen) +
+    ylab("Ratio of F (EM:OM)") + xlab("Years") +
+    theme_bw()
+  
+  rt_terminal_ratio
+  
+}
+
+f_ts_plots <- map(scen_list, plot_f_ts)
+
+```
+
+::: panel-tabset
+### No red tide OMxEM
+
+```{r, warning=FALSE}
+f_ts_plots[[1]]
+```
+
+### No red tide OM x 2 years red tide EM
+
+```{r, warning=FALSE}
+f_ts_plots[[2]]
+```
+
+### 2 years red tide OM x No red tide EM
+
+```{r, warning=FALSE}
+f_ts_plots[[3]]
+```
+
+### 2 years red tide OM X 2 years red tide EM
+
+```{r, warning=FALSE}
+f_ts_plots[[4]]
+```
+
+### 2 years red tide OM X 2 years red tide EM Fixed
+
+```{r, warning=FALSE}
+f_ts_plots[[5]]
+```
+
+### No red tide OM x all years red tide EM 
+
+```{r, warning=FALSE}
+f_ts_plots[[6]]
+```
+### 2 years red tide OM x all years red tide EM 
+
+```{r, warning=FALSE}
+f_ts_plots[[7]]
+```
+
+### Every 3 years red tide OM x all years red tide EM 
+
+```{r, warning=FALSE}
+f_ts_plots[[7]]
+```
+
+:::
+
+Figure 11B. Overall mortality ratio (EM:OM) over time by scenario.  The line indicates the median and the ribbon is the 25-75% quartiles.  Red tide mortality is consistently underestimated, it is more underestimated in future years where there is less data. 
+
+## Version #2 using the F.Value from dqs
+
+```{r}
+
+#set up the OM and EM dataframes, join them, and calculate the EM:OM ratio for each available value
+
+OM_runs_dq <- summary$dq %>%
+  filter(str_detect(model_run, "OM"))
+  
+EM_runs_dq <- summary$dq %>%
+  filter(str_detect(model_run, "EM"))
+
+ratio_df_dq <- left_join(EM_runs_dq, OM_runs_dq,
+                      by = c("year", "scenario", "iteration"),
+                      suffix = c("_em", "_om")) %>%
+  mutate(across(
+    .cols = where(is.numeric) & ends_with("_om"),
+    .fns = ~ {
+      # Get the name of the corresponding '_em' column
+      em_col_name <- str_replace(cur_column(), "_om", "_em")
+      # Get the value from the '_em' column for the current row
+      em_value <- get(em_col_name)
+      # Get the value from the current '_om' column (represented by .x)
+      om_value <- .x
+
+      # Conditional logic:
+      # If both '_em' and '_om' values are 0, set the ratio to 1.
+      # Otherwise, perform the division.
+      if_else(em_value == 0 & om_value == 0, 1, em_value / om_value)
+    },
+    .names = "{str_remove(.col, '_om')}_ratio"
+  )) %>%
+  select(year, scenario, iteration, model_run = model_run_em, ends_with("_ratio"))
+
+```
+
+```{r}
+
+
+plot_f_ts <- function(scen) {
+  
+  fleet_ratios <- ratio_df_dq %>%
+    filter(
+      # only looking at the projection
+      year >= 2017,
+      # one scenario at a time
+      scenario == scen,
+      # exclude init
+      !str_detect(model_run, "init")
+    ) %>% 
+    mutate(
+      end_year = as.numeric(str_extract(model_run, "\\d{4}$"))+3,
+      years_until_terminal = end_year - year
+    )
+  
+  rt_summary <- fleet_ratios %>%
+    # Group by year to calculate stats for each year
+    group_by(year) %>%
+    # Calculate the median and the 25th/75th percentiles for the ribbon
+    reframe(
+      median_ratio = median(Value.F_ratio, na.rm = TRUE),
+      lower_quartile = quantile(Value.F_ratio, 0.25, na.rm = TRUE),
+      upper_quartile = quantile(Value.F_ratio, 0.75, na.rm = TRUE)
+    )
+  
+  
+  rt_terminal_ratio <- fleet_ratios %>%
+    ggplot() +
+    geom_point(aes(y = Value.F_ratio, year),
+               color = "grey",
+               alpha = 0.5) + # Individual points
+    # Add the error ribbon using the summary data
+    geom_ribbon(
+      data = rt_summary,
+      aes(year, ymin = lower_quartile, ymax = upper_quartile),
+      fill = "lightblue",
+      alpha = 0.7
+    ) +
+    # Add the median line using the summary data
+    geom_line(
+      data = rt_summary,
+      aes(y = median_ratio, year),
+      linewidth = 1,
+      color = "black"
+    ) +
+    geom_hline(yintercept = 1, linetype = "dashed") +
+    theme(axis.text.x = element_text(
+      angle = 90,
+      vjust = 0.5,
+      hjust = 1
+    )) +
+    ggtitle(scen) +
+    ylab("Ratio of F (EM:OM)") + xlab("Years") +
+    theme_bw()
+  
+  rt_terminal_ratio
+  
+}
+
+f_ts_plots <- map(scen_list, plot_f_ts)
+
+```
+
+::: panel-tabset
+### No red tide OMxEM
+
+```{r, warning=FALSE}
+f_ts_plots[[1]]
+```
+
+### No red tide OM x 2 years red tide EM
+
+```{r, warning=FALSE}
+f_ts_plots[[2]]
+```
+
+### 2 years red tide OM x No red tide EM
+
+```{r, warning=FALSE}
+f_ts_plots[[3]]
+```
+
+### 2 years red tide OM X 2 years red tide EM
+
+```{r, warning=FALSE}
+f_ts_plots[[4]]
+```
+
+### 2 years red tide OM X 2 years red tide EM
+
+```{r, warning=FALSE}
+f_ts_plots[[5]]
+```
+
+### No red tide OM x all years red tide EM 
+
+```{r, warning=FALSE}
+f_ts_plots[[6]]
+```
+### 2 years red tide OM x all years red tide EM 
+
+```{r, warning=FALSE}
+f_ts_plots[[7]]
+```
+
+### Every 3 years red tide OM x all years red tide EM 
+
+```{r, warning=FALSE}
+f_ts_plots[[8]]
+```
+
+:::
 
 ## Biomass
 
@@ -749,6 +1123,30 @@ biomass_ts_plots[[3]]
 
 ```{r, warning=FALSE}
 biomass_ts_plots[[4]]
+```
+
+### 2 years red tide OM X 2 years red tide EM Fixed
+
+```{r, warning=FALSE}
+biomass_ts_plots[[5]]
+```
+
+### No red tide OM x all years red tide EM 
+
+```{r, warning=FALSE}
+biomass_ts_plots[[6]]
+```
+
+### 2 years red tide OM x all years red tide EM 
+
+```{r, warning=FALSE}
+biomass_ts_plots[[7]]
+```
+
+### Every 3 years red tide OM x all years red tide EM 
+
+```{r, warning=FALSE}
+biomass_ts_plots[[8]]
 ```
 
 :::
@@ -993,6 +1391,29 @@ f_ts_plots[[3]]
 ```{r, warning=FALSE}
 f_ts_plots[[4]]
 ```
+### 2 years red tide OM X 2 years red tide EM Fixed
+
+```{r, warning=FALSE}
+f_ts_plots[[5]]
+```
+ 
+### No red tide OM x all years red tide EM 
+
+```{r, warning=FALSE}
+f_ts_plots[[6]]
+```
+
+### 2 years red tide OM x all years red tide EM 
+
+```{r, warning=FALSE}
+f_ts_plots[[7]]
+```
+
+### Every 3 years red tide OM x all years red tide EM 
+
+```{r, warning=FALSE}
+f_ts_plots[[8]]
+```
 
 :::
 
@@ -1102,7 +1523,28 @@ f_ts_plots[[3]]
 ```{r, warning=FALSE}
 f_ts_plots[[4]]
 ```
+### 2 years red tide OM X 2 years red tide EM Fixed
 
+```{r, warning=FALSE}
+f_ts_plots[[5]]
+```
+### No red tide OM x all years red tide EM 
+
+```{r, warning=FALSE}
+f_ts_plots[[6]]
+```
+
+### 2 years red tide OM x all years red tide EM 
+
+```{r, warning=FALSE}
+f_ts_plots[[7]]
+```
+
+### Every 3 years red tide OM x all years red tide EM 
+
+```{r, warning=FALSE}
+f_ts_plots[[8]]
+```
 
 :::
 
@@ -1211,7 +1653,29 @@ biomass_ts_plots[[3]]
 ```{r, warning=FALSE}
 biomass_ts_plots[[4]]
 ```
+### 2 years red tide OM X 2 years red tide EM Fixed
 
+```{r, warning=FALSE}
+biomass_ts_plots[[5]]
+```
+
+### No red tide OM x all years red tide EM 
+
+```{r, warning=FALSE}
+biomass_ts_plots[[6]]
+```
+
+### 2 years red tide OM x all years red tide EM 
+
+```{r, warning=FALSE}
+biomass_ts_plots[[7]]
+```
+
+### Every 3 years red tide OM x all years red tide EM 
+
+```{r, warning=FALSE}
+biomass_ts_plots[[8]]
+```
 
 :::
 
@@ -1428,7 +1892,7 @@ t_plot_short + t_plot
   
 }
 
-all_term_plots<- map(unique(summary$ts$scenario), scen_ts_plots)
+all_term_plots<- map(scen_list, scen_ts_plots)
 
 ```
 
@@ -1455,7 +1919,29 @@ all_term_plots[[3]]
 ```{r, warning=FALSE}
 all_term_plots[[4]]
 ```
+### 2 years red tide OM X 2 years red tide EM Fixed
 
+```{r, warning=FALSE}
+all_term_plots[[5]]
+```
+
+### No red tide OM x all years red tide EM 
+
+```{r, warning=FALSE}
+all_term_plots[[6]]
+```
+
+### 2 years red tide OM x all years red tide EM 
+
+```{r, warning=FALSE}
+all_term_plots[[7]]
+```
+
+### Every 3 years red tide OM x all years red tide EM 
+
+```{r, warning=FALSE}
+all_term_plots[[8]]
+```
 
 :::
 
@@ -1536,7 +2022,7 @@ t_plot_short + t_plot
   
 }
 
-all_term_plots<- map(unique(summary$ts$scenario), scen_ts_plots)
+all_term_plots<- map(scen_list, scen_ts_plots)
 
 ```
 
@@ -1564,6 +2050,29 @@ all_term_plots[[3]]
 all_term_plots[[4]]
 ```
 
+### 2 years red tide OM X 2 years red tide EM Fixed
+
+```{r, warning=FALSE}
+all_term_plots[[5]]
+```
+
+### No red tide OM x all years red tide EM 
+
+```{r, warning=FALSE}
+all_term_plots[[6]]
+```
+
+### 2 years red tide OM x all years red tide EM 
+
+```{r, warning=FALSE}
+all_term_plots[[7]]
+```
+
+### Every 3 years red tide OM x all years red tide EM 
+
+```{r, warning=FALSE}
+all_term_plots[[8]]
+```
 
 :::
 
@@ -1906,9 +2415,25 @@ EM_means <- summary$ts %>%
 
 ```{r, warning = FALSE, message =FALSE}
 EM_means %>%
-  mutate(
-    em_model = ifelse(scenario %in% c("no_rt", "rt_2_x_no_rt"), "No Red Tide", "2 Years Red Tide"),
-    om_model = ifelse(scenario %in% c("no_rt", "no_rt_x_rt_2"), "No Red Tide", "2 Years Red Tide")
+mutate(
+    em_model = ifelse(
+      scenario %in% c("no_rt", "rt_2_x_no_rt", "rt_2_x_no_rt_high"),
+      "No Red Tide",
+ifelse(
+        grepl("high", scenario),
+        "2 Years High Red Tide",
+        ifelse(grepl("all", scenario), "no_rt_x_all_yrs", "2 Years Red Tide")
+      )
+    ),
+    om_model = ifelse(
+      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_rt_2_high", "no_rt_x_all_yrs"),
+      "No Red Tide",
+      ifelse(
+        grepl("high", scenario),
+        "2 Years High Red Tide",
+        ifelse(grepl("all", scenario), "no_rt_x_all_yrs", "2 Years Red Tide")
+      )
+    )
   ) %>%
   # Pivot the data longer
   pivot_longer(
@@ -1938,9 +2463,25 @@ EM_means %>%
 
 ```{r, warning = FALSE, message =FALSE}
 EM_means %>%
-  mutate(
-    em_model = ifelse(scenario %in% c("no_rt", "rt_2_x_no_rt"), "No Red Tide", "2 Years Red Tide"),
-    om_model = ifelse(scenario %in% c("no_rt", "no_rt_x_rt_2"), "No Red Tide", "2 Years Red Tide")
+mutate(
+    em_model = ifelse(
+      scenario %in% c("no_rt", "rt_2_x_no_rt", "rt_2_x_no_rt_high", "no_rt_x_all_yrs"),
+      "No Red Tide",
+      ifelse(
+        grepl("high", scenario),
+        "2 Years High Red Tide",
+        ifelse(grepl("all", scenario), "no_rt_x_all_yrs", "2 Years Red Tide")
+      )
+    ),
+    om_model = ifelse(
+      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_rt_2_high"),
+      "No Red Tide",
+      ifelse(
+        grepl("high", scenario),
+        "2 Years High Red Tide",
+        "2 Years Red Tide"
+      )
+    )
   ) %>%
   # Pivot the data longer
   pivot_longer(
@@ -1961,9 +2502,25 @@ EM_means %>%
 
 ```{r, warning = FALSE, message =FALSE}
 EM_means %>%
-  mutate(
-    em_model = ifelse(scenario %in% c("no_rt", "rt_2_x_no_rt"), "No Red Tide", "2 Years Red Tide"),
-    om_model = ifelse(scenario %in% c("no_rt", "no_rt_x_rt_2"), "No Red Tide", "2 Years Red Tide")
+mutate(
+    em_model = ifelse(
+      scenario %in% c("no_rt", "rt_2_x_no_rt", "rt_2_x_no_rt_high", "no_rt_x_all_yrs"),
+      "No Red Tide",
+      ifelse(
+        grepl("high", scenario),
+        "2 Years High Red Tide",
+        ifelse(grepl("all", scenario), "no_rt_x_all_yrs", "2 Years Red Tide")
+      )
+    ),
+    om_model = ifelse(
+      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_rt_2_high"),
+      "No Red Tide",
+      ifelse(
+        grepl("high", scenario),
+        "2 Years High Red Tide",
+        "2 Years Red Tide"
+      )
+    )
   ) %>%
   # Pivot the data longer
   pivot_longer(
@@ -1993,9 +2550,25 @@ EM_means %>%
 
 ```{r, warning = FALSE, message =FALSE}
 EM_means %>%
-  mutate(
-    em_model = ifelse(scenario %in% c("no_rt", "rt_2_x_no_rt"), "No Red Tide", "2 Years Red Tide"),
-    om_model = ifelse(scenario %in% c("no_rt", "no_rt_x_rt_2"), "No Red Tide", "2 Years Red Tide")
+mutate(
+    em_model = ifelse(
+      scenario %in% c("no_rt", "rt_2_x_no_rt", "rt_2_x_no_rt_high", "no_rt_x_all_yrs"),
+      "No Red Tide",
+      ifelse(
+        grepl("high", scenario),
+        "2 Years High Red Tide",
+        ifelse(grepl("all", scenario), "no_rt_x_all_yrs", "2 Years Red Tide")
+      )
+    ),
+    om_model = ifelse(
+      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_rt_2_high"),
+      "No Red Tide",
+      ifelse(
+        grepl("high", scenario),
+        "2 Years High Red Tide",
+        "2 Years Red Tide"
+      )
+    )
   ) %>%
   # Pivot the data longer
   pivot_longer(
@@ -2017,9 +2590,25 @@ EM_means %>%
 
 ```{r, warning = FALSE, message =FALSE}
 EM_means %>%
-  mutate(
-    em_model = ifelse(scenario %in% c("no_rt", "rt_2_x_no_rt"), "No Red Tide", "2 Years Red Tide"),
-    om_model = ifelse(scenario %in% c("no_rt", "no_rt_x_rt_2"), "No Red Tide", "2 Years Red Tide")
+mutate(
+    em_model = ifelse(
+      scenario %in% c("no_rt", "rt_2_x_no_rt", "rt_2_x_no_rt_high", "no_rt_x_all_yrs"),
+      "No Red Tide",
+      ifelse(
+        grepl("high", scenario),
+        "2 Years High Red Tide",
+        ifelse(grepl("all", scenario), "no_rt_x_all_yrs", "2 Years Red Tide")
+      )
+    ),
+    om_model = ifelse(
+      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_rt_2_high"),
+      "No Red Tide",
+      ifelse(
+        grepl("high", scenario),
+        "2 Years High Red Tide",
+        "2 Years Red Tide"
+      )
+    )
   ) %>%
   # Pivot the data longer
   pivot_longer(
@@ -2057,9 +2646,25 @@ Misspecifying the model does not increase the error, instead there is more error
 
 ```{r, warning = FALSE, message =FALSE}
 EM_means %>%
-  mutate(
-    em_model = ifelse(scenario %in% c("no_rt", "rt_2_x_no_rt"), "No Red Tide", "2 Years Red Tide"),
-    om_model = ifelse(scenario %in% c("no_rt", "no_rt_x_rt_2"), "No Red Tide", "2 Years Red Tide")
+mutate(
+    em_model = ifelse(
+      scenario %in% c("no_rt", "rt_2_x_no_rt", "rt_2_x_no_rt_high", "no_rt_x_all_yrs"),
+      "No Red Tide",
+      ifelse(
+        grepl("high", scenario),
+        "2 Years High Red Tide",
+        ifelse(grepl("all", scenario), "no_rt_x_all_yrs", "2 Years Red Tide")
+      )
+    ),
+    om_model = ifelse(
+      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_rt_2_high"),
+      "No Red Tide",
+      ifelse(
+        grepl("high", scenario),
+        "2 Years High Red Tide",
+        "2 Years Red Tide"
+      )
+    )
   ) %>%
   # Pivot the data longer
   pivot_longer(
@@ -2084,9 +2689,25 @@ EM_means %>%
 
 ```{r, warning = FALSE, message =FALSE}
 EM_means %>%
-  mutate(
-    em_model = ifelse(scenario %in% c("no_rt", "rt_2_x_no_rt"), "No Red Tide", "2 Years Red Tide"),
-    om_model = ifelse(scenario %in% c("no_rt", "no_rt_x_rt_2"), "No Red Tide", "2 Years Red Tide")
+mutate(
+    em_model = ifelse(
+      scenario %in% c("no_rt", "rt_2_x_no_rt", "rt_2_x_no_rt_high", "no_rt_x_all_yrs"),
+      "No Red Tide",
+      ifelse(
+        grepl("high", scenario),
+        "2 Years High Red Tide",
+        ifelse(grepl("all", scenario), "no_rt_x_all_yrs", "2 Years Red Tide")
+      )
+    ),
+    om_model = ifelse(
+      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_rt_2_high"),
+      "No Red Tide",
+      ifelse(
+        grepl("high", scenario),
+        "2 Years High Red Tide",
+        "2 Years Red Tide"
+      )
+    )
   ) %>%
   # Pivot the data longer
   pivot_longer(
@@ -2124,9 +2745,25 @@ Misspecifying the model does not increase the error, instead there is more error
 
 ```{r, warning = FALSE, message =FALSE}
 EM_means %>%
-  mutate(
-    em_model = ifelse(scenario %in% c("no_rt", "rt_2_x_no_rt"), "No Red Tide", "2 Years Red Tide"),
-    om_model = ifelse(scenario %in% c("no_rt", "no_rt_x_rt_2"), "No Red Tide", "2 Years Red Tide")
+mutate(
+    em_model = ifelse(
+      scenario %in% c("no_rt", "rt_2_x_no_rt", "rt_2_x_no_rt_high", "no_rt_x_all_yrs"),
+      "No Red Tide",
+      ifelse(
+        grepl("high", scenario),
+        "2 Years High Red Tide",
+        ifelse(grepl("all", scenario), "no_rt_x_all_yrs", "2 Years Red Tide")
+      )
+    ),
+    om_model = ifelse(
+      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_rt_2_high"),
+      "No Red Tide",
+      ifelse(
+        grepl("high", scenario),
+        "2 Years High Red Tide",
+        "2 Years Red Tide"
+      )
+    )
   ) %>%
   # Pivot the data longer
   pivot_longer(
@@ -2157,9 +2794,25 @@ EM_means %>%
 
 ```{r}
 EM_means_re %>%
-  mutate(
-    em_model = ifelse(scenario %in% c("no_rt", "rt_2_x_no_rt"), "No Red Tide", "2 Years Red Tide"),
-    om_model = ifelse(scenario %in% c("no_rt", "no_rt_x_rt_2"), "No Red Tide", "2 Years Red Tide")
+mutate(
+    em_model = ifelse(
+      scenario %in% c("no_rt", "rt_2_x_no_rt", "rt_2_x_no_rt_high", "no_rt_x_all_yrs"),
+      "No Red Tide",
+      ifelse(
+        grepl("high", scenario),
+        "2 Years High Red Tide",
+        ifelse(grepl("all", scenario), "no_rt_x_all_yrs", "2 Years Red Tide")
+      )
+    ),
+    om_model = ifelse(
+      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_rt_2_high"),
+      "No Red Tide",
+      ifelse(
+        grepl("high", scenario),
+        "2 Years High Red Tide",
+        "2 Years Red Tide"
+      )
+    )
   ) %>%
   # Pivot the data longer
   pivot_longer(
@@ -2179,9 +2832,25 @@ EM_means_re %>%
 
 ```{r}
 EM_means_re %>%
-  mutate(
-    em_model = ifelse(scenario %in% c("no_rt", "rt_2_x_no_rt"), "No Red Tide", "2 Years Red Tide"),
-    om_model = ifelse(scenario %in% c("no_rt", "no_rt_x_rt_2"), "No Red Tide", "2 Years Red Tide")
+mutate(
+    em_model = ifelse(
+      scenario %in% c("no_rt", "rt_2_x_no_rt", "rt_2_x_no_rt_high", "no_rt_x_all_yrs"),
+      "No Red Tide",
+      ifelse(
+        grepl("high", scenario),
+        "2 Years High Red Tide",
+        ifelse(grepl("all", scenario), "no_rt_x_all_yrs", "2 Years Red Tide")
+      )
+    ),
+    om_model = ifelse(
+      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_rt_2_high"),
+      "No Red Tide",
+      ifelse(
+        grepl("high", scenario),
+        "2 Years High Red Tide",
+        "2 Years Red Tide"
+      )
+    )
   ) %>%
   # Pivot the data longer
   pivot_longer(
@@ -2201,9 +2870,25 @@ EM_means_re %>%
 
 ```{r}
 EM_means_re %>%
-  mutate(
-    em_model = ifelse(scenario %in% c("no_rt", "rt_2_x_no_rt"), "No Red Tide", "2 Years Red Tide"),
-    om_model = ifelse(scenario %in% c("no_rt", "no_rt_x_rt_2"), "No Red Tide", "2 Years Red Tide")
+mutate(
+    em_model = ifelse(
+      scenario %in% c("no_rt", "rt_2_x_no_rt", "rt_2_x_no_rt_high", "no_rt_x_all_yrs"),
+      "No Red Tide",
+      ifelse(
+        grepl("high", scenario),
+        "2 Years High Red Tide",
+        ifelse(grepl("all", scenario), "no_rt_x_all_yrs", "2 Years Red Tide")
+      )
+    ),
+    om_model = ifelse(
+      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_rt_2_high"),
+      "No Red Tide",
+      ifelse(
+        grepl("high", scenario),
+        "2 Years High Red Tide",
+        "2 Years Red Tide"
+      )
+    )
   ) %>%
   # Pivot the data longer
   pivot_longer(
@@ -2224,9 +2909,25 @@ EM_means_re %>%
 
 ```{r}
 EM_means_re %>%
-  mutate(
-    em_model = ifelse(scenario %in% c("no_rt", "rt_2_x_no_rt"), "No Red Tide", "2 Years Red Tide"),
-    om_model = ifelse(scenario %in% c("no_rt", "no_rt_x_rt_2"), "No Red Tide", "2 Years Red Tide")
+mutate(
+    em_model = ifelse(
+      scenario %in% c("no_rt", "rt_2_x_no_rt", "rt_2_x_no_rt_high", "no_rt_x_all_yrs"),
+      "No Red Tide",
+      ifelse(
+        grepl("high", scenario),
+        "2 Years High Red Tide",
+        ifelse(grepl("all", scenario), "no_rt_x_all_yrs", "2 Years Red Tide")
+      )
+    ),
+    om_model = ifelse(
+      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_rt_2_high"),
+      "No Red Tide",
+      ifelse(
+        grepl("high", scenario),
+        "2 Years High Red Tide",
+        "2 Years Red Tide"
+      )
+    )
   ) %>%
   # Pivot the data longer
   pivot_longer(
@@ -2248,9 +2949,25 @@ EM_means_re %>%
 
 ```{r}
 EM_means_re %>%
-  mutate(
-    em_model = ifelse(scenario %in% c("no_rt", "rt_2_x_no_rt"), "No Red Tide", "2 Years Red Tide"),
-    om_model = ifelse(scenario %in% c("no_rt", "no_rt_x_rt_2"), "No Red Tide", "2 Years Red Tide")
+mutate(
+    em_model = ifelse(
+      scenario %in% c("no_rt", "rt_2_x_no_rt", "rt_2_x_no_rt_high", "no_rt_x_all_yrs"),
+      "No Red Tide",
+      ifelse(
+        grepl("high", scenario),
+        "2 Years High Red Tide",
+        ifelse(grepl("all", scenario), "no_rt_x_all_yrs", "2 Years Red Tide")
+      )
+    ),
+    om_model = ifelse(
+      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_rt_2_high"),
+      "No Red Tide",
+      ifelse(
+        grepl("high", scenario),
+        "2 Years High Red Tide",
+        "2 Years Red Tide"
+      )
+    )
   ) %>%
   # Pivot the data longer
   pivot_longer(
@@ -2271,9 +2988,25 @@ EM_means_re %>%
 
 ```{r}
 EM_means_re %>%
-  mutate(
-    em_model = ifelse(scenario %in% c("no_rt", "rt_2_x_no_rt"), "No Red Tide", "2 Years Red Tide"),
-    om_model = ifelse(scenario %in% c("no_rt", "no_rt_x_rt_2"), "No Red Tide", "2 Years Red Tide")
+mutate(
+    em_model = ifelse(
+      scenario %in% c("no_rt", "rt_2_x_no_rt", "rt_2_x_no_rt_high", "no_rt_x_all_yrs"),
+      "No Red Tide",
+      ifelse(
+        grepl("high", scenario),
+        "2 Years High Red Tide",
+        ifelse(grepl("all", scenario), "no_rt_x_all_yrs", "2 Years Red Tide")
+      )
+    ),
+    om_model = ifelse(
+      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_rt_2_high"),
+      "No Red Tide",
+      ifelse(
+        grepl("high", scenario),
+        "2 Years High Red Tide",
+        "2 Years Red Tide"
+      )
+    )
   ) %>%
   # Pivot the data longer
   pivot_longer(
@@ -2296,9 +3029,25 @@ EM_means_re %>%
 
 ```{r, warning = FALSE, message =FALSE}
 EM_means_re %>%
-  mutate(
-    em_model = ifelse(scenario %in% c("no_rt", "rt_2_x_no_rt"), "No Red Tide", "2 Years Red Tide"),
-    om_model = ifelse(scenario %in% c("no_rt", "no_rt_x_rt_2"), "No Red Tide", "2 Years Red Tide")
+mutate(
+    em_model = ifelse(
+      scenario %in% c("no_rt", "rt_2_x_no_rt", "rt_2_x_no_rt_high", "no_rt_x_all_yrs"),
+      "No Red Tide",
+      ifelse(
+        grepl("high", scenario),
+        "2 Years High Red Tide",
+        ifelse(grepl("all", scenario), "no_rt_x_all_yrs", "2 Years Red Tide")
+      )
+    ),
+    om_model = ifelse(
+      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_rt_2_high"),
+      "No Red Tide",
+      ifelse(
+        grepl("high", scenario),
+        "2 Years High Red Tide",
+        "2 Years Red Tide"
+      )
+    )
   ) %>%
   # Pivot the data longer
   pivot_longer(
@@ -2360,6 +3109,8 @@ ts_plot_variable(summary, raw_rec_dev, run_res_path, save = TRUE)
 :::
 
 ## Pull data from SS runs
+
+This chunk takes a while to run and pulls the ss_output data from all iterations and all scenarios, it only saves the data that is listed, so selectivity, catage, batage, natage, and *new* CPUE indexes.  
 
 ```{r, include = FALSE}
 
@@ -2445,13 +3196,17 @@ size_sel_plots <- function(scen_list) {
         ) %>%
         mutate(scenario = scen, iteration = iter)
       
+      cpue <- selectivity_res$cpue %>%
+        mutate(scenario = scen, iteration = iter)
+      
       list(
         lsel_df = size_selectivity,
         asel_df = age_selectivity,
         natage_df = natage,
         batage_df = batage,
         catage_df = catage, 
-        disc_df = disc_selectivity
+        disc_df = disc_selectivity, 
+        cpue_df = cpue
       )
     })
     
@@ -2470,6 +3225,8 @@ size_sel_plots <- function(scen_list) {
       list_rbind()
     combined_disc_df <- map(iteration_results_list, ~ .x$disc_df) %>%
       list_rbind()
+    combined_cpue_df <- map(iteration_results_list, ~ .x$cpue_df) %>%
+      list_rbind()
     # Return a list of combined data frames for this scenario
     list(
       lsel_scenario_df = combined_lsel_df,
@@ -2477,7 +3234,8 @@ size_sel_plots <- function(scen_list) {
       natage_scenario_df = combined_natage_df,
       batage_scenario_df = combined_batage_df,
       catage_scenario_df = combined_catage_df,
-      disc_scenario_df = combined_disc_df
+      disc_scenario_df = combined_disc_df, 
+      cpue_scenario_df = combined_cpue_df
     )
   })
   # Filter out NULL results from scenarios if any were skipped
@@ -2496,7 +3254,8 @@ size_sel_plots <- function(scen_list) {
     list_rbind()
   final_disc_data <- map(scenario_results_list, ~ .x$disc_scenario_df) %>%
     list_rbind()
-  
+  final_cpue_data <- map(scenario_results_list, ~ .x$cpue_scenario_df) %>%
+    list_rbind() 
   # Return a list containing both combined data frames
   return(list(
     length_selectivity_data = final_lsel_data,
@@ -2504,7 +3263,8 @@ size_sel_plots <- function(scen_list) {
     natage_data = final_natage_data,
     batage_data = final_batage_data,
     catage_data = final_catage_data,
-    disc_data = final_disc_data
+    disc_data = final_disc_data, 
+    cpue_data = final_cpue_data
   ))
 }
 
@@ -2592,13 +3352,17 @@ size_sel_plots_OM <- function(scen_list) {
         ) %>%
         mutate(scenario = scen, iteration = iter)
       
+      cpue <- selectivity_res$cpue %>%
+        mutate(scenario = scen, iteration = iter)
+      
       list(
         lsel_df = size_selectivity,
         asel_df = age_selectivity,
         natage_df = natage,
         batage_df = batage,
         catage_df = catage, 
-        disc_df = disc_selectivity
+        disc_df = disc_selectivity, 
+        cpue_df = cpue
       )
     })
     
@@ -2617,6 +3381,8 @@ size_sel_plots_OM <- function(scen_list) {
       list_rbind()
     combined_disc_df <- map(iteration_results_list, ~ .x$disc_df) %>%
       list_rbind()
+    combined_cpue_df <- map(iteration_results_list, ~ .x$cpue_df) %>%
+      list_rbind()
     # Return a list of combined data frames for this scenario
     list(
       lsel_scenario_df = combined_lsel_df,
@@ -2624,7 +3390,8 @@ size_sel_plots_OM <- function(scen_list) {
       natage_scenario_df = combined_natage_df,
       batage_scenario_df = combined_batage_df,
       catage_scenario_df = combined_catage_df,
-      disc_scenario_df = combined_disc_df
+      disc_scenario_df = combined_disc_df, 
+      cpue_scenario_df = combined_cpue_df
     )
   })
   # Filter out NULL results from scenarios if any were skipped
@@ -2643,6 +3410,8 @@ size_sel_plots_OM <- function(scen_list) {
     list_rbind()
   final_disc_data <- map(scenario_results_list, ~ .x$disc_scenario_df) %>%
     list_rbind()
+  final_cpue_data <- map(scenario_results_list, ~ .x$cpue_scenario_df) %>%
+    list_rbind()
   
   # Return a list containing both combined data frames
   return(list(
@@ -2651,7 +3420,8 @@ size_sel_plots_OM <- function(scen_list) {
     natage_data = final_natage_data,
     batage_data = final_batage_data,
     catage_data = final_catage_data,
-    disc_data = final_disc_data
+    disc_data = final_disc_data, 
+    cpue_data = final_cpue_data
   ))
 }
 
@@ -2947,6 +3717,195 @@ scen_dat$catage_data %>%
   ggtitle("Catch at Age") +
   facet_wrap(~Fleet) +
   theme_bw()
+```
+
+:::
+
+## CPUE
+
+```{r}
+
+index_list <- unique(scen_dat$cpue_data$Fleet_name)
+
+cpue_plot <- function(index) {
+  scen_dat$cpue_data %>%
+    filter(Fleet_name == index) %>%
+    #pivot_longer(cols = c(Obs, Exp), names_to = "type") %>%
+    ggplot(aes(Yr, Exp)) +
+    geom_line(aes(color = iteration, group = iteration)) +
+    facet_wrap(~scenario) +
+    theme_bw() + 
+    ggtitle(paste0("EM: ", index))
+}
+
+cpue_plots <- map(index_list, cpue_plot)
+
+```
+
+
+```{r}
+
+cpue_om_plot <- function(index) {
+scen_dat_OM$cpue_data %>%
+    filter(Fleet_name == index) %>%
+    #pivot_longer(cols = c(Obs, Exp), names_to = "type") %>%
+    ggplot(aes(Yr, Obs)) +
+    geom_line(aes(color = iteration, group = iteration)) +
+    facet_wrap(~scenario) +
+    theme_bw() + 
+    ggtitle(paste0("OM: ", index))
+}
+cpue_om_plots <- map(index_list, cpue_om_plot)
+
+```
+
+```{r}
+
+scen_dat$cpue_data <- scen_dat$cpue_data %>%
+  mutate(model = "EM")
+
+scen_dat_OM$cpue_data <- scen_dat_OM$cpue_data %>%
+  mutate(model = "OM")
+
+cpue_data <- rbind(scen_dat$cpue_data, scen_dat_OM$cpue_data)
+
+cpue_all_plot <- function(index) {
+cpue_data %>%
+    filter(Fleet_name == index) %>%
+    #pivot_longer(cols = c(Obs, Exp), names_to = "type") %>%
+    ggplot(aes(Yr, Exp, color = model, linetype = model)) +
+    geom_point(alpha = 0.2, color = "grey") +
+    stat_summary(fun = "median", geom = "line", linewidth = 1) +
+    facet_wrap(~scenario) +
+    theme_bw() + 
+    ggtitle(paste0(index))
+}
+cpue_all_plots <- map(index_list, cpue_all_plot)
+
+cpue_zoom_plot <- function(index) {
+cpue_data %>%
+    filter(Fleet_name == index) %>%
+    drop_na(Exp) %>%
+    #pivot_longer(cols = c(Obs, Exp), names_to = "type") %>%
+    ggplot(aes(Yr, Exp, color = model, linetype = model)) +
+    geom_vline(xintercept = c(2018, 2021), linetype = "dashed", color = "gray") +
+    geom_point(alpha = 0.2, color = "grey") +
+    stat_summary(fun = "median", geom = "line", linewidth = 1) +
+    facet_wrap(~scenario) +
+    theme_bw() + 
+    xlim(2017, 2025) + 
+    ggtitle(paste0(index, " - Rec zoomed in"))
+}
+cpue_zoom_plots <- map(index_list, cpue_zoom_plot)
+
+cpue_zoom_plot_obs <- function(index) {
+cpue_data %>%
+    filter(Fleet_name == index) %>%
+    drop_na(Obs) %>%
+    #pivot_longer(cols = c(Obs, Exp), names_to = "type") %>%
+    ggplot(aes(Yr, Obs, color = model, linetype = model)) +
+    geom_vline(xintercept = c(2018, 2021), linetype = "dashed", color = "gray") +
+    geom_point(alpha = 0.2, color = "grey") +
+    stat_summary(fun = "median", geom = "line", linewidth = 1) +
+    facet_wrap(~scenario) +
+    theme_bw() + 
+    xlim(2017, 2025) + 
+    ggtitle(paste0(index, " - Obs zoomed in"))
+}
+cpue_zoom_plots_obs <- map(index_list, cpue_zoom_plot_obs)
+```
+
+::: panel-tabset
+### commHL
+
+```{r, warning=FALSE}
+
+cpue_plots[[1]]
+cpue_om_plots[[1]]
+cpue_all_plots[[1]]
+
+```
+
+### commLL
+
+```{r, warning=FALSE}
+
+cpue_plots[[2]]
+cpue_om_plots[[2]]
+cpue_all_plots[[2]]
+
+```
+
+### Rec
+
+```{r, warning=FALSE}
+
+cpue_plots[[3]]
+cpue_om_plots[[3]]
+cpue_all_plots[[3]]
+cpue_zoom_plots[[3]]
+cpue_zoom_plots_obs[[3]]
+
+```
+
+### SEAMAP_vid
+
+```{r, warning=FALSE}
+
+cpue_plots[[4]]
+cpue_om_plots[[4]]
+cpue_all_plots[[4]]
+cpue_zoom_plots[[4]]
+cpue_zoom_plots_obs[[4]]
+
+```
+
+### SEAMAP_GF
+
+```{r, warning=FALSE}
+
+cpue_plots[[5]]
+cpue_om_plots[[5]]
+cpue_all_plots[[5]]
+cpue_zoom_plots[[5]]
+cpue_zoom_plots_obs[[5]]
+
+```
+
+### NMFS_BLL
+
+```{r, warning=FALSE}
+
+cpue_plots[[6]]
+cpue_om_plots[[6]]
+cpue_all_plots[[6]]
+cpue_zoom_plots[[6]]
+cpue_zoom_plots_obs[[6]]
+
+```
+
+### CBT_PRSurv
+
+```{r, warning=FALSE}
+
+cpue_plots[[7]]
+cpue_om_plots[[7]]
+cpue_all_plots[[7]]
+cpue_zoom_plots[[7]]
+cpue_zoom_plots_obs[[7]]
+
+```
+
+### FWRI_RTD
+
+```{r, warning=FALSE}
+
+cpue_plots[[8]]
+cpue_om_plots[[8]]
+cpue_all_plots[[8]]
+cpue_zoom_plots[[8]]
+cpue_zoom_plots_obs[[8]]
+
 ```
 
 :::
@@ -3696,29 +4655,53 @@ EM_means_ratio <- summary$ts %>%
   left_join(OM_means, by = c("year", "scenario", "iteration")) %>%
   group_by(scenario, iteration, year) %>%
   mutate(
+    # Check for NA or if the denominator is zero.
     re_Recruit_0 = ifelse(
-      is.na(Recruit_0 / OM_Recruit_0),
-      0,
-    Recruit_0/OM_Recruit_0
+      is.na(Recruit_0) | is.na(OM_Recruit_0) | OM_Recruit_0 == 0,
+      1,
+      Recruit_0/OM_Recruit_0
     ),
-    #this put zeros back in.
-    re_F_5 = ifelse(is.na((F_5) / OM_F_5), 1, (F_5) /
-                      OM_F_5),
-    re_SpawnBio = ifelse(is.na((SpawnBio) / OM_SpawnBio), 1, (SpawnBio) /
-                      OM_SpawnBio),
-        re_com = ifelse(is.na((commercial) / OM_com), 1, (commercial) /
-                      OM_com),
-        re_rec = ifelse(is.na((recreational) / OM_rec), 1, (recreational) /
-                      OM_rec),
-        re_dead_5 = ifelse(is.na((deadB_5) / OM_dead_5), 1, (deadB_5) /
-                      OM_dead_5),
-        re_com_f = ifelse(is.na((com_f) / OM_com_f), 1, (com_f) /
-                      OM_com_f),
-        re_rec_f = ifelse(is.na((rec_f) / OM_rec_f), 1, (rec_f) /
-                      OM_rec_f),        
-        re_abundance = ifelse(is.na((Bio_smry) / OM_abundance), 1, (Bio_smry) /
-                      OM_abundance),
-        re_removals = sum(re_com, re_rec, re_dead_5),
+    re_F_5 = ifelse(
+      is.na(F_5) | is.na(OM_F_5) | OM_F_5 == 0,
+      1,
+      F_5/OM_F_5
+    ),
+    re_SpawnBio = ifelse(
+      is.na(SpawnBio) | is.na(OM_SpawnBio) | OM_SpawnBio == 0,
+      1,
+      SpawnBio/OM_SpawnBio
+    ),
+    re_com = ifelse(
+      is.na(commercial) | is.na(OM_com) | OM_com == 0,
+      1,
+      commercial/OM_com
+    ),
+    re_rec = ifelse(
+      is.na(recreational) | is.na(OM_rec) | OM_rec == 0,
+      1,
+      recreational/OM_rec
+    ),
+    re_dead_5 = ifelse(
+      is.na(deadB_5) | is.na(OM_dead_5) | OM_dead_5 == 0,
+      1,
+      deadB_5/OM_dead_5
+    ),
+    re_com_f = ifelse(
+      is.na(com_f) | is.na(OM_com_f) | OM_com_f == 0,
+      1,
+      com_f/OM_com_f
+    ),
+    re_rec_f = ifelse(
+      is.na(rec_f) | is.na(OM_rec_f) | OM_rec_f == 0,
+      1,
+      rec_f/OM_rec_f
+    ),
+    re_abundance = ifelse(
+      is.na(Bio_smry) | is.na(OM_abundance) | OM_abundance == 0,
+      1,
+      Bio_smry/OM_abundance
+    ),
+    re_removals = sum(re_com, re_rec, re_dead_5),
     end_year = as.numeric(str_extract(model_run, "\\d{4}$"))+3,
     years_until_terminal = end_year - year
   )
@@ -3726,12 +4709,12 @@ EM_means_ratio <- summary$ts %>%
 EM_means_ratio %>%
 mutate(
     em_model = ifelse(
-      scenario %in% c("no_rt", "rt_2_x_no_rt", "rt_2_x_no_rt_high"),
+      scenario %in% c("no_rt", "rt_2_x_no_rt", "rt_2_x_no_rt_high", "no_rt_x_all_yrs"),
       "No Red Tide",
       ifelse(
         grepl("high", scenario),
         "2 Years High Red Tide",
-        "2 Years Red Tide"
+        ifelse(grepl("all", scenario), "no_rt_x_all_yrs", "2 Years Red Tide")
       )
     ),
     om_model = ifelse(
@@ -3743,7 +4726,7 @@ mutate(
         "2 Years Red Tide"
       )
     )
-  )%>%
+  ) %>%
   # Pivot the data longer
   pivot_longer(
     cols = c(re_com, re_rec, re_dead_5),
@@ -3763,7 +4746,7 @@ mutate(
   stat_summary(fun.data = mean_cl_normal, geom = "ribbon", alpha = 0.3) +
   facet_grid(variable~scenario, scales = "free") +
   theme_bw()+ 
-  coord_cartesian(ylim = c(0,3)) +
+  #coord_cartesian(ylim = c(0,3)) +
   #coord_cartesian(xlim = c(2017, 2025)) +
   labs(color = "EM", fill = "EM", x = "Year", y = "Ratio EM:OM")
 
@@ -4101,5 +5084,6 @@ ratio_df %>%
 
 ```
 
-
 :::
+
+
