@@ -1,0 +1,1095 @@
+---
+format:
+  html:
+    toc: true
+    toc_location: right
+    embed-resources: true
+editor: source
+execute:
+  echo: false
+---
+
+# Diagnostic work in SSMSE
+
+This is all of the code that uses r4ss to pull individual runs from an SSMSE folder and looks closer at data that is not extracted in the summary function.  It was starting to slow down my quarto document so I have moved it to this quarto document.  
+
+```{r, include = FALSE}
+library(tidyverse)
+library("nmfspalette")
+library(patchwork)
+library(knitr)
+library(kableExtra)
+
+#name of the OM
+OM_name <- "default"
+run_SSMSE_dir <- file.path("C:/Users/apn26/Documents/CIMAS/Personal Notes/test_cloud_computing/testing_cloud")
+default <- file.path(run_SSMSE_dir, OM_name)
+
+#name of the results files
+results_name <- "_rt_2_fixed_2021"
+
+#pull the summary and dat files, the dat file isn't actually that important.  
+cc_storage <- file.path("C:/Users/apn26/Documents/CIMAS/Personal Notes/cc_storage")
+summary <- readRDS(file = file.path(cc_storage, paste0("results_summary", results_name, ".rda")))
+dat <- r4ss::SS_readdat(file.path(default, "red_grouper_1986_2017_RedTideFleet.dat"))
+
+
+summary$ts <- summary$ts %>%
+  filter(model_run != "", !str_detect(model_run, "Base")) %>% #remove "Base" model 
+  mutate(end_year = as.numeric(str_extract(model_run, "\\d{4}$")) + 3, 
+         years_until_terminal = end_year - year) %>%
+  filter(case_when(
+    str_detect(model_run, "_EM") ~ years_until_terminal > 2,
+    TRUE ~ TRUE # Keep all other rows if no _EM
+  )) %>%
+  mutate(
+    scenario = factor(scenario, 
+                      levels = c("no_rt", 
+                                 "no_rt_x_rt_2", 
+                                 "rt_2_x_no_rt", 
+                                 "rt_2_x_rt_2", "rt_2_x_rt_2_fixed",
+                                 "no_rt_x_all_yrs", 
+                                 "rt_2_x_all_yrs",
+                                 "rep_3_x_all_yrs"))
+  )
+
+summary$dq <- summary$dq %>%
+  filter(model_run != "", !str_detect(model_run, "Base")) %>%
+  mutate(end_year = as.numeric(str_extract(model_run, "\\d{4}$")) + 3,
+         years_until_terminal = end_year - year) %>%
+  filter(case_when(
+    str_detect(model_run, "_EM") ~ years_until_terminal > 2,
+    TRUE ~ TRUE # Keep all other rows if no _EM
+  )) %>%
+  mutate(
+    scenario = factor(scenario, 
+                      levels = c("no_rt", 
+                                 "no_rt_x_rt_2", 
+                                 "rt_2_x_no_rt", 
+                                 "rt_2_x_rt_2", "rt_2_x_rt_2_fixed",
+                                 "no_rt_x_all_yrs", 
+                                 "rt_2_x_all_yrs",
+                                 "rep_3_x_all_yrs"))
+  )
+summary$scalar <- summary$scalar %>%
+  filter(model_run != "", !str_detect(model_run, "Base")) 
+
+#rename the OM if it's different from default
+OM_name <- "default_sigmaR"
+
+```
+
+```{r}
+#create a list of scenarios for plot generation, usually the default order is fine.  
+#scen_list <- unique(summary$ts$scenario)
+#hard coded in a specific order.  
+scen_list <- c(
+  "no_rt",
+  "no_rt_x_rt_2",
+  "rt_2_x_no_rt",
+  "rt_2_x_rt_2",
+  "rt_2_x_rt_2_fixed",
+  "no_rt_x_all_yrs",
+  "rt_2_x_all_yrs",
+  "rep_3_x_all_yrs"
+)
+
+```
+
+## Pull data from SS runs
+
+This chunk takes a while to run and pulls the ss_output data from all iterations and all scenarios, it only saves the data that is listed, so selectivity, catage, batage, natage, and *new* CPUE indexes.  
+
+```{r, include = FALSE}
+
+library(r4ss)
+
+iter = 1
+bonus_scen <- scen_list
+
+size_sel_plots <- function(scen_list) {
+  scenario_results_list <- map(scen_list, function(scen) {
+    iteration_results_list <- map(1:10, function(iter) {
+      selectivity_run <- file.path(
+        cc_storage,
+        paste0("results", results_name),
+        scen,
+        iter,
+        paste0(OM_name, "_EM_2047")
+      )
+      if (!dir.exists(selectivity_run)) {
+        warning(paste(
+          "Directory not found:",
+          selectivity_run,
+          "- Skipping this run."
+        ))
+        return(NULL) # Return NULL if directory doesn't exist, will be handled by list_rbind
+      }
+      
+      selectivity_res <- SS_output(selectivity_run,
+                                   printstats = FALSE,
+                                   verbose = FALSE)
+      
+      
+      size_selectivity <- selectivity_res$sizeselex %>%
+        filter(Label == "2047_4_Lsel") %>%
+        pivot_longer(
+          cols = matches("^\\d+$"),
+          names_to = "length",
+          values_to = "selex"
+        ) %>%
+        mutate(scenario = scen, iteration = iter)
+      
+      age_selectivity <- selectivity_res$ageselex %>%
+        filter(Label == "2047_4_Asel2") %>%
+        pivot_longer(
+          cols = matches("^\\d+$"),
+          names_to = "age",
+          values_to = "selex"
+        ) %>%
+        mutate(scenario = scen, iteration = iter)
+      
+      natage <- selectivity_res$natage %>%
+        filter(`Beg/Mid` == "B") %>%
+        pivot_longer(
+          cols = matches("^\\d+$"),
+          names_to = "age",
+          values_to = "n"
+        ) %>%
+        mutate(scenario = scen, iteration = iter)
+            
+      batage <- selectivity_res$batage %>%
+        filter(`Beg/Mid` == "B") %>%
+        pivot_longer(
+          cols = matches("^\\d+$"),
+          names_to = "age",
+          values_to = "biomass"
+        ) %>%
+        mutate(scenario = scen, iteration = iter)
+      
+      catage <- selectivity_res$catage %>%
+        pivot_longer(
+          cols = matches("^\\d+$"),
+          names_to = "age",
+          values_to = "catch"
+        ) %>%
+        mutate(scenario = scen, iteration = iter)
+      
+      disc_selectivity <- selectivity_res$sizeselex %>%
+        filter(Label == "2047_4_Dead") %>%
+        pivot_longer(
+          cols = matches("^\\d+$"),
+          names_to = "length",
+          values_to = "selex"
+        ) %>%
+        mutate(scenario = scen, iteration = iter)
+      
+      cpue <- selectivity_res$cpue %>%
+        mutate(scenario = scen, iteration = iter)
+      
+      list(
+        lsel_df = size_selectivity,
+        asel_df = age_selectivity,
+        natage_df = natage,
+        batage_df = batage,
+        catage_df = catage, 
+        disc_df = disc_selectivity, 
+        cpue_df = cpue
+      )
+    })
+    
+    iteration_results_list <- purrr::compact(iteration_results_list)
+
+    # Combine all dfs from this scenario's iterations
+    combined_lsel_df <- map(iteration_results_list, ~ .x$lsel_df) %>%
+      list_rbind() 
+    combined_asel_df <- map(iteration_results_list, ~ .x$asel_df) %>%
+      list_rbind() 
+    combined_natage_df <- map(iteration_results_list, ~ .x$natage_df) %>%
+      list_rbind() 
+    combined_batage_df <- map(iteration_results_list, ~ .x$batage_df) %>%
+      list_rbind()
+    combined_catage_df <- map(iteration_results_list, ~ .x$catage_df) %>%
+      list_rbind()
+    combined_disc_df <- map(iteration_results_list, ~ .x$disc_df) %>%
+      list_rbind()
+    combined_cpue_df <- map(iteration_results_list, ~ .x$cpue_df) %>%
+      list_rbind()
+    # Return a list of combined data frames for this scenario
+    list(
+      lsel_scenario_df = combined_lsel_df,
+      asel_scenario_df = combined_asel_df,      
+      natage_scenario_df = combined_natage_df,
+      batage_scenario_df = combined_batage_df,
+      catage_scenario_df = combined_catage_df,
+      disc_scenario_df = combined_disc_df, 
+      cpue_scenario_df = combined_cpue_df
+    )
+  })
+  # Filter out NULL results from scenarios if any were skipped
+  scenario_results_list <- purrr::compact(scenario_results_list)
+
+  # Finally, combine all scenario data frames
+  final_lsel_data <- map(scenario_results_list, ~ .x$lsel_scenario_df) %>%
+    list_rbind()
+  final_asel_data <- map(scenario_results_list, ~ .x$asel_scenario_df) %>%
+    list_rbind()
+  final_natage_data <- map(scenario_results_list, ~ .x$natage_scenario_df) %>%
+    list_rbind()
+  final_batage_data <- map(scenario_results_list, ~ .x$batage_scenario_df) %>%
+    list_rbind()
+  final_catage_data <- map(scenario_results_list, ~ .x$catage_scenario_df) %>%
+    list_rbind()
+  final_disc_data <- map(scenario_results_list, ~ .x$disc_scenario_df) %>%
+    list_rbind()
+  final_cpue_data <- map(scenario_results_list, ~ .x$cpue_scenario_df) %>%
+    list_rbind() 
+  # Return a list containing both combined data frames
+  return(list(
+    length_selectivity_data = final_lsel_data,
+    age_selectivity_data = final_asel_data,
+    natage_data = final_natage_data,
+    batage_data = final_batage_data,
+    catage_data = final_catage_data,
+    disc_data = final_disc_data, 
+    cpue_data = final_cpue_data
+  ))
+}
+
+scen_dat <- size_sel_plots(bonus_scen)
+
+
+```
+
+```{r, include = FALSE}
+
+size_sel_plots_OM <- function(scen_list) {
+  scenario_results_list <- map(scen_list, function(scen) {
+    iteration_results_list <- map(1:10, function(iter) {
+      selectivity_run <- file.path(
+        cc_storage,
+        paste0("results", results_name),
+        scen,
+        iter,
+        paste0(OM_name, "_OM")
+      )
+      if (!dir.exists(selectivity_run)) {
+        warning(paste(
+          "Directory not found:",
+          selectivity_run,
+          "- Skipping this run."
+        ))
+        return(NULL) # Return NULL if directory doesn't exist, will be handled by list_rbind
+      }
+      
+      selectivity_res <- SS_output(selectivity_run,
+                                   printstats = FALSE,
+                                   verbose = FALSE)
+      
+      
+      size_selectivity <- selectivity_res$sizeselex %>%
+        filter(Label == "2047_4_Lsel") %>%
+        pivot_longer(
+          cols = matches("^\\d+$"),
+          names_to = "length",
+          values_to = "selex"
+        ) %>%
+        mutate(scenario = scen, iteration = iter)
+      
+      age_selectivity <- selectivity_res$ageselex %>%
+        filter(Label == "2047_4_Asel2") %>%
+        pivot_longer(
+          cols = matches("^\\d+$"),
+          names_to = "age",
+          values_to = "selex"
+        ) %>%
+        mutate(scenario = scen, iteration = iter)
+      
+      natage <- selectivity_res$natage %>%
+        filter(`Beg/Mid` == "B") %>%
+        pivot_longer(
+          cols = matches("^\\d+$"),
+          names_to = "age",
+          values_to = "n"
+        ) %>%
+        mutate(scenario = scen, iteration = iter)
+            
+      batage <- selectivity_res$batage %>%
+        filter(`Beg/Mid` == "B") %>%
+        pivot_longer(
+          cols = matches("^\\d+$"),
+          names_to = "age",
+          values_to = "biomass"
+        ) %>%
+        mutate(scenario = scen, iteration = iter)
+      
+      catage <- selectivity_res$catage %>%
+        pivot_longer(
+          cols = matches("^\\d+$"),
+          names_to = "age",
+          values_to = "catch"
+        ) %>%
+        mutate(scenario = scen, iteration = iter)
+      
+      disc_selectivity <- selectivity_res$sizeselex %>%
+        filter(Label == "2047_4_Dead") %>%
+        pivot_longer(
+          cols = matches("^\\d+$"),
+          names_to = "length",
+          values_to = "selex"
+        ) %>%
+        mutate(scenario = scen, iteration = iter)
+      
+      cpue <- selectivity_res$cpue %>%
+        mutate(scenario = scen, iteration = iter)
+      
+      list(
+        lsel_df = size_selectivity,
+        asel_df = age_selectivity,
+        natage_df = natage,
+        batage_df = batage,
+        catage_df = catage, 
+        disc_df = disc_selectivity, 
+        cpue_df = cpue
+      )
+    })
+    
+    iteration_results_list <- purrr::compact(iteration_results_list)
+
+    # Combine all dfs from this scenario's iterations
+    combined_lsel_df <- map(iteration_results_list, ~ .x$lsel_df) %>%
+      list_rbind() 
+    combined_asel_df <- map(iteration_results_list, ~ .x$asel_df) %>%
+      list_rbind() 
+    combined_natage_df <- map(iteration_results_list, ~ .x$natage_df) %>%
+      list_rbind() 
+    combined_batage_df <- map(iteration_results_list, ~ .x$batage_df) %>%
+      list_rbind()
+    combined_catage_df <- map(iteration_results_list, ~ .x$catage_df) %>%
+      list_rbind()
+    combined_disc_df <- map(iteration_results_list, ~ .x$disc_df) %>%
+      list_rbind()
+    combined_cpue_df <- map(iteration_results_list, ~ .x$cpue_df) %>%
+      list_rbind()
+    # Return a list of combined data frames for this scenario
+    list(
+      lsel_scenario_df = combined_lsel_df,
+      asel_scenario_df = combined_asel_df,      
+      natage_scenario_df = combined_natage_df,
+      batage_scenario_df = combined_batage_df,
+      catage_scenario_df = combined_catage_df,
+      disc_scenario_df = combined_disc_df, 
+      cpue_scenario_df = combined_cpue_df
+    )
+  })
+  # Filter out NULL results from scenarios if any were skipped
+  scenario_results_list <- purrr::compact(scenario_results_list)
+
+  # Finally, combine all scenario data frames
+  final_lsel_data <- map(scenario_results_list, ~ .x$lsel_scenario_df) %>%
+    list_rbind()
+  final_asel_data <- map(scenario_results_list, ~ .x$asel_scenario_df) %>%
+    list_rbind()
+  final_natage_data <- map(scenario_results_list, ~ .x$natage_scenario_df) %>%
+    list_rbind()
+  final_batage_data <- map(scenario_results_list, ~ .x$batage_scenario_df) %>%
+    list_rbind()
+  final_catage_data <- map(scenario_results_list, ~ .x$catage_scenario_df) %>%
+    list_rbind()
+  final_disc_data <- map(scenario_results_list, ~ .x$disc_scenario_df) %>%
+    list_rbind()
+  final_cpue_data <- map(scenario_results_list, ~ .x$cpue_scenario_df) %>%
+    list_rbind()
+  
+  # Return a list containing both combined data frames
+  return(list(
+    length_selectivity_data = final_lsel_data,
+    age_selectivity_data = final_asel_data,
+    natage_data = final_natage_data,
+    batage_data = final_batage_data,
+    catage_data = final_catage_data,
+    disc_data = final_disc_data, 
+    cpue_data = final_cpue_data
+  ))
+}
+
+scen_dat_OM <- size_sel_plots_OM(bonus_scen)
+
+
+```
+
+
+## Selectivity Exploration
+
+::: panel-tabset
+
+### Selectivity at length (points) with OM line
+
+```{r}
+scen_dat$length_selectivity_data %>%
+  ggplot(aes(as.numeric(length), selex)) + 
+  geom_point(aes(color = scenario, group = scenario)) +
+  geom_line(data = scen_dat_OM$length_selectivity_data, aes(as.numeric(length), selex, color = scenario, group = scenario))+
+  ggtitle("Length Selectivity - Rec Fleet")+
+  theme_bw()
+```
+
+### Selectivity at length (lines) with OM
+
+```{r}
+scen_dat$length_selectivity_data %>%
+  ggplot(aes(as.numeric(length), selex)) + 
+  stat_summary(fun = "median", geom = "line", aes(color = scenario), linewidth = 1, alpha = 3) +
+  geom_line(data = scen_dat_OM$length_selectivity_data, aes(as.numeric(length), selex,  group = scenario), color = "black", linewidth = 1, linetype = "dashed")+
+  ggtitle("Length Selectivity - Rec Fleet")+
+  facet_wrap(~scenario)+
+  theme_bw()
+  
+```
+
+### Zoomed in Selectivity at length
+
+
+```{r}
+scen_dat$length_selectivity_data <- scen_dat$length_selectivity_data %>%
+  mutate(is_highlighted = ifelse(scenario %in% c(OM_name), "Highlighted", "Other"))
+
+
+scen_dat$length_selectivity_data %>%
+  ggplot(aes(as.numeric(length), selex)) + 
+  stat_summary(fun = "median", geom = "line", aes(color = scenario), size = 1, alpha = 3) +
+  ggtitle("Length Selectivity - Rec Fleet") +
+  coord_cartesian(xlim = c(10, 25), ylim = c(0,0.4)) +
+  theme_bw()
+  
+scen_dat$length_selectivity_data %>%
+  ggplot(aes(as.numeric(length), selex)) + 
+  stat_summary(fun = "median", geom = "line", aes(color = scenario), size = 1, alpha = 3) +
+  ggtitle("Length Selectivity - Rec Fleet")+
+  coord_cartesian(xlim = c(30, 52))+
+  theme_bw()
+
+scen_dat$length_selectivity_data %>%
+  ggplot(aes(as.numeric(length), selex)) + 
+  stat_summary(fun = "median", geom = "line", aes(color = scenario), size = 1, alpha = 3) +
+  ggtitle("Length Selectivity - Rec Fleet")+
+  coord_cartesian(xlim = c(50, 65))+
+  theme_bw()
+
+```
+
+### Zoomed in Selectivity at length with highlighted line
+
+```{r}
+
+scen_dat$length_selectivity_data %>%
+  ggplot(aes(as.numeric(length), selex)) + 
+  stat_summary(fun = "median", geom = "line", aes(color = scenario, size = is_highlighted), alpha = 3) +
+  scale_size_manual(values = c("Highlighted" = 2.0, "Other" = 0.5)) +
+  ggtitle("Length Selectivity - Rec Fleet") +
+  coord_cartesian(xlim = c(10, 25)) +
+  theme_bw()
+
+scen_dat$length_selectivity_data %>%
+  ggplot(aes(as.numeric(length), selex)) + 
+  stat_summary(fun = "median", geom = "line", aes(color = scenario, size = is_highlighted), alpha = 3) +
+  scale_size_manual(values = c("Highlighted" = 2.0, "Other" = 0.5)) +  ggtitle("Length Selectivity - Rec Fleet")+
+  coord_cartesian(xlim = c(25, 60))+
+  theme_bw()
+
+scen_dat$length_selectivity_data %>%
+  ggplot(aes(as.numeric(length), selex)) + 
+  stat_summary(fun = "median", geom = "line", aes(color = scenario, size = is_highlighted), alpha = 3) +
+  scale_size_manual(values = c("Highlighted" = 2.0, "Other" = 0.5)) +  ggtitle("Length Selectivity - Rec Fleet")+
+  coord_cartesian(xlim = c(50, 65))+
+  theme_bw()
+
+
+```
+
+:::
+
+::: panel-tabset
+
+### Selectivity at age (points)
+
+```{r}
+scen_dat$age_selectivity_data %>%
+  ggplot(aes(as.numeric(age), selex)) + 
+  geom_point(aes(color = scenario, group = scenario)) +
+  ggtitle("age Selectivity - Rec Fleet")+
+  theme_bw()
+```
+
+### Selectivity at age (lines)
+
+```{r}
+scen_dat$age_selectivity_data %>%
+  ggplot(aes(as.numeric(age), selex)) + 
+  stat_summary(fun = "median", geom = "line", aes(color = scenario), size = 1, alpha = 3) +
+  ggtitle("age Selectivity - Rec Fleet")+
+  theme_bw()
+  
+```
+
+### Zoomed in Selectivity at age
+
+
+```{r}
+scen_dat$age_selectivity_data <- scen_dat$age_selectivity_data %>%
+  mutate(is_highlighted = ifelse(scenario %in% c(OM_name), "Highlighted", "Other"))
+
+
+scen_dat$age_selectivity_data %>%
+  ggplot(aes(as.numeric(age), selex)) + 
+  stat_summary(fun = "median", geom = "line", aes(color = scenario), size = 1, alpha = 3) +
+  ggtitle("age Selectivity - Rec Fleet") +
+  coord_cartesian(xlim = c(0, 5)) +
+  theme_bw()
+  
+scen_dat$age_selectivity_data %>%
+  ggplot(aes(as.numeric(age), selex)) + 
+  stat_summary(fun = "median", geom = "line", aes(color = scenario), size = 1, alpha = 3) +
+  ggtitle("age Selectivity - Rec Fleet")+
+  coord_cartesian(xlim = c(5, 10))+
+  theme_bw()
+
+scen_dat$age_selectivity_data %>%
+  ggplot(aes(as.numeric(age), selex)) + 
+  stat_summary(fun = "median", geom = "line", aes(color = scenario), size = 1, alpha = 3) +
+  ggtitle("age Selectivity - Rec Fleet")+
+  coord_cartesian(xlim = c(10, 20))+
+  theme_bw()
+
+```
+
+### Zoomed in Selectivity at age with highlighted line
+
+```{r}
+
+scen_dat$age_selectivity_data %>%
+  ggplot(aes(as.numeric(age), selex)) + 
+  stat_summary(fun = "median", geom = "line", aes(color = scenario, size = is_highlighted), alpha = 3) +
+  scale_size_manual(values = c("Highlighted" = 2.0, "Other" = 0.5)) +
+  ggtitle("age Selectivity - Rec Fleet") +
+  coord_cartesian(xlim = c(0, 5)) +
+  theme_bw()
+
+scen_dat$age_selectivity_data %>%
+  ggplot(aes(as.numeric(age), selex)) + 
+  stat_summary(fun = "median", geom = "line", aes(color = scenario, size = is_highlighted), alpha = 3) +
+  scale_size_manual(values = c("Highlighted" = 2.0, "Other" = 0.5)) +  ggtitle("age Selectivity - Rec Fleet")+
+  coord_cartesian(xlim = c(5, 10))+
+  theme_bw()
+
+scen_dat$age_selectivity_data %>%
+  ggplot(aes(as.numeric(age), selex)) + 
+  stat_summary(fun = "median", geom = "line", aes(color = scenario, size = is_highlighted), alpha = 3) +
+  scale_size_manual(values = c("Highlighted" = 2.0, "Other" = 0.5)) +  ggtitle("age Selectivity - Rec Fleet")+
+  coord_cartesian(xlim = c(10, 20))+
+  theme_bw()
+
+
+```
+
+:::
+
+## natage
+
+::: panel-tabset
+
+### N at age with OM (dashed)
+
+```{r}
+scen_dat$natage_data %>%
+  filter(Yr == 2017) %>%
+  ggplot(aes(as.numeric(age), n)) + 
+  stat_summary(fun = "median", geom = "line", aes(color = scenario), linewidth = 1, alpha = 3) +
+  stat_summary(data = scen_dat_OM$natage, fun = "median", geom = "line", aes(color = scenario), linewidth = 1, alpha = 3, linetype = "dashed") +
+  facet_wrap(~scenario) +
+  ggtitle("Median N at Age")+
+  theme_bw()
+```
+
+
+### N at age (lines) in 2017
+
+```{r}
+scen_dat$natage_data %>%
+  filter(Yr == 2017) %>%
+  ggplot(aes(as.numeric(age), n)) + 
+  stat_summary(fun = "median", geom = "line", aes(color = scenario), linewidth = 1, alpha = 3) +
+  ggtitle("Median N at Age")+
+  theme_bw()
+```
+
+### N at age (points) in 2017
+
+```{r}
+scen_dat$natage_data %>%
+  filter(Yr == 2017) %>%
+  ggplot(aes(as.numeric(age), n)) + 
+  geom_point(aes(color = scenario, group = scenario)) +
+  ggtitle("N at Age")+
+  theme_bw()
+```
+
+:::
+
+## batage
+
+::: panel-tabset
+
+
+### Biomass at age (lines) with OM in 2017
+
+```{r}
+scen_dat$batage_data %>%
+  filter(Yr == 2017) %>%
+  ggplot(aes(as.numeric(age), biomass)) + 
+  stat_summary(fun = "median", geom = "line", aes(color = scenario), linewidth = 1, alpha = 3) +
+  stat_summary(data = scen_dat_OM$batage_data, fun = "median", geom = "line",   linewidth = 1, alpha = 3, linetype = "dashed", color = "black") +
+  ggtitle("Median Biomass at Age")+
+  facet_wrap(~scenario)+
+  theme_bw()
+```
+
+### Biomass at age (lines) in 2017
+
+```{r}
+scen_dat$batage_data %>%
+  filter(Yr == 2017) %>%
+  ggplot(aes(as.numeric(age), biomass)) + 
+  stat_summary(fun = "median", geom = "line", aes(color = scenario), linewidth = 1, alpha = 3) +
+  ggtitle("Median Biomass at Age")+
+  theme_bw()
+```
+
+### Biomass at age (points) in 2017
+
+```{r}
+scen_dat$batage_data %>%
+  filter(Yr == 2017) %>%
+  ggplot(aes(as.numeric(age), biomass)) + 
+  geom_point(aes(color = scenario, group = scenario)) +
+  ggtitle("Biomass at Age")+
+  theme_bw()
+```
+
+:::
+
+## catage
+
+::: panel-tabset
+
+### Catch at age (lines) in 2017
+
+```{r}
+scen_dat$catage_data %>%
+  filter(Yr == 2017) %>%
+  ggplot(aes(as.numeric(age), catch)) + 
+  stat_summary(fun = "median", geom = "line", aes(color = scenario), linewidth = 1, alpha = 3) +
+  stat_summary(data = scen_dat_OM$catage_data, fun = "median", geom = "line",   linewidth = 1, alpha = 3, linetype = "dashed", color = "black") +
+  ggtitle("Median Catch at Age") +
+  facet_wrap(~Fleet) +
+  theme_bw()
+```
+
+### Catch at age (points) in 2017
+
+```{r}
+scen_dat$catage_data %>%
+  filter(Yr == 2017) %>%
+  ggplot(aes(as.numeric(age), catch)) + 
+  geom_point(aes(color = scenario, group = scenario)) +
+  ggtitle("Catch at Age") +
+  facet_wrap(~Fleet) +
+  theme_bw()
+```
+
+:::
+
+## CPUE
+
+```{r}
+
+index_list <- unique(scen_dat$cpue_data$Fleet_name)
+
+cpue_plot <- function(index) {
+  scen_dat$cpue_data %>%
+    filter(Fleet_name == index) %>%
+    #pivot_longer(cols = c(Obs, Exp), names_to = "type") %>%
+    ggplot(aes(Yr, Exp)) +
+    geom_line(aes(color = iteration, group = iteration)) +
+    facet_wrap(~scenario) +
+    theme_bw() + 
+    ggtitle(paste0("EM: ", index))
+}
+
+cpue_plots <- map(index_list, cpue_plot)
+
+```
+
+
+```{r}
+
+cpue_om_plot <- function(index) {
+scen_dat_OM$cpue_data %>%
+    filter(Fleet_name == index) %>%
+    #pivot_longer(cols = c(Obs, Exp), names_to = "type") %>%
+    ggplot(aes(Yr, Obs)) +
+    geom_line(aes(color = iteration, group = iteration)) +
+    facet_wrap(~scenario) +
+    theme_bw() + 
+    ggtitle(paste0("OM: ", index))
+}
+cpue_om_plots <- map(index_list, cpue_om_plot)
+
+```
+
+```{r}
+
+scen_dat$cpue_data <- scen_dat$cpue_data %>%
+  mutate(model = "EM")
+
+scen_dat_OM$cpue_data <- scen_dat_OM$cpue_data %>%
+  mutate(model = "OM")
+
+cpue_data <- rbind(scen_dat$cpue_data, scen_dat_OM$cpue_data)
+
+cpue_all_plot <- function(index) {
+cpue_data %>%
+    filter(Fleet_name == index) %>%
+    #pivot_longer(cols = c(Obs, Exp), names_to = "type") %>%
+    ggplot(aes(Yr, Exp, color = model, linetype = model)) +
+    geom_point(alpha = 0.2, color = "grey") +
+    stat_summary(fun = "median", geom = "line", linewidth = 1) +
+    facet_wrap(~scenario) +
+    theme_bw() + 
+    ggtitle(paste0(index))
+}
+cpue_all_plots <- map(index_list, cpue_all_plot)
+
+cpue_zoom_plot <- function(index) {
+cpue_data %>%
+    filter(Fleet_name == index) %>%
+    drop_na(Exp) %>%
+    #pivot_longer(cols = c(Obs, Exp), names_to = "type") %>%
+    ggplot(aes(Yr, Exp, color = model, linetype = model)) +
+    geom_vline(xintercept = c(2018, 2021), linetype = "dashed", color = "gray") +
+    geom_point(alpha = 0.2, color = "grey") +
+    stat_summary(fun = "median", geom = "line", linewidth = 1) +
+    facet_wrap(~scenario) +
+    theme_bw() + 
+    xlim(2017, 2025) + 
+    ggtitle(paste0(index, " - Rec zoomed in"))
+}
+cpue_zoom_plots <- map(index_list, cpue_zoom_plot)
+
+cpue_zoom_plot_obs <- function(index) {
+cpue_data %>%
+    filter(Fleet_name == index) %>%
+    drop_na(Obs) %>%
+    #pivot_longer(cols = c(Obs, Exp), names_to = "type") %>%
+    ggplot(aes(Yr, Obs, color = model, linetype = model)) +
+    geom_vline(xintercept = c(2018, 2021), linetype = "dashed", color = "gray") +
+    geom_point(alpha = 0.2, color = "grey") +
+    stat_summary(fun = "median", geom = "line", linewidth = 1) +
+    facet_wrap(~scenario) +
+    theme_bw() + 
+    xlim(2017, 2025) + 
+    ggtitle(paste0(index, " - Obs zoomed in"))
+}
+cpue_zoom_plots_obs <- map(index_list, cpue_zoom_plot_obs)
+```
+
+::: panel-tabset
+### commHL
+
+```{r, warning=FALSE}
+
+cpue_plots[[1]]
+cpue_om_plots[[1]]
+cpue_all_plots[[1]]
+
+```
+
+### commLL
+
+```{r, warning=FALSE}
+
+cpue_plots[[2]]
+cpue_om_plots[[2]]
+cpue_all_plots[[2]]
+
+```
+
+### Rec
+
+```{r, warning=FALSE}
+
+cpue_plots[[3]]
+cpue_om_plots[[3]]
+cpue_all_plots[[3]]
+cpue_zoom_plots[[3]]
+cpue_zoom_plots_obs[[3]]
+
+```
+
+### SEAMAP_vid
+
+```{r, warning=FALSE}
+
+cpue_plots[[4]]
+cpue_om_plots[[4]]
+cpue_all_plots[[4]]
+cpue_zoom_plots[[4]]
+cpue_zoom_plots_obs[[4]]
+
+```
+
+### SEAMAP_GF
+
+```{r, warning=FALSE}
+
+cpue_plots[[5]]
+cpue_om_plots[[5]]
+cpue_all_plots[[5]]
+cpue_zoom_plots[[5]]
+cpue_zoom_plots_obs[[5]]
+
+```
+
+### NMFS_BLL
+
+```{r, warning=FALSE}
+
+cpue_plots[[6]]
+cpue_om_plots[[6]]
+cpue_all_plots[[6]]
+cpue_zoom_plots[[6]]
+cpue_zoom_plots_obs[[6]]
+
+```
+
+### CBT_PRSurv
+
+```{r, warning=FALSE}
+
+cpue_plots[[7]]
+cpue_om_plots[[7]]
+cpue_all_plots[[7]]
+cpue_zoom_plots[[7]]
+cpue_zoom_plots_obs[[7]]
+
+```
+
+### FWRI_RTD
+
+```{r, warning=FALSE}
+
+cpue_plots[[8]]
+cpue_om_plots[[8]]
+cpue_all_plots[[8]]
+cpue_zoom_plots[[8]]
+cpue_zoom_plots_obs[[8]]
+
+```
+
+:::
+
+## Selectivity Exploration Disc
+
+::: panel-tabset
+
+### Selectivity at length (points)
+
+```{r}
+scen_dat$disc_data %>%
+  ggplot(aes(as.numeric(length), selex)) + 
+  geom_point(aes(color = scenario, group = scenario)) +
+  ggtitle("Length Selectivity - Dead Rec Fleet")+
+  theme_bw()
+```
+
+### Selectivity at length (lines)
+
+```{r}
+scen_dat$disc_data %>%
+  ggplot(aes(as.numeric(length), selex)) + 
+  stat_summary(fun = "median", geom = "line", aes(color = scenario), linewidth = 1, alpha = 3) +
+  ggtitle("Length Selectivity - Dead Rec Fleet")+
+  theme_bw()
+  
+```
+
+### Zoomed in Selectivity at length
+
+
+```{r}
+scen_dat$disc_data <- scen_dat$disc_data %>%
+  mutate(is_highlighted = ifelse(scenario %in% c(OM_name), "Highlighted", "Other"))
+
+
+scen_dat$disc_data %>%
+  ggplot(aes(as.numeric(length), selex)) + 
+  stat_summary(fun = "median", geom = "line", aes(color = scenario), size = 1, alpha = 3) +
+  ggtitle("Length Selectivity - Dead Rec Fleet") +
+  coord_cartesian(xlim = c(10, 25), ylim = c(0,0.4)) +
+  theme_bw()
+  
+scen_dat$disc_data %>%
+  ggplot(aes(as.numeric(length), selex)) + 
+  stat_summary(fun = "median", geom = "line", aes(color = scenario), size = 1, alpha = 3) +
+  ggtitle("Length Selectivity - Dead Rec Fleet")+
+  coord_cartesian(xlim = c(30, 52))+
+  theme_bw()
+
+scen_dat$disc_data %>%
+  ggplot(aes(as.numeric(length), selex)) + 
+  stat_summary(fun = "median", geom = "line", aes(color = scenario), size = 1, alpha = 3) +
+  ggtitle("Length Selectivity - Dead Rec Fleet")+
+  coord_cartesian(xlim = c(50, 65))+
+  theme_bw()
+
+```
+
+### Zoomed in Selectivity at length with highlighted line
+
+```{r}
+
+scen_dat$disc_data %>%
+  ggplot(aes(as.numeric(length), selex)) + 
+  stat_summary(fun = "median", geom = "line", aes(color = scenario, size = is_highlighted), alpha = 3) +
+  scale_size_manual(values = c("Highlighted" = 2.0, "Other" = 0.5)) +
+  ggtitle("Length Selectivity - Dead Rec Fleet") +
+  coord_cartesian(xlim = c(10, 25)) +
+  theme_bw()
+
+scen_dat$disc_data %>%
+  ggplot(aes(as.numeric(length), selex)) + 
+  stat_summary(fun = "median", geom = "line", aes(color = scenario, size = is_highlighted), alpha = 3) +
+  scale_size_manual(values = c("Highlighted" = 2.0, "Other" = 0.5)) +  ggtitle("Length Selectivity - Dead Rec Fleet")+
+  coord_cartesian(xlim = c(25, 60))+
+  theme_bw()
+
+scen_dat$disc_data %>%
+  ggplot(aes(as.numeric(length), selex)) + 
+  stat_summary(fun = "median", geom = "line", aes(color = scenario, size = is_highlighted), alpha = 3) +
+  scale_size_manual(values = c("Highlighted" = 2.0, "Other" = 0.5)) +  ggtitle("Length Selectivity - Dead Rec Fleet")+
+  coord_cartesian(xlim = c(50, 65))+
+  theme_bw()
+
+
+```
+
+:::
+
+## Retention Exploration
+
+::: panel-tabset
+### Retention one iteration
+
+```{r}
+Mylogistic <- function(x,sl,inf,asym)  asym/(1+exp(-(1/sl)*(x-inf)))
+
+retain <- summary$scalar %>%
+  select(scenario, model_run, iteration, contains("Retain_L")) %>%
+  pivot_longer(
+    cols = starts_with("Retain_L_"),
+    names_to = c(".value", "fleet"),
+    names_pattern = "Retain_L_(asymptote_logit|infl|width)_(.*)"
+  ) %>%
+  rename(
+    asym = asymptote_logit,
+    sl = width
+  ) 
+
+plot_data <- expand_grid(
+  nesting(retain), 
+  x = seq(0, 100, 1)
+) %>%
+  mutate(
+    y = Mylogistic(x, sl, infl, asym)
+  )
+
+plot_data %>%
+  filter(str_detect(model_run, "2065|OM"), iteration == 1, !str_detect(fleet, "BLK"),) %>%
+  ggplot(aes(x = x, y = y, group = interaction(model_run, iteration, fleet))) +
+  geom_line(aes(color = fleet, linetype = model_run), linewidth = 1) +
+  facet_wrap(~scenario) +
+  labs(
+    title = "Logistic Retention Curves by Fleet (iter = 1)",
+    x = "Length",
+    y = "Retention Probability"
+  ) +
+  theme_bw()
+
+```
+
+### Retention median
+
+```{r}
+  
+plot_data %>%
+  filter(str_detect(model_run, "2065|OM"), !str_detect(fleet, "BLK"),) %>%
+  ggplot(aes(x = x, y = y)) +
+  stat_summary(fun = "median", geom = "line", aes(color = fleet, linetype = model_run), linewidth =1 ) +
+  facet_wrap(~scenario) +
+  labs(
+    title = "Logistic Retention Curves by Fleet (median, 10 iter)",
+    x = "Length",
+    y = "Retention Probability"
+  ) +
+  theme_bw()
+```
+
+:::
+
+
+## Ro Exploration
+
+Extracted the R0 from SR_LN_R0 from the summary$scalar.  
+
+```{r}
+
+summary$scalar %>%
+  select(iteration, scenario, model_run, SR_LN_R0) %>%
+  mutate(r0 = exp(SR_LN_R0)) %>%
+  ggplot(aes(scenario, r0)) +
+  geom_boxplot() +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+
+summary$scalar %>%
+  select(iteration, scenario, model_run, SR_LN_R0) %>%
+  mutate(r0 = exp(SR_LN_R0)) %>%
+  ggplot(aes(scenario, r0)) +
+  geom_boxplot(aes(color = model_run)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+
+
+```
+
+
+```{r}
+
+ratio_R0 <- summary$scalar %>%
+  select(iteration, scenario, model_run, SR_LN_R0) %>%
+  mutate(r0 = exp(SR_LN_R0)) %>%
+  select(!SR_LN_R0) %>%
+  filter(model_run %in% c(paste0(OM_name, "_OM"), paste0(OM_name, "_EM_2047"))) %>%
+  pivot_wider(
+      names_from = model_run,  # this will create "OM" and "EM" columns
+      values_from = r0
+  ) %>%
+  rename("OM" = paste0(OM_name, "_OM") , "EM" = paste0(OM_name, "_EM_2047")) %>%
+  group_by(scenario, iteration) %>%
+  mutate(ratio_R0 = EM/OM)
+  
+ratio_R0 %>%
+  ggplot(aes(scenario, ratio_R0)) +
+  geom_boxplot()
+
+```
