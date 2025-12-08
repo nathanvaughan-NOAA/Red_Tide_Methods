@@ -388,6 +388,7 @@ Figure 5. Recruitment over time by scenario.  Recruitment is determined by the B
 ```{r, echo = FALSE, warning = FALSE}
 dq_plot_variable(summary, run_res_path = run_res_path)
 ```
+
 Figure 6 (same as figure 3). The spawning stock biomass (SSB) over time.  These plots best demonstrate the effects of the red tide mortality on the spawning availability, with the increased frequency and magnitude of red tides resulting in lower SSB.  
 
 ### SPR Ratio
@@ -540,56 +541,25 @@ f_ts_plots <- map(scen_list, plot_f_ts)
 
 ```
 
-::: panel-tabset
-### No red tide OMxEM
+::: {.panel-tabset}
 
-```{r, warning=FALSE}
-f_ts_plots[[1]]
-```
+```{r, results='asis'}
 
-### No red tide OM x 2 years red tide EM
+# Loop through the list and print each figure
+for (q in 1:length(f_ts_plots)) {
+  # 1. Print the tab name (required for this method)
+  cat('###', f_ts_plots[[q]]$labels$title, '\n\n') 
+  
+  # 2. Print the table content using kable
+  print(f_ts_plots[[q]])
+  
+  # Add a separator to ensure Quarto recognizes distinct outputs
+  cat('\n\n') 
+}
 
-```{r, warning=FALSE}
-f_ts_plots[[2]]
-```
-
-### 2 years red tide OM x No red tide EM
-
-```{r, warning=FALSE}
-f_ts_plots[[3]]
-```
-
-### 2 years red tide OM X 2 years red tide EM
-
-```{r, warning=FALSE}
-f_ts_plots[[4]]
-```
-### 2 years red tide OM X 2 years red tide EM  Fixed
-
-```{r, warning=FALSE}
-f_ts_plots[[5]]
-```
-
-### No red tide OM x all years red tide EM 
-
-```{r, warning=FALSE}
-f_ts_plots[[6]]
-```
-
-### 2 years red tide OM x all years red tide EM 
-
-```{r, warning=FALSE}
-f_ts_plots[[7]]
-```
-
-### Every 3 years red tide OM x all years red tide EM 
-
-```{r, warning=FALSE}
-f_ts_plots[[8]]
 ```
 
 :::
-
 
 Figure 10. Each fleet's fishing mortality ratio (EM:OM) over time by scenario.  The line indicates the median and the ribbon is the 25-75% quartiles.  F_5 is consistently underestimated, it is more underestimated in future years where there is less data.  
 
@@ -671,51 +641,22 @@ f_ts_plots <- map(scen_list, plot_f_ts)
 
 ```
 
-::: panel-tabset
-### No red tide OMxEM
+::: {.panel-tabset}
 
-```{r, warning=FALSE}
-f_ts_plots[[1]]
-```
+```{r, results='asis'}
 
-### No red tide OM x 2 years red tide EM
+# Loop through the list and print each figure
+for (q in 1:length(f_ts_plots)) {
+  # 1. Print the tab name (required for this method)
+  cat('###', f_ts_plots[[q]]$labels$title, '\n\n') 
+  
+  # 2. Print the table content using kable
+  print(f_ts_plots[[q]])
+  
+  # Add a separator to ensure Quarto recognizes distinct outputs
+  cat('\n\n') 
+}
 
-```{r, warning=FALSE}
-f_ts_plots[[2]]
-```
-
-### 2 years red tide OM x No red tide EM
-
-```{r, warning=FALSE}
-f_ts_plots[[3]]
-```
-
-### 2 years red tide OM X 2 years red tide EM
-
-```{r, warning=FALSE}
-f_ts_plots[[4]]
-```
-### 2 years red tide OM X 2 years red tide EM Fixed
-
-```{r, warning=FALSE}
-f_ts_plots[[5]]
-```
-
-### No red tide OM x all years red tide EM 
-
-```{r, warning=FALSE}
-f_ts_plots[[6]]
-```
-### 2 years red tide OM x all years red tide EM 
-
-```{r, warning=FALSE}
-f_ts_plots[[7]]
-```
-
-### Every 3 years red tide OM x all years red tide EM 
-
-```{r, warning=FALSE}
-f_ts_plots[[8]]
 ```
 
 :::
@@ -817,52 +758,22 @@ f_ts_plots <- map(scen_list, plot_f_ts)
 
 ```
 
-::: panel-tabset
-### No red tide OMxEM
+::: {.panel-tabset}
 
-```{r, warning=FALSE}
-f_ts_plots[[1]]
-```
+```{r, results='asis'}
 
-### No red tide OM x 2 years red tide EM
+# Loop through the list and print each figure
+for (q in 1:length(f_ts_plots)) {
+  # 1. Print the tab name (required for this method)
+  cat('###', f_ts_plots[[q]]$labels$title, '\n\n') 
+  
+  # 2. Print the table content using kable
+  print(f_ts_plots[[q]])
+  
+  # Add a separator to ensure Quarto recognizes distinct outputs
+  cat('\n\n') 
+}
 
-```{r, warning=FALSE}
-f_ts_plots[[2]]
-```
-
-### 2 years red tide OM x No red tide EM
-
-```{r, warning=FALSE}
-f_ts_plots[[3]]
-```
-
-### 2 years red tide OM X 2 years red tide EM
-
-```{r, warning=FALSE}
-f_ts_plots[[4]]
-```
-
-### 2 years red tide OM X 2 years red tide EM Fixed
-
-```{r, warning=FALSE}
-f_ts_plots[[5]]
-```
-
-### No red tide OM x all years red tide EM 
-
-```{r, warning=FALSE}
-f_ts_plots[[6]]
-```
-### 2 years red tide OM x all years red tide EM 
-
-```{r, warning=FALSE}
-f_ts_plots[[7]]
-```
-
-### Every 3 years red tide OM x all years red tide EM 
-
-```{r, warning=FALSE}
-f_ts_plots[[7]]
 ```
 
 :::
@@ -972,52 +883,22 @@ f_ts_plots <- map(scen_list, plot_f_ts)
 
 ```
 
-::: panel-tabset
-### No red tide OMxEM
+::: {.panel-tabset}
 
-```{r, warning=FALSE}
-f_ts_plots[[1]]
-```
+```{r, results='asis'}
 
-### No red tide OM x 2 years red tide EM
+# Loop through the list and print each figure
+for (q in 1:length(f_ts_plots)) {
+  # 1. Print the tab name (required for this method)
+  cat('###', f_ts_plots[[q]]$labels$title, '\n\n') 
+  
+  # 2. Print the table content using kable
+  print(f_ts_plots[[q]])
+  
+  # Add a separator to ensure Quarto recognizes distinct outputs
+  cat('\n\n') 
+}
 
-```{r, warning=FALSE}
-f_ts_plots[[2]]
-```
-
-### 2 years red tide OM x No red tide EM
-
-```{r, warning=FALSE}
-f_ts_plots[[3]]
-```
-
-### 2 years red tide OM X 2 years red tide EM
-
-```{r, warning=FALSE}
-f_ts_plots[[4]]
-```
-
-### 2 years red tide OM X 2 years red tide EM
-
-```{r, warning=FALSE}
-f_ts_plots[[5]]
-```
-
-### No red tide OM x all years red tide EM 
-
-```{r, warning=FALSE}
-f_ts_plots[[6]]
-```
-### 2 years red tide OM x all years red tide EM 
-
-```{r, warning=FALSE}
-f_ts_plots[[7]]
-```
-
-### Every 3 years red tide OM x all years red tide EM 
-
-```{r, warning=FALSE}
-f_ts_plots[[8]]
 ```
 
 :::
@@ -1098,53 +979,22 @@ biomass_ts_plots <- map(scen_list, plot_biomass_ts)
 
 ```
 
-::: panel-tabset
-### No red tide OMxEM
+::: {.panel-tabset}
 
-```{r, warning=FALSE}
-biomass_ts_plots[[1]]
-```
+```{r, results='asis'}
 
-### No red tide OM x 2 years red tide EM
+# Loop through the list and print each figure
+for (q in 1:length(biomass_ts_plots)) {
+  # 1. Print the tab name (required for this method)
+  cat('###', biomass_ts_plots[[q]]$labels$title, '\n\n') 
+  
+  # 2. Print the table content using kable
+  print(biomass_ts_plots[[q]])
+  
+  # Add a separator to ensure Quarto recognizes distinct outputs
+  cat('\n\n') 
+}
 
-```{r, warning=FALSE}
-biomass_ts_plots[[2]]
-```
-
-### 2 years red tide OM x No red tide EM
-
-```{r, warning=FALSE}
-biomass_ts_plots[[3]]
-```
-
-### 2 years red tide OM X 2 years red tide EM
-
-```{r, warning=FALSE}
-biomass_ts_plots[[4]]
-```
-
-### 2 years red tide OM X 2 years red tide EM Fixed
-
-```{r, warning=FALSE}
-biomass_ts_plots[[5]]
-```
-
-### No red tide OM x all years red tide EM 
-
-```{r, warning=FALSE}
-biomass_ts_plots[[6]]
-```
-
-### 2 years red tide OM x all years red tide EM 
-
-```{r, warning=FALSE}
-biomass_ts_plots[[7]]
-```
-
-### Every 3 years red tide OM x all years red tide EM 
-
-```{r, warning=FALSE}
-biomass_ts_plots[[8]]
 ```
 
 :::
@@ -1365,52 +1215,22 @@ f_ts_plots <- map(scen_list, plot_f_ts)
 
 ```
 
-::: panel-tabset
-### No red tide OMxEM
+::: {.panel-tabset}
 
-```{r, warning=FALSE}
-f_ts_plots[[1]]
-```
+```{r, results='asis'}
 
-### No red tide OM x 2 years red tide EM
+# Loop through the list and print each figure
+for (q in 1:length(f_ts_plots)) {
+  # 1. Print the tab name (required for this method)
+  cat('###', f_ts_plots[[q]]$labels$title, '\n\n') 
+  
+  # 2. Print the table content using kable
+  print(f_ts_plots[[q]])
+  
+  # Add a separator to ensure Quarto recognizes distinct outputs
+  cat('\n\n') 
+}
 
-```{r, warning=FALSE}
-f_ts_plots[[2]]
-```
-
-### 2 years red tide OM x No red tide EM
-
-```{r, warning=FALSE}
-f_ts_plots[[3]]
-```
-
-### 2 years red tide OM X 2 years red tide EM
-
-```{r, warning=FALSE}
-f_ts_plots[[4]]
-```
-### 2 years red tide OM X 2 years red tide EM Fixed
-
-```{r, warning=FALSE}
-f_ts_plots[[5]]
-```
- 
-### No red tide OM x all years red tide EM 
-
-```{r, warning=FALSE}
-f_ts_plots[[6]]
-```
-
-### 2 years red tide OM x all years red tide EM 
-
-```{r, warning=FALSE}
-f_ts_plots[[7]]
-```
-
-### Every 3 years red tide OM x all years red tide EM 
-
-```{r, warning=FALSE}
-f_ts_plots[[8]]
 ```
 
 :::
@@ -1497,51 +1317,22 @@ f_ts_plots <- map(scen_list, plot_f_ts)
 
 ```
 
-::: panel-tabset
-### No red tide OMxEM
+::: {.panel-tabset}
 
-```{r, warning=FALSE}
-f_ts_plots[[1]]
-```
+```{r, results='asis'}
 
-### No red tide OM x 2 years red tide EM
+# Loop through the list and print each figure
+for (q in 1:length(f_ts_plots)) {
+  # 1. Print the tab name (required for this method)
+  cat('###', f_ts_plots[[q]]$labels$title, '\n\n') 
+  
+  # 2. Print the table content using kable
+  print(f_ts_plots[[q]])
+  
+  # Add a separator to ensure Quarto recognizes distinct outputs
+  cat('\n\n') 
+}
 
-```{r, warning=FALSE}
-f_ts_plots[[2]]
-```
-
-### 2 years red tide OM x No red tide EM
-
-```{r, warning=FALSE}
-f_ts_plots[[3]]
-```
-
-### 2 years red tide OM X 2 years red tide EM
-
-```{r, warning=FALSE}
-f_ts_plots[[4]]
-```
-### 2 years red tide OM X 2 years red tide EM Fixed
-
-```{r, warning=FALSE}
-f_ts_plots[[5]]
-```
-### No red tide OM x all years red tide EM 
-
-```{r, warning=FALSE}
-f_ts_plots[[6]]
-```
-
-### 2 years red tide OM x all years red tide EM 
-
-```{r, warning=FALSE}
-f_ts_plots[[7]]
-```
-
-### Every 3 years red tide OM x all years red tide EM 
-
-```{r, warning=FALSE}
-f_ts_plots[[8]]
 ```
 
 :::
@@ -1627,52 +1418,22 @@ biomass_ts_plots <- map(scen_list, plot_biomass_ts)
 
 ```
 
-::: panel-tabset
-### No red tide OMxEM
+::: {.panel-tabset}
 
-```{r, warning=FALSE}
-biomass_ts_plots[[1]]
-```
+```{r, results='asis'}
 
-### No red tide OM x 2 years red tide EM
+# Loop through the list and print each figure
+for (q in 1:length(biomass_ts_plots)) {
+  # 1. Print the tab name (required for this method)
+  cat('###', biomass_ts_plots[[q]]$labels$title, '\n\n') 
+  
+  # 2. Print the table content using kable
+  print(biomass_ts_plots[[q]])
+  
+  # Add a separator to ensure Quarto recognizes distinct outputs
+  cat('\n\n') 
+}
 
-```{r, warning=FALSE}
-biomass_ts_plots[[2]]
-```
-
-### 2 years red tide OM x No red tide EM
-
-```{r, warning=FALSE}
-biomass_ts_plots[[3]]
-```
-
-### 2 years red tide OM X 2 years red tide EM
-
-```{r, warning=FALSE}
-biomass_ts_plots[[4]]
-```
-### 2 years red tide OM X 2 years red tide EM Fixed
-
-```{r, warning=FALSE}
-biomass_ts_plots[[5]]
-```
-
-### No red tide OM x all years red tide EM 
-
-```{r, warning=FALSE}
-biomass_ts_plots[[6]]
-```
-
-### 2 years red tide OM x all years red tide EM 
-
-```{r, warning=FALSE}
-biomass_ts_plots[[7]]
-```
-
-### Every 3 years red tide OM x all years red tide EM 
-
-```{r, warning=FALSE}
-biomass_ts_plots[[8]]
 ```
 
 :::
@@ -1819,7 +1580,6 @@ Figure 19. SSB ratio (EM:OM) over the years from the terminal year by scenario. 
 
 ## Term Plots
 
-::: panel-tabset
 ```{r}
 
 # identify the last year sampled by SSMSE
@@ -1882,7 +1642,7 @@ t_plot_short <- scen_merge %>%
   scale_linetype_manual(values = rep("solid", 100)) +
   guides(linetype = FALSE, color=FALSE) +
   labs(color = "Model Runs") +
-  xlim(2000, 2030)+
+  coord_cartesian(xlim = c(2000, 2030))+
   ggtitle(scen, subtitle = "Short-term")+
   theme_bw()
 
@@ -1894,51 +1654,22 @@ all_term_plots<- map(scen_list, scen_ts_plots)
 
 ```
 
-### No red tide OMxEM
+::: {.panel-tabset}
 
-```{r, warning=FALSE}
-all_term_plots[[1]]
-```
+```{r, results='asis', warning = FALSE}
 
-### No red tide OM x 2 years red tide EM
+# Loop through the list and print each figure
+for (q in 1:length(all_term_plots)) {
+  # 1. Print the tab name (required for this method)
+  cat('###', scen_list[q], '\n\n') 
+  
+  # 2. Print the table content using kable
+  print(all_term_plots[[q]])
+  
+  # Add a separator to ensure Quarto recognizes distinct outputs
+  cat('\n\n') 
+}
 
-```{r, warning=FALSE}
-all_term_plots[[2]]
-```
-
-### 2 years red tide OM x No red tide EM
-
-```{r, warning=FALSE}
-all_term_plots[[3]]
-```
-
-### 2 years red tide OM X 2 years red tide EM
-
-```{r, warning=FALSE}
-all_term_plots[[4]]
-```
-### 2 years red tide OM X 2 years red tide EM Fixed
-
-```{r, warning=FALSE}
-all_term_plots[[5]]
-```
-
-### No red tide OM x all years red tide EM 
-
-```{r, warning=FALSE}
-all_term_plots[[6]]
-```
-
-### 2 years red tide OM x all years red tide EM 
-
-```{r, warning=FALSE}
-all_term_plots[[7]]
-```
-
-### Every 3 years red tide OM x all years red tide EM 
-
-```{r, warning=FALSE}
-all_term_plots[[8]]
 ```
 
 :::
@@ -1947,7 +1678,6 @@ Figure 20. Term plots are meant to be a "short term" (2000-2030) and "long term"
 
 ## Management Term Plots
 
-::: panel-tabset
 ```{r}
 
 # identify the last year sampled by SSMSE
@@ -2024,60 +1754,27 @@ all_term_plots<- map(scen_list, scen_ts_plots)
 
 ```
 
-### No red tide OMxEM
+::: {.panel-tabset}
 
-```{r, warning=FALSE}
-all_term_plots[[1]]
-```
+```{r, results='asis', warning = FALSE}
 
-### No red tide OM x 2 years red tide EM
+# Loop through the list and print each figure
+for (q in 1:length(all_term_plots)) {
+  # 1. Print the tab name (required for this method)
+  cat('###', scen_list[q], '\n\n') 
+  
+  # 2. Print the table content using kable
+  print(all_term_plots[[q]])
+  
+  # Add a separator to ensure Quarto recognizes distinct outputs
+  cat('\n\n') 
+}
 
-```{r, warning=FALSE}
-all_term_plots[[2]]
-```
-
-### 2 years red tide OM x No red tide EM
-
-```{r, warning=FALSE}
-all_term_plots[[3]]
-```
-
-### 2 years red tide OM X 2 years red tide EM
-
-```{r, warning=FALSE}
-all_term_plots[[4]]
-```
-
-### 2 years red tide OM X 2 years red tide EM Fixed
-
-```{r, warning=FALSE}
-all_term_plots[[5]]
-```
-
-### No red tide OM x all years red tide EM 
-
-```{r, warning=FALSE}
-all_term_plots[[6]]
-```
-
-### 2 years red tide OM x all years red tide EM 
-
-```{r, warning=FALSE}
-all_term_plots[[7]]
-```
-
-### Every 3 years red tide OM x all years red tide EM 
-
-```{r, warning=FALSE}
-all_term_plots[[8]]
 ```
 
 :::
 
 Figure 21. Management Term plots are meant to be a "short term" (2000-2027) and "long term" (1989-2067) look at a few key parameters from the time series dataset.  These plots demonstrate that red tide events correspond with SPR Ratio spikes, and can slowly decrease retained biomass or spawning biomass in the short term.  In the long term, there are no trends.  I tried to add median trend lines for the OM and EM but they aren't very clear because of how the lines are colored.  
-
-
-
 
 ## Relative Error Plots
 
@@ -2086,6 +1783,8 @@ Inspired by Wetzel and Punt et al. 2011
 I am going to attempt to make their Relative Error Plots.
 
 RE = (E - T) / T
+
+If the RE is NA (T = 0), the RE = 0.  This introduces issues in the _all year scenarios where many of the T values are zero and the E > 0.   
 
 ```{r}
 
@@ -2223,7 +1922,7 @@ rec_c
 
 ### Red Tide Discards
 
-```{r}
+```{r, warning = FALSE}
 
 rt_c <-EM_means %>% 
   filter(F_5 > 0) %>%
@@ -2236,9 +1935,14 @@ rt_c
 ```
 :::
 
+
+::: panel-tabset
+
+### All relative errors
+
 Figure 21. Relative error plots for each variable of interest zoomed in.  
 
-```{r}
+```{r, warning = FALSE}
 recruit <- recruit +
   theme(axis.text.y = element_blank()) 
 f_rec <- f_rec +
@@ -2256,6 +1960,8 @@ com_c <- com_c  + ggtitle("Com catch")
 (spawn + recruit) / (f_com + f_rec + f5) / (com_c + rec_c + rt_c)
 
 ```
+
+### All RE with fixed x values
 
 Figure 22. Relative error plots of each variable of interest on the same patchwork.   
 
@@ -2279,6 +1985,8 @@ com_c <- com_c + xlim(-2,5) + ggtitle("Com catch")
 ```
 
 Figure 23. Relative error plots of each variable of interest with fixed x-limits between -2 and 5.  
+
+:::
 
 ## Red Tide Magnitudes and Frequencies
 
@@ -2306,7 +2014,14 @@ red_tide_years <- summary$ts %>%
   ungroup() %>%
   right_join(red_tide_magnitudes, join_by(scenario))
 
-red_tide_years
+red_tide_years %>%
+  kable(
+    align = c("l", "c", "c", "c") # Align columns (left, center, center, center)
+  ) %>%
+  kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed"), # Add bootstrap styling
+    full_width = FALSE # Don't stretch table to full page width
+  )
 ```
 
 Table 3. The magnitudes and frequencies of each scenario with the summarized catch to demonstrate scale differences.  
@@ -2314,8 +2029,6 @@ Table 3. The magnitudes and frequencies of each scenario with the summarized cat
 ## MAPE
 
 Mean Average Percentage Error
-
-Inspired by 
 
 ```{r}
 
@@ -2337,10 +2050,14 @@ OM_means <- summary$ts %>%
   )
 
 EM_means_re <- summary$ts %>%
-  filter(
-    str_detect(model_run, "_EM_2047")) %>%
-  rowwise()%>%
-  mutate(commercial = sum(retainB_1, retainB_2), recreational = retainB_4, com_f = sum(F_1, F_2), rec_f = F_4) %>%
+  filter(str_detect(model_run, "_EM_2047")) %>%
+  rowwise() %>%
+  mutate(
+    commercial = sum(retainB_1, retainB_2),
+    recreational = retainB_4,
+    com_f = sum(F_1, F_2),
+    rec_f = F_4
+  ) %>%
   left_join(OM_means, by = c("year", "scenario", "iteration")) %>%
   group_by(scenario, iteration, year) %>%
   mutate(
@@ -2352,55 +2069,79 @@ EM_means_re <- summary$ts %>%
     #this put zeros back in.
     re_F_5 = ifelse(is.na((F_5 - OM_F_5) / OM_F_5), 0, (F_5 - OM_F_5) /
                       OM_F_5),
-    re_SpawnBio = ifelse(is.na((SpawnBio - OM_SpawnBio) / OM_SpawnBio), 0, (SpawnBio - OM_SpawnBio) /
-                      OM_SpawnBio),
-        re_com = ifelse(is.na((commercial - OM_com) / OM_com), 0, (commercial - OM_com) /
+    re_SpawnBio = ifelse(is.na((
+      SpawnBio - OM_SpawnBio
+    ) / OM_SpawnBio), 0, (SpawnBio - OM_SpawnBio) /
+      OM_SpawnBio),
+    re_com = ifelse(is.na((commercial - OM_com) / OM_com), 0, (commercial - OM_com) /
                       OM_com),
-        re_rec = ifelse(is.na((recreational - OM_rec) / OM_rec), 0, (recreational - OM_rec) /
-                      OM_rec),
-        re_dead_5 = ifelse(is.na((deadB_5 - OM_dead_5) / OM_dead_5), 0, (deadB_5 - OM_dead_5) /
-                      OM_dead_5),
-        re_com_f = ifelse(is.na((com_f - OM_com_f) / OM_com_f), 0, (com_f - OM_com_f) /
-                      OM_com_f),
-        re_rec_f = ifelse(is.na((rec_f - OM_rec_f) / OM_rec_f), 0, (rec_f - OM_rec_f) /
-                      OM_rec_f),        
-        re_abundance = ifelse(is.na((Bio_smry - OM_abundance) / OM_abundance), 0, (Bio_smry - OM_abundance) /
-                      OM_abundance),
-    end_year = as.numeric(str_extract(model_run, "\\d{4}$"))+3,
+    re_rec = ifelse(is.na((
+      recreational - OM_rec
+    ) / OM_rec), 0, (recreational - OM_rec) /
+      OM_rec),
+    re_dead_5 = ifelse(is.na((deadB_5 - OM_dead_5) / OM_dead_5), 0, (deadB_5 - OM_dead_5) /
+                         OM_dead_5),
+    re_com_f = ifelse(is.na((com_f - OM_com_f) / OM_com_f), 0, (com_f - OM_com_f) /
+                        OM_com_f),
+    re_rec_f = ifelse(is.na((rec_f - OM_rec_f) / OM_rec_f), 0, (rec_f - OM_rec_f) /
+                        OM_rec_f),
+    re_abundance = ifelse(
+      is.na((Bio_smry - OM_abundance) / OM_abundance),
+      0,
+      (Bio_smry - OM_abundance) /
+        OM_abundance
+    ),
+    end_year = as.numeric(str_extract(model_run, "\\d{4}$")) + 3,
     years_until_terminal = end_year - year
   )
 
 EM_means <- summary$ts %>%
-  filter(
-    str_detect(model_run, "_EM_2047")) %>%
-  rowwise()%>%
-  mutate(commercial = sum(retainB_1, retainB_2), recreational = retainB_4, com_f = sum(F_1, F_2), rec_f = F_4) %>%
+  filter(str_detect(model_run, "_EM_2047")) %>%
+  rowwise() %>%
+  mutate(
+    commercial = sum(retainB_1, retainB_2),
+    recreational = retainB_4,
+    com_f = sum(F_1, F_2),
+    rec_f = F_4
+  ) %>%
   left_join(OM_means, by = c("year", "scenario", "iteration")) %>%
   group_by(scenario, iteration, year) %>%
   mutate(
-    re_Recruit_0 = ifelse(
-      is.na((Recruit_0 - OM_Recruit_0) / OM_Recruit_0),
-      0,
-      abs((Recruit_0 - OM_Recruit_0) / OM_Recruit_0)*100
-    ),
+    re_Recruit_0 = ifelse(is.na((
+      Recruit_0 - OM_Recruit_0
+    ) / OM_Recruit_0), 0, abs((
+      Recruit_0 - OM_Recruit_0
+    ) / OM_Recruit_0) * 100),
     #this put zeros back in.
     re_F_5 = ifelse(is.na((F_5 - OM_F_5) / OM_F_5), 0, abs((F_5 - OM_F_5) /
-                      OM_F_5))*100,
-    re_SpawnBio = ifelse(is.na((SpawnBio - OM_SpawnBio) / OM_SpawnBio), 0, abs((SpawnBio - OM_SpawnBio) /
-                      OM_SpawnBio))*100,
-        re_com = ifelse(is.na((commercial - OM_com) / OM_com), 0, abs((commercial - OM_com) /
-                      OM_com))*100,
-        re_rec = ifelse(is.na((recreational - OM_rec) / OM_rec), 0, abs((recreational - OM_rec) /
-                      OM_rec))*100,
-        re_dead_5 = ifelse(is.na((deadB_5 - OM_dead_5) / OM_dead_5), 0, abs((deadB_5 - OM_dead_5) /
-                      OM_dead_5))*100,
-        re_com_f = ifelse(is.na((com_f - OM_com_f) / OM_com_f), 0, abs((com_f - OM_com_f) /
-                      OM_com_f))*100,
-        re_rec_f = ifelse(is.na((rec_f - OM_rec_f) / OM_rec_f), 0, abs((rec_f - OM_rec_f) /
-                      OM_rec_f))*100,        
-        re_abundance = ifelse(is.na((Bio_smry - OM_abundance) / OM_abundance), 0, abs(Bio_smry - OM_abundance) /
-                      OM_abundance)*100,
-    end_year = as.numeric(str_extract(model_run, "\\d{4}$"))+3,
+                                                             OM_F_5)) * 100,
+    re_SpawnBio = ifelse(is.na((
+      SpawnBio - OM_SpawnBio
+    ) / OM_SpawnBio), 0, abs((
+      SpawnBio - OM_SpawnBio
+    ) /
+      OM_SpawnBio)) * 100,
+    re_com = ifelse(is.na((commercial - OM_com) / OM_com), 0, abs((commercial - OM_com) /
+                                                                    OM_com)) * 100,
+    re_rec = ifelse(is.na((
+      recreational - OM_rec
+    ) / OM_rec), 0, abs((
+      recreational - OM_rec
+    ) /
+      OM_rec)) * 100,
+    re_dead_5 = ifelse(is.na((deadB_5 - OM_dead_5) / OM_dead_5), 0, abs((deadB_5 - OM_dead_5) /
+                                                                          OM_dead_5)) * 100,
+    re_com_f = ifelse(is.na((com_f - OM_com_f) / OM_com_f), 0, abs((com_f - OM_com_f) /
+                                                                     OM_com_f)) * 100,
+    re_rec_f = ifelse(is.na((rec_f - OM_rec_f) / OM_rec_f), 0, abs((rec_f - OM_rec_f) /
+                                                                     OM_rec_f)) * 100,
+    re_abundance = ifelse(
+      is.na((Bio_smry - OM_abundance) / OM_abundance),
+      0,
+      abs(Bio_smry - OM_abundance) /
+        OM_abundance
+    ) * 100,
+    end_year = as.numeric(str_extract(model_run, "\\d{4}$")) + 3,
     years_until_terminal = end_year - year
   )
 
@@ -2415,23 +2156,15 @@ EM_means <- summary$ts %>%
 EM_means %>%
 mutate(
     em_model = ifelse(
-      scenario %in% c("no_rt", "rt_2_x_no_rt", "rt_2_x_no_rt_high"),
-      "No Red Tide",
-ifelse(
-        grepl("high", scenario),
-        "2 Years High Red Tide",
-        ifelse(grepl("all", scenario), "no_rt_x_all_yrs", "2 Years Red Tide")
-      )
+      scenario %in% c("no_rt", "rt_2_x_no_rt"), "No Red Tide",
+      ifelse( grepl("all_yrs", scenario), "All Years Red Tide", 
+      "2 Years Red Tide")
     ),
     om_model = ifelse(
-      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_rt_2_high", "no_rt_x_all_yrs"),
-      "No Red Tide",
-      ifelse(
-        grepl("high", scenario),
-        "2 Years High Red Tide",
-        ifelse(grepl("all", scenario), "no_rt_x_all_yrs", "2 Years Red Tide")
+      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_all_yrs"), "No Red Tide",
+      ifelse(grepl("rep", scenario), "Repeat Red Tide", 
+      "2 Years Red Tide")
       )
-    )
   ) %>%
   # Pivot the data longer
   pivot_longer(
@@ -2463,23 +2196,15 @@ ifelse(
 EM_means %>%
 mutate(
     em_model = ifelse(
-      scenario %in% c("no_rt", "rt_2_x_no_rt", "rt_2_x_no_rt_high", "no_rt_x_all_yrs"),
-      "No Red Tide",
-      ifelse(
-        grepl("high", scenario),
-        "2 Years High Red Tide",
-        ifelse(grepl("all", scenario), "no_rt_x_all_yrs", "2 Years Red Tide")
-      )
+      scenario %in% c("no_rt", "rt_2_x_no_rt"), "No Red Tide",
+      ifelse( grepl("all_yrs", scenario), "All Years Red Tide", 
+      "2 Years Red Tide")
     ),
     om_model = ifelse(
-      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_rt_2_high"),
-      "No Red Tide",
-      ifelse(
-        grepl("high", scenario),
-        "2 Years High Red Tide",
-        "2 Years Red Tide"
+      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_all_yrs"), "No Red Tide",
+      ifelse(grepl("rep", scenario), "Repeat Red Tide", 
+      "2 Years Red Tide")
       )
-    )
   ) %>%
   # Pivot the data longer
   pivot_longer(
@@ -2502,23 +2227,15 @@ mutate(
 EM_means %>%
 mutate(
     em_model = ifelse(
-      scenario %in% c("no_rt", "rt_2_x_no_rt", "rt_2_x_no_rt_high", "no_rt_x_all_yrs"),
-      "No Red Tide",
-      ifelse(
-        grepl("high", scenario),
-        "2 Years High Red Tide",
-        ifelse(grepl("all", scenario), "no_rt_x_all_yrs", "2 Years Red Tide")
-      )
+      scenario %in% c("no_rt", "rt_2_x_no_rt"), "No Red Tide",
+      ifelse( grepl("all_yrs", scenario), "All Years Red Tide", 
+      "2 Years Red Tide")
     ),
     om_model = ifelse(
-      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_rt_2_high"),
-      "No Red Tide",
-      ifelse(
-        grepl("high", scenario),
-        "2 Years High Red Tide",
-        "2 Years Red Tide"
+      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_all_yrs"), "No Red Tide",
+      ifelse(grepl("rep", scenario), "Repeat Red Tide", 
+      "2 Years Red Tide")
       )
-    )
   ) %>%
   # Pivot the data longer
   pivot_longer(
@@ -2550,23 +2267,15 @@ mutate(
 EM_means %>%
 mutate(
     em_model = ifelse(
-      scenario %in% c("no_rt", "rt_2_x_no_rt", "rt_2_x_no_rt_high", "no_rt_x_all_yrs"),
-      "No Red Tide",
-      ifelse(
-        grepl("high", scenario),
-        "2 Years High Red Tide",
-        ifelse(grepl("all", scenario), "no_rt_x_all_yrs", "2 Years Red Tide")
-      )
+      scenario %in% c("no_rt", "rt_2_x_no_rt"), "No Red Tide",
+      ifelse( grepl("all_yrs", scenario), "All Years Red Tide", 
+      "2 Years Red Tide")
     ),
     om_model = ifelse(
-      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_rt_2_high"),
-      "No Red Tide",
-      ifelse(
-        grepl("high", scenario),
-        "2 Years High Red Tide",
-        "2 Years Red Tide"
+      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_all_yrs"), "No Red Tide",
+      ifelse(grepl("rep", scenario), "Repeat Red Tide", 
+      "2 Years Red Tide")
       )
-    )
   ) %>%
   # Pivot the data longer
   pivot_longer(
@@ -2590,23 +2299,15 @@ mutate(
 EM_means %>%
 mutate(
     em_model = ifelse(
-      scenario %in% c("no_rt", "rt_2_x_no_rt", "rt_2_x_no_rt_high", "no_rt_x_all_yrs"),
-      "No Red Tide",
-      ifelse(
-        grepl("high", scenario),
-        "2 Years High Red Tide",
-        ifelse(grepl("all", scenario), "no_rt_x_all_yrs", "2 Years Red Tide")
-      )
+      scenario %in% c("no_rt", "rt_2_x_no_rt"), "No Red Tide",
+      ifelse( grepl("all_yrs", scenario), "All Years Red Tide", 
+      "2 Years Red Tide")
     ),
     om_model = ifelse(
-      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_rt_2_high"),
-      "No Red Tide",
-      ifelse(
-        grepl("high", scenario),
-        "2 Years High Red Tide",
-        "2 Years Red Tide"
+      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_all_yrs"), "No Red Tide",
+      ifelse(grepl("rep", scenario), "Repeat Red Tide", 
+      "2 Years Red Tide")
       )
-    )
   ) %>%
   # Pivot the data longer
   pivot_longer(
@@ -2646,23 +2347,15 @@ Misspecifying the model does not increase the error, instead there is more error
 EM_means %>%
 mutate(
     em_model = ifelse(
-      scenario %in% c("no_rt", "rt_2_x_no_rt", "rt_2_x_no_rt_high", "no_rt_x_all_yrs"),
-      "No Red Tide",
-      ifelse(
-        grepl("high", scenario),
-        "2 Years High Red Tide",
-        ifelse(grepl("all", scenario), "no_rt_x_all_yrs", "2 Years Red Tide")
-      )
+      scenario %in% c("no_rt", "rt_2_x_no_rt"), "No Red Tide",
+      ifelse( grepl("all_yrs", scenario), "All Years Red Tide", 
+      "2 Years Red Tide")
     ),
     om_model = ifelse(
-      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_rt_2_high"),
-      "No Red Tide",
-      ifelse(
-        grepl("high", scenario),
-        "2 Years High Red Tide",
-        "2 Years Red Tide"
+      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_all_yrs"), "No Red Tide",
+      ifelse(grepl("rep", scenario), "Repeat Red Tide", 
+      "2 Years Red Tide")
       )
-    )
   ) %>%
   # Pivot the data longer
   pivot_longer(
@@ -2689,23 +2382,15 @@ mutate(
 EM_means %>%
 mutate(
     em_model = ifelse(
-      scenario %in% c("no_rt", "rt_2_x_no_rt", "rt_2_x_no_rt_high", "no_rt_x_all_yrs"),
-      "No Red Tide",
-      ifelse(
-        grepl("high", scenario),
-        "2 Years High Red Tide",
-        ifelse(grepl("all", scenario), "no_rt_x_all_yrs", "2 Years Red Tide")
-      )
+      scenario %in% c("no_rt", "rt_2_x_no_rt"), "No Red Tide",
+      ifelse( grepl("all_yrs", scenario), "All Years Red Tide", 
+      "2 Years Red Tide")
     ),
     om_model = ifelse(
-      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_rt_2_high"),
-      "No Red Tide",
-      ifelse(
-        grepl("high", scenario),
-        "2 Years High Red Tide",
-        "2 Years Red Tide"
+      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_all_yrs"), "No Red Tide",
+      ifelse(grepl("rep", scenario), "Repeat Red Tide", 
+      "2 Years Red Tide")
       )
-    )
   ) %>%
   # Pivot the data longer
   pivot_longer(
@@ -2745,23 +2430,15 @@ Misspecifying the model does not increase the error, instead there is more error
 EM_means %>%
 mutate(
     em_model = ifelse(
-      scenario %in% c("no_rt", "rt_2_x_no_rt", "rt_2_x_no_rt_high", "no_rt_x_all_yrs"),
-      "No Red Tide",
-      ifelse(
-        grepl("high", scenario),
-        "2 Years High Red Tide",
-        ifelse(grepl("all", scenario), "no_rt_x_all_yrs", "2 Years Red Tide")
-      )
+      scenario %in% c("no_rt", "rt_2_x_no_rt"), "No Red Tide",
+      ifelse( grepl("all_yrs", scenario), "All Years Red Tide", 
+      "2 Years Red Tide")
     ),
     om_model = ifelse(
-      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_rt_2_high"),
-      "No Red Tide",
-      ifelse(
-        grepl("high", scenario),
-        "2 Years High Red Tide",
-        "2 Years Red Tide"
+      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_all_yrs"), "No Red Tide",
+      ifelse(grepl("rep", scenario), "Repeat Red Tide", 
+      "2 Years Red Tide")
       )
-    )
   ) %>%
   # Pivot the data longer
   pivot_longer(
@@ -2794,23 +2471,15 @@ mutate(
 EM_means_re %>%
 mutate(
     em_model = ifelse(
-      scenario %in% c("no_rt", "rt_2_x_no_rt", "rt_2_x_no_rt_high", "no_rt_x_all_yrs"),
-      "No Red Tide",
-      ifelse(
-        grepl("high", scenario),
-        "2 Years High Red Tide",
-        ifelse(grepl("all", scenario), "no_rt_x_all_yrs", "2 Years Red Tide")
-      )
+      scenario %in% c("no_rt", "rt_2_x_no_rt"), "No Red Tide",
+      ifelse( grepl("all_yrs", scenario), "All Years Red Tide", 
+      "2 Years Red Tide")
     ),
     om_model = ifelse(
-      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_rt_2_high"),
-      "No Red Tide",
-      ifelse(
-        grepl("high", scenario),
-        "2 Years High Red Tide",
-        "2 Years Red Tide"
+      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_all_yrs"), "No Red Tide",
+      ifelse(grepl("rep", scenario), "Repeat Red Tide", 
+      "2 Years Red Tide")
       )
-    )
   ) %>%
   # Pivot the data longer
   pivot_longer(
@@ -2832,23 +2501,15 @@ mutate(
 EM_means_re %>%
 mutate(
     em_model = ifelse(
-      scenario %in% c("no_rt", "rt_2_x_no_rt", "rt_2_x_no_rt_high", "no_rt_x_all_yrs"),
-      "No Red Tide",
-      ifelse(
-        grepl("high", scenario),
-        "2 Years High Red Tide",
-        ifelse(grepl("all", scenario), "no_rt_x_all_yrs", "2 Years Red Tide")
-      )
+      scenario %in% c("no_rt", "rt_2_x_no_rt"), "No Red Tide",
+      ifelse( grepl("all_yrs", scenario), "All Years Red Tide", 
+      "2 Years Red Tide")
     ),
     om_model = ifelse(
-      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_rt_2_high"),
-      "No Red Tide",
-      ifelse(
-        grepl("high", scenario),
-        "2 Years High Red Tide",
-        "2 Years Red Tide"
+      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_all_yrs"), "No Red Tide",
+      ifelse(grepl("rep", scenario), "Repeat Red Tide", 
+      "2 Years Red Tide")
       )
-    )
   ) %>%
   # Pivot the data longer
   pivot_longer(
@@ -2870,23 +2531,15 @@ mutate(
 EM_means_re %>%
 mutate(
     em_model = ifelse(
-      scenario %in% c("no_rt", "rt_2_x_no_rt", "rt_2_x_no_rt_high", "no_rt_x_all_yrs"),
-      "No Red Tide",
-      ifelse(
-        grepl("high", scenario),
-        "2 Years High Red Tide",
-        ifelse(grepl("all", scenario), "no_rt_x_all_yrs", "2 Years Red Tide")
-      )
+      scenario %in% c("no_rt", "rt_2_x_no_rt"), "No Red Tide",
+      ifelse( grepl("all_yrs", scenario), "All Years Red Tide", 
+      "2 Years Red Tide")
     ),
     om_model = ifelse(
-      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_rt_2_high"),
-      "No Red Tide",
-      ifelse(
-        grepl("high", scenario),
-        "2 Years High Red Tide",
-        "2 Years Red Tide"
+      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_all_yrs"), "No Red Tide",
+      ifelse(grepl("rep", scenario), "Repeat Red Tide", 
+      "2 Years Red Tide")
       )
-    )
   ) %>%
   # Pivot the data longer
   pivot_longer(
@@ -2909,23 +2562,15 @@ mutate(
 EM_means_re %>%
 mutate(
     em_model = ifelse(
-      scenario %in% c("no_rt", "rt_2_x_no_rt", "rt_2_x_no_rt_high", "no_rt_x_all_yrs"),
-      "No Red Tide",
-      ifelse(
-        grepl("high", scenario),
-        "2 Years High Red Tide",
-        ifelse(grepl("all", scenario), "no_rt_x_all_yrs", "2 Years Red Tide")
-      )
+      scenario %in% c("no_rt", "rt_2_x_no_rt"), "No Red Tide",
+      ifelse( grepl("all_yrs", scenario), "All Years Red Tide", 
+      "2 Years Red Tide")
     ),
     om_model = ifelse(
-      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_rt_2_high"),
-      "No Red Tide",
-      ifelse(
-        grepl("high", scenario),
-        "2 Years High Red Tide",
-        "2 Years Red Tide"
+      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_all_yrs"), "No Red Tide",
+      ifelse(grepl("rep", scenario), "Repeat Red Tide", 
+      "2 Years Red Tide")
       )
-    )
   ) %>%
   # Pivot the data longer
   pivot_longer(
@@ -2949,23 +2594,15 @@ mutate(
 EM_means_re %>%
 mutate(
     em_model = ifelse(
-      scenario %in% c("no_rt", "rt_2_x_no_rt", "rt_2_x_no_rt_high", "no_rt_x_all_yrs"),
-      "No Red Tide",
-      ifelse(
-        grepl("high", scenario),
-        "2 Years High Red Tide",
-        ifelse(grepl("all", scenario), "no_rt_x_all_yrs", "2 Years Red Tide")
-      )
+      scenario %in% c("no_rt", "rt_2_x_no_rt"), "No Red Tide",
+      ifelse( grepl("all_yrs", scenario), "All Years Red Tide", 
+      "2 Years Red Tide")
     ),
     om_model = ifelse(
-      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_rt_2_high"),
-      "No Red Tide",
-      ifelse(
-        grepl("high", scenario),
-        "2 Years High Red Tide",
-        "2 Years Red Tide"
+      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_all_yrs"), "No Red Tide",
+      ifelse(grepl("rep", scenario), "Repeat Red Tide", 
+      "2 Years Red Tide")
       )
-    )
   ) %>%
   # Pivot the data longer
   pivot_longer(
@@ -2988,23 +2625,15 @@ mutate(
 EM_means_re %>%
 mutate(
     em_model = ifelse(
-      scenario %in% c("no_rt", "rt_2_x_no_rt", "rt_2_x_no_rt_high", "no_rt_x_all_yrs"),
-      "No Red Tide",
-      ifelse(
-        grepl("high", scenario),
-        "2 Years High Red Tide",
-        ifelse(grepl("all", scenario), "no_rt_x_all_yrs", "2 Years Red Tide")
-      )
+      scenario %in% c("no_rt", "rt_2_x_no_rt"), "No Red Tide",
+      ifelse( grepl("all_yrs", scenario), "All Years Red Tide", 
+      "2 Years Red Tide")
     ),
     om_model = ifelse(
-      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_rt_2_high"),
-      "No Red Tide",
-      ifelse(
-        grepl("high", scenario),
-        "2 Years High Red Tide",
-        "2 Years Red Tide"
+      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_all_yrs"), "No Red Tide",
+      ifelse(grepl("rep", scenario), "Repeat Red Tide", 
+      "2 Years Red Tide")
       )
-    )
   ) %>%
   # Pivot the data longer
   pivot_longer(
@@ -3029,23 +2658,15 @@ mutate(
 EM_means_re %>%
 mutate(
     em_model = ifelse(
-      scenario %in% c("no_rt", "rt_2_x_no_rt", "rt_2_x_no_rt_high", "no_rt_x_all_yrs"),
-      "No Red Tide",
-      ifelse(
-        grepl("high", scenario),
-        "2 Years High Red Tide",
-        ifelse(grepl("all", scenario), "no_rt_x_all_yrs", "2 Years Red Tide")
-      )
+      scenario %in% c("no_rt", "rt_2_x_no_rt"), "No Red Tide",
+      ifelse( grepl("all_yrs", scenario), "All Years Red Tide", 
+      "2 Years Red Tide")
     ),
     om_model = ifelse(
-      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_rt_2_high"),
-      "No Red Tide",
-      ifelse(
-        grepl("high", scenario),
-        "2 Years High Red Tide",
-        "2 Years Red Tide"
+      scenario %in% c("no_rt", "no_rt_x_rt_2", "no_rt_x_all_yrs"), "No Red Tide",
+      ifelse(grepl("rep", scenario), "Repeat Red Tide", 
+      "2 Years Red Tide")
       )
-    )
   ) %>%
   # Pivot the data longer
   pivot_longer(
@@ -3104,956 +2725,6 @@ ts_plot_variable(summary, rec_dev, run_res_path, save = TRUE)
 ```{r, echo = FALSE, warning = FALSE}
 ts_plot_variable(summary, raw_rec_dev, run_res_path, save = TRUE)
 ```
-:::
-
-## Pull data from SS runs
-
-This chunk takes a while to run and pulls the ss_output data from all iterations and all scenarios, it only saves the data that is listed, so selectivity, catage, batage, natage, and *new* CPUE indexes.  
-
-```{r, include = FALSE}
-
-library(r4ss)
-
-iter = 1
-bonus_scen <- scen_list
-
-size_sel_plots <- function(scen_list) {
-  scenario_results_list <- map(scen_list, function(scen) {
-    iteration_results_list <- map(1:10, function(iter) {
-      selectivity_run <- file.path(
-        cc_storage,
-        paste0("results", results_name),
-        scen,
-        iter,
-        paste0(OM_name, "_EM_2047")
-      )
-      if (!dir.exists(selectivity_run)) {
-        warning(paste(
-          "Directory not found:",
-          selectivity_run,
-          "- Skipping this run."
-        ))
-        return(NULL) # Return NULL if directory doesn't exist, will be handled by list_rbind
-      }
-      
-      selectivity_res <- SS_output(selectivity_run,
-                                   printstats = FALSE,
-                                   verbose = FALSE)
-      
-      
-      size_selectivity <- selectivity_res$sizeselex %>%
-        filter(Label == "2047_4_Lsel") %>%
-        pivot_longer(
-          cols = matches("^\\d+$"),
-          names_to = "length",
-          values_to = "selex"
-        ) %>%
-        mutate(scenario = scen, iteration = iter)
-      
-      age_selectivity <- selectivity_res$ageselex %>%
-        filter(Label == "2047_4_Asel2") %>%
-        pivot_longer(
-          cols = matches("^\\d+$"),
-          names_to = "age",
-          values_to = "selex"
-        ) %>%
-        mutate(scenario = scen, iteration = iter)
-      
-      natage <- selectivity_res$natage %>%
-        filter(`Beg/Mid` == "B") %>%
-        pivot_longer(
-          cols = matches("^\\d+$"),
-          names_to = "age",
-          values_to = "n"
-        ) %>%
-        mutate(scenario = scen, iteration = iter)
-            
-      batage <- selectivity_res$batage %>%
-        filter(`Beg/Mid` == "B") %>%
-        pivot_longer(
-          cols = matches("^\\d+$"),
-          names_to = "age",
-          values_to = "biomass"
-        ) %>%
-        mutate(scenario = scen, iteration = iter)
-      
-      catage <- selectivity_res$catage %>%
-        pivot_longer(
-          cols = matches("^\\d+$"),
-          names_to = "age",
-          values_to = "catch"
-        ) %>%
-        mutate(scenario = scen, iteration = iter)
-      
-      disc_selectivity <- selectivity_res$sizeselex %>%
-        filter(Label == "2047_4_Dead") %>%
-        pivot_longer(
-          cols = matches("^\\d+$"),
-          names_to = "length",
-          values_to = "selex"
-        ) %>%
-        mutate(scenario = scen, iteration = iter)
-      
-      cpue <- selectivity_res$cpue %>%
-        mutate(scenario = scen, iteration = iter)
-      
-      list(
-        lsel_df = size_selectivity,
-        asel_df = age_selectivity,
-        natage_df = natage,
-        batage_df = batage,
-        catage_df = catage, 
-        disc_df = disc_selectivity, 
-        cpue_df = cpue
-      )
-    })
-    
-    iteration_results_list <- purrr::compact(iteration_results_list)
-
-    # Combine all dfs from this scenario's iterations
-    combined_lsel_df <- map(iteration_results_list, ~ .x$lsel_df) %>%
-      list_rbind() 
-    combined_asel_df <- map(iteration_results_list, ~ .x$asel_df) %>%
-      list_rbind() 
-    combined_natage_df <- map(iteration_results_list, ~ .x$natage_df) %>%
-      list_rbind() 
-    combined_batage_df <- map(iteration_results_list, ~ .x$batage_df) %>%
-      list_rbind()
-    combined_catage_df <- map(iteration_results_list, ~ .x$catage_df) %>%
-      list_rbind()
-    combined_disc_df <- map(iteration_results_list, ~ .x$disc_df) %>%
-      list_rbind()
-    combined_cpue_df <- map(iteration_results_list, ~ .x$cpue_df) %>%
-      list_rbind()
-    # Return a list of combined data frames for this scenario
-    list(
-      lsel_scenario_df = combined_lsel_df,
-      asel_scenario_df = combined_asel_df,      
-      natage_scenario_df = combined_natage_df,
-      batage_scenario_df = combined_batage_df,
-      catage_scenario_df = combined_catage_df,
-      disc_scenario_df = combined_disc_df, 
-      cpue_scenario_df = combined_cpue_df
-    )
-  })
-  # Filter out NULL results from scenarios if any were skipped
-  scenario_results_list <- purrr::compact(scenario_results_list)
-
-  # Finally, combine all scenario data frames
-  final_lsel_data <- map(scenario_results_list, ~ .x$lsel_scenario_df) %>%
-    list_rbind()
-  final_asel_data <- map(scenario_results_list, ~ .x$asel_scenario_df) %>%
-    list_rbind()
-  final_natage_data <- map(scenario_results_list, ~ .x$natage_scenario_df) %>%
-    list_rbind()
-  final_batage_data <- map(scenario_results_list, ~ .x$batage_scenario_df) %>%
-    list_rbind()
-  final_catage_data <- map(scenario_results_list, ~ .x$catage_scenario_df) %>%
-    list_rbind()
-  final_disc_data <- map(scenario_results_list, ~ .x$disc_scenario_df) %>%
-    list_rbind()
-  final_cpue_data <- map(scenario_results_list, ~ .x$cpue_scenario_df) %>%
-    list_rbind() 
-  # Return a list containing both combined data frames
-  return(list(
-    length_selectivity_data = final_lsel_data,
-    age_selectivity_data = final_asel_data,
-    natage_data = final_natage_data,
-    batage_data = final_batage_data,
-    catage_data = final_catage_data,
-    disc_data = final_disc_data, 
-    cpue_data = final_cpue_data
-  ))
-}
-
-scen_dat <- size_sel_plots(bonus_scen)
-
-
-```
-
-```{r, include = FALSE}
-
-size_sel_plots_OM <- function(scen_list) {
-  scenario_results_list <- map(scen_list, function(scen) {
-    iteration_results_list <- map(1:10, function(iter) {
-      selectivity_run <- file.path(
-        cc_storage,
-        paste0("results", results_name),
-        scen,
-        iter,
-        paste0(OM_name, "_OM")
-      )
-      if (!dir.exists(selectivity_run)) {
-        warning(paste(
-          "Directory not found:",
-          selectivity_run,
-          "- Skipping this run."
-        ))
-        return(NULL) # Return NULL if directory doesn't exist, will be handled by list_rbind
-      }
-      
-      selectivity_res <- SS_output(selectivity_run,
-                                   printstats = FALSE,
-                                   verbose = FALSE)
-      
-      
-      size_selectivity <- selectivity_res$sizeselex %>%
-        filter(Label == "2047_4_Lsel") %>%
-        pivot_longer(
-          cols = matches("^\\d+$"),
-          names_to = "length",
-          values_to = "selex"
-        ) %>%
-        mutate(scenario = scen, iteration = iter)
-      
-      age_selectivity <- selectivity_res$ageselex %>%
-        filter(Label == "2047_4_Asel2") %>%
-        pivot_longer(
-          cols = matches("^\\d+$"),
-          names_to = "age",
-          values_to = "selex"
-        ) %>%
-        mutate(scenario = scen, iteration = iter)
-      
-      natage <- selectivity_res$natage %>%
-        filter(`Beg/Mid` == "B") %>%
-        pivot_longer(
-          cols = matches("^\\d+$"),
-          names_to = "age",
-          values_to = "n"
-        ) %>%
-        mutate(scenario = scen, iteration = iter)
-            
-      batage <- selectivity_res$batage %>%
-        filter(`Beg/Mid` == "B") %>%
-        pivot_longer(
-          cols = matches("^\\d+$"),
-          names_to = "age",
-          values_to = "biomass"
-        ) %>%
-        mutate(scenario = scen, iteration = iter)
-      
-      catage <- selectivity_res$catage %>%
-        pivot_longer(
-          cols = matches("^\\d+$"),
-          names_to = "age",
-          values_to = "catch"
-        ) %>%
-        mutate(scenario = scen, iteration = iter)
-      
-      disc_selectivity <- selectivity_res$sizeselex %>%
-        filter(Label == "2047_4_Dead") %>%
-        pivot_longer(
-          cols = matches("^\\d+$"),
-          names_to = "length",
-          values_to = "selex"
-        ) %>%
-        mutate(scenario = scen, iteration = iter)
-      
-      cpue <- selectivity_res$cpue %>%
-        mutate(scenario = scen, iteration = iter)
-      
-      list(
-        lsel_df = size_selectivity,
-        asel_df = age_selectivity,
-        natage_df = natage,
-        batage_df = batage,
-        catage_df = catage, 
-        disc_df = disc_selectivity, 
-        cpue_df = cpue
-      )
-    })
-    
-    iteration_results_list <- purrr::compact(iteration_results_list)
-
-    # Combine all dfs from this scenario's iterations
-    combined_lsel_df <- map(iteration_results_list, ~ .x$lsel_df) %>%
-      list_rbind() 
-    combined_asel_df <- map(iteration_results_list, ~ .x$asel_df) %>%
-      list_rbind() 
-    combined_natage_df <- map(iteration_results_list, ~ .x$natage_df) %>%
-      list_rbind() 
-    combined_batage_df <- map(iteration_results_list, ~ .x$batage_df) %>%
-      list_rbind()
-    combined_catage_df <- map(iteration_results_list, ~ .x$catage_df) %>%
-      list_rbind()
-    combined_disc_df <- map(iteration_results_list, ~ .x$disc_df) %>%
-      list_rbind()
-    combined_cpue_df <- map(iteration_results_list, ~ .x$cpue_df) %>%
-      list_rbind()
-    # Return a list of combined data frames for this scenario
-    list(
-      lsel_scenario_df = combined_lsel_df,
-      asel_scenario_df = combined_asel_df,      
-      natage_scenario_df = combined_natage_df,
-      batage_scenario_df = combined_batage_df,
-      catage_scenario_df = combined_catage_df,
-      disc_scenario_df = combined_disc_df, 
-      cpue_scenario_df = combined_cpue_df
-    )
-  })
-  # Filter out NULL results from scenarios if any were skipped
-  scenario_results_list <- purrr::compact(scenario_results_list)
-
-  # Finally, combine all scenario data frames
-  final_lsel_data <- map(scenario_results_list, ~ .x$lsel_scenario_df) %>%
-    list_rbind()
-  final_asel_data <- map(scenario_results_list, ~ .x$asel_scenario_df) %>%
-    list_rbind()
-  final_natage_data <- map(scenario_results_list, ~ .x$natage_scenario_df) %>%
-    list_rbind()
-  final_batage_data <- map(scenario_results_list, ~ .x$batage_scenario_df) %>%
-    list_rbind()
-  final_catage_data <- map(scenario_results_list, ~ .x$catage_scenario_df) %>%
-    list_rbind()
-  final_disc_data <- map(scenario_results_list, ~ .x$disc_scenario_df) %>%
-    list_rbind()
-  final_cpue_data <- map(scenario_results_list, ~ .x$cpue_scenario_df) %>%
-    list_rbind()
-  
-  # Return a list containing both combined data frames
-  return(list(
-    length_selectivity_data = final_lsel_data,
-    age_selectivity_data = final_asel_data,
-    natage_data = final_natage_data,
-    batage_data = final_batage_data,
-    catage_data = final_catage_data,
-    disc_data = final_disc_data, 
-    cpue_data = final_cpue_data
-  ))
-}
-
-scen_dat_OM <- size_sel_plots_OM(bonus_scen)
-
-
-```
-
-
-## Selectivity Exploration
-
-::: panel-tabset
-
-### Selectivity at length (points) with OM line
-
-```{r}
-scen_dat$length_selectivity_data %>%
-  ggplot(aes(as.numeric(length), selex)) + 
-  geom_point(aes(color = scenario, group = scenario)) +
-  geom_line(data = scen_dat_OM$length_selectivity_data, aes(as.numeric(length), selex, color = scenario, group = scenario))+
-  ggtitle("Length Selectivity - Rec Fleet")+
-  theme_bw()
-```
-
-### Selectivity at length (lines) with OM
-
-```{r}
-scen_dat$length_selectivity_data %>%
-  ggplot(aes(as.numeric(length), selex)) + 
-  stat_summary(fun = "median", geom = "line", aes(color = scenario), linewidth = 1, alpha = 3) +
-  geom_line(data = scen_dat_OM$length_selectivity_data, aes(as.numeric(length), selex,  group = scenario), color = "black", linewidth = 1, linetype = "dashed")+
-  ggtitle("Length Selectivity - Rec Fleet")+
-  facet_wrap(~scenario)+
-  theme_bw()
-  
-```
-
-### Zoomed in Selectivity at length
-
-
-```{r}
-scen_dat$length_selectivity_data <- scen_dat$length_selectivity_data %>%
-  mutate(is_highlighted = ifelse(scenario %in% c(OM_name), "Highlighted", "Other"))
-
-
-scen_dat$length_selectivity_data %>%
-  ggplot(aes(as.numeric(length), selex)) + 
-  stat_summary(fun = "median", geom = "line", aes(color = scenario), size = 1, alpha = 3) +
-  ggtitle("Length Selectivity - Rec Fleet") +
-  coord_cartesian(xlim = c(10, 25), ylim = c(0,0.4)) +
-  theme_bw()
-  
-scen_dat$length_selectivity_data %>%
-  ggplot(aes(as.numeric(length), selex)) + 
-  stat_summary(fun = "median", geom = "line", aes(color = scenario), size = 1, alpha = 3) +
-  ggtitle("Length Selectivity - Rec Fleet")+
-  coord_cartesian(xlim = c(30, 52))+
-  theme_bw()
-
-scen_dat$length_selectivity_data %>%
-  ggplot(aes(as.numeric(length), selex)) + 
-  stat_summary(fun = "median", geom = "line", aes(color = scenario), size = 1, alpha = 3) +
-  ggtitle("Length Selectivity - Rec Fleet")+
-  coord_cartesian(xlim = c(50, 65))+
-  theme_bw()
-
-```
-
-### Zoomed in Selectivity at length with highlighted line
-
-```{r}
-
-scen_dat$length_selectivity_data %>%
-  ggplot(aes(as.numeric(length), selex)) + 
-  stat_summary(fun = "median", geom = "line", aes(color = scenario, size = is_highlighted), alpha = 3) +
-  scale_size_manual(values = c("Highlighted" = 2.0, "Other" = 0.5)) +
-  ggtitle("Length Selectivity - Rec Fleet") +
-  coord_cartesian(xlim = c(10, 25)) +
-  theme_bw()
-
-scen_dat$length_selectivity_data %>%
-  ggplot(aes(as.numeric(length), selex)) + 
-  stat_summary(fun = "median", geom = "line", aes(color = scenario, size = is_highlighted), alpha = 3) +
-  scale_size_manual(values = c("Highlighted" = 2.0, "Other" = 0.5)) +  ggtitle("Length Selectivity - Rec Fleet")+
-  coord_cartesian(xlim = c(25, 60))+
-  theme_bw()
-
-scen_dat$length_selectivity_data %>%
-  ggplot(aes(as.numeric(length), selex)) + 
-  stat_summary(fun = "median", geom = "line", aes(color = scenario, size = is_highlighted), alpha = 3) +
-  scale_size_manual(values = c("Highlighted" = 2.0, "Other" = 0.5)) +  ggtitle("Length Selectivity - Rec Fleet")+
-  coord_cartesian(xlim = c(50, 65))+
-  theme_bw()
-
-
-```
-
-:::
-
-::: panel-tabset
-
-### Selectivity at age (points)
-
-```{r}
-scen_dat$age_selectivity_data %>%
-  ggplot(aes(as.numeric(age), selex)) + 
-  geom_point(aes(color = scenario, group = scenario)) +
-  ggtitle("age Selectivity - Rec Fleet")+
-  theme_bw()
-```
-
-### Selectivity at age (lines)
-
-```{r}
-scen_dat$age_selectivity_data %>%
-  ggplot(aes(as.numeric(age), selex)) + 
-  stat_summary(fun = "median", geom = "line", aes(color = scenario), size = 1, alpha = 3) +
-  ggtitle("age Selectivity - Rec Fleet")+
-  theme_bw()
-  
-```
-
-### Zoomed in Selectivity at age
-
-
-```{r}
-scen_dat$age_selectivity_data <- scen_dat$age_selectivity_data %>%
-  mutate(is_highlighted = ifelse(scenario %in% c(OM_name), "Highlighted", "Other"))
-
-
-scen_dat$age_selectivity_data %>%
-  ggplot(aes(as.numeric(age), selex)) + 
-  stat_summary(fun = "median", geom = "line", aes(color = scenario), size = 1, alpha = 3) +
-  ggtitle("age Selectivity - Rec Fleet") +
-  coord_cartesian(xlim = c(0, 5)) +
-  theme_bw()
-  
-scen_dat$age_selectivity_data %>%
-  ggplot(aes(as.numeric(age), selex)) + 
-  stat_summary(fun = "median", geom = "line", aes(color = scenario), size = 1, alpha = 3) +
-  ggtitle("age Selectivity - Rec Fleet")+
-  coord_cartesian(xlim = c(5, 10))+
-  theme_bw()
-
-scen_dat$age_selectivity_data %>%
-  ggplot(aes(as.numeric(age), selex)) + 
-  stat_summary(fun = "median", geom = "line", aes(color = scenario), size = 1, alpha = 3) +
-  ggtitle("age Selectivity - Rec Fleet")+
-  coord_cartesian(xlim = c(10, 20))+
-  theme_bw()
-
-```
-
-### Zoomed in Selectivity at age with highlighted line
-
-```{r}
-
-scen_dat$age_selectivity_data %>%
-  ggplot(aes(as.numeric(age), selex)) + 
-  stat_summary(fun = "median", geom = "line", aes(color = scenario, size = is_highlighted), alpha = 3) +
-  scale_size_manual(values = c("Highlighted" = 2.0, "Other" = 0.5)) +
-  ggtitle("age Selectivity - Rec Fleet") +
-  coord_cartesian(xlim = c(0, 5)) +
-  theme_bw()
-
-scen_dat$age_selectivity_data %>%
-  ggplot(aes(as.numeric(age), selex)) + 
-  stat_summary(fun = "median", geom = "line", aes(color = scenario, size = is_highlighted), alpha = 3) +
-  scale_size_manual(values = c("Highlighted" = 2.0, "Other" = 0.5)) +  ggtitle("age Selectivity - Rec Fleet")+
-  coord_cartesian(xlim = c(5, 10))+
-  theme_bw()
-
-scen_dat$age_selectivity_data %>%
-  ggplot(aes(as.numeric(age), selex)) + 
-  stat_summary(fun = "median", geom = "line", aes(color = scenario, size = is_highlighted), alpha = 3) +
-  scale_size_manual(values = c("Highlighted" = 2.0, "Other" = 0.5)) +  ggtitle("age Selectivity - Rec Fleet")+
-  coord_cartesian(xlim = c(10, 20))+
-  theme_bw()
-
-
-```
-
-:::
-
-## natage
-
-::: panel-tabset
-
-### N at age with OM (dashed)
-
-```{r}
-scen_dat$natage_data %>%
-  filter(Yr == 2017) %>%
-  ggplot(aes(as.numeric(age), n)) + 
-  stat_summary(fun = "median", geom = "line", aes(color = scenario), linewidth = 1, alpha = 3) +
-  stat_summary(data = scen_dat_OM$natage, fun = "median", geom = "line", aes(color = scenario), linewidth = 1, alpha = 3, linetype = "dashed") +
-  facet_wrap(~scenario) +
-  ggtitle("Median N at Age")+
-  theme_bw()
-```
-
-
-### N at age (lines) in 2017
-
-```{r}
-scen_dat$natage_data %>%
-  filter(Yr == 2017) %>%
-  ggplot(aes(as.numeric(age), n)) + 
-  stat_summary(fun = "median", geom = "line", aes(color = scenario), linewidth = 1, alpha = 3) +
-  ggtitle("Median N at Age")+
-  theme_bw()
-```
-
-### N at age (points) in 2017
-
-```{r}
-scen_dat$natage_data %>%
-  filter(Yr == 2017) %>%
-  ggplot(aes(as.numeric(age), n)) + 
-  geom_point(aes(color = scenario, group = scenario)) +
-  ggtitle("N at Age")+
-  theme_bw()
-```
-
-:::
-
-## batage
-
-::: panel-tabset
-
-
-### Biomass at age (lines) with OM in 2017
-
-```{r}
-scen_dat$batage_data %>%
-  filter(Yr == 2017) %>%
-  ggplot(aes(as.numeric(age), biomass)) + 
-  stat_summary(fun = "median", geom = "line", aes(color = scenario), linewidth = 1, alpha = 3) +
-  stat_summary(data = scen_dat_OM$batage_data, fun = "median", geom = "line",   linewidth = 1, alpha = 3, linetype = "dashed", color = "black") +
-  ggtitle("Median Biomass at Age")+
-  facet_wrap(~scenario)+
-  theme_bw()
-```
-
-### Biomass at age (lines) in 2017
-
-```{r}
-scen_dat$batage_data %>%
-  filter(Yr == 2017) %>%
-  ggplot(aes(as.numeric(age), biomass)) + 
-  stat_summary(fun = "median", geom = "line", aes(color = scenario), linewidth = 1, alpha = 3) +
-  ggtitle("Median Biomass at Age")+
-  theme_bw()
-```
-
-### Biomass at age (points) in 2017
-
-```{r}
-scen_dat$batage_data %>%
-  filter(Yr == 2017) %>%
-  ggplot(aes(as.numeric(age), biomass)) + 
-  geom_point(aes(color = scenario, group = scenario)) +
-  ggtitle("Biomass at Age")+
-  theme_bw()
-```
-
-:::
-
-## catage
-
-::: panel-tabset
-
-### Catch at age (lines) in 2017
-
-```{r}
-scen_dat$catage_data %>%
-  filter(Yr == 2017) %>%
-  ggplot(aes(as.numeric(age), catch)) + 
-  stat_summary(fun = "median", geom = "line", aes(color = scenario), linewidth = 1, alpha = 3) +
-  stat_summary(data = scen_dat_OM$catage_data, fun = "median", geom = "line",   linewidth = 1, alpha = 3, linetype = "dashed", color = "black") +
-  ggtitle("Median Catch at Age") +
-  facet_wrap(~Fleet) +
-  theme_bw()
-```
-
-### Catch at age (points) in 2017
-
-```{r}
-scen_dat$catage_data %>%
-  filter(Yr == 2017) %>%
-  ggplot(aes(as.numeric(age), catch)) + 
-  geom_point(aes(color = scenario, group = scenario)) +
-  ggtitle("Catch at Age") +
-  facet_wrap(~Fleet) +
-  theme_bw()
-```
-
-:::
-
-## CPUE
-
-```{r}
-
-index_list <- unique(scen_dat$cpue_data$Fleet_name)
-
-cpue_plot <- function(index) {
-  scen_dat$cpue_data %>%
-    filter(Fleet_name == index) %>%
-    #pivot_longer(cols = c(Obs, Exp), names_to = "type") %>%
-    ggplot(aes(Yr, Exp)) +
-    geom_line(aes(color = iteration, group = iteration)) +
-    facet_wrap(~scenario) +
-    theme_bw() + 
-    ggtitle(paste0("EM: ", index))
-}
-
-cpue_plots <- map(index_list, cpue_plot)
-
-```
-
-
-```{r}
-
-cpue_om_plot <- function(index) {
-scen_dat_OM$cpue_data %>%
-    filter(Fleet_name == index) %>%
-    #pivot_longer(cols = c(Obs, Exp), names_to = "type") %>%
-    ggplot(aes(Yr, Obs)) +
-    geom_line(aes(color = iteration, group = iteration)) +
-    facet_wrap(~scenario) +
-    theme_bw() + 
-    ggtitle(paste0("OM: ", index))
-}
-cpue_om_plots <- map(index_list, cpue_om_plot)
-
-```
-
-```{r}
-
-scen_dat$cpue_data <- scen_dat$cpue_data %>%
-  mutate(model = "EM")
-
-scen_dat_OM$cpue_data <- scen_dat_OM$cpue_data %>%
-  mutate(model = "OM")
-
-cpue_data <- rbind(scen_dat$cpue_data, scen_dat_OM$cpue_data)
-
-cpue_all_plot <- function(index) {
-cpue_data %>%
-    filter(Fleet_name == index) %>%
-    #pivot_longer(cols = c(Obs, Exp), names_to = "type") %>%
-    ggplot(aes(Yr, Exp, color = model, linetype = model)) +
-    geom_point(alpha = 0.2, color = "grey") +
-    stat_summary(fun = "median", geom = "line", linewidth = 1) +
-    facet_wrap(~scenario) +
-    theme_bw() + 
-    ggtitle(paste0(index))
-}
-cpue_all_plots <- map(index_list, cpue_all_plot)
-
-cpue_zoom_plot <- function(index) {
-cpue_data %>%
-    filter(Fleet_name == index) %>%
-    drop_na(Exp) %>%
-    #pivot_longer(cols = c(Obs, Exp), names_to = "type") %>%
-    ggplot(aes(Yr, Exp, color = model, linetype = model)) +
-    geom_vline(xintercept = c(2018, 2021), linetype = "dashed", color = "gray") +
-    geom_point(alpha = 0.2, color = "grey") +
-    stat_summary(fun = "median", geom = "line", linewidth = 1) +
-    facet_wrap(~scenario) +
-    theme_bw() + 
-    xlim(2017, 2025) + 
-    ggtitle(paste0(index, " - Rec zoomed in"))
-}
-cpue_zoom_plots <- map(index_list, cpue_zoom_plot)
-
-cpue_zoom_plot_obs <- function(index) {
-cpue_data %>%
-    filter(Fleet_name == index) %>%
-    drop_na(Obs) %>%
-    #pivot_longer(cols = c(Obs, Exp), names_to = "type") %>%
-    ggplot(aes(Yr, Obs, color = model, linetype = model)) +
-    geom_vline(xintercept = c(2018, 2021), linetype = "dashed", color = "gray") +
-    geom_point(alpha = 0.2, color = "grey") +
-    stat_summary(fun = "median", geom = "line", linewidth = 1) +
-    facet_wrap(~scenario) +
-    theme_bw() + 
-    xlim(2017, 2025) + 
-    ggtitle(paste0(index, " - Obs zoomed in"))
-}
-cpue_zoom_plots_obs <- map(index_list, cpue_zoom_plot_obs)
-```
-
-::: panel-tabset
-### commHL
-
-```{r, warning=FALSE}
-
-cpue_plots[[1]]
-cpue_om_plots[[1]]
-cpue_all_plots[[1]]
-
-```
-
-### commLL
-
-```{r, warning=FALSE}
-
-cpue_plots[[2]]
-cpue_om_plots[[2]]
-cpue_all_plots[[2]]
-
-```
-
-### Rec
-
-```{r, warning=FALSE}
-
-cpue_plots[[3]]
-cpue_om_plots[[3]]
-cpue_all_plots[[3]]
-cpue_zoom_plots[[3]]
-cpue_zoom_plots_obs[[3]]
-
-```
-
-### SEAMAP_vid
-
-```{r, warning=FALSE}
-
-cpue_plots[[4]]
-cpue_om_plots[[4]]
-cpue_all_plots[[4]]
-cpue_zoom_plots[[4]]
-cpue_zoom_plots_obs[[4]]
-
-```
-
-### SEAMAP_GF
-
-```{r, warning=FALSE}
-
-cpue_plots[[5]]
-cpue_om_plots[[5]]
-cpue_all_plots[[5]]
-cpue_zoom_plots[[5]]
-cpue_zoom_plots_obs[[5]]
-
-```
-
-### NMFS_BLL
-
-```{r, warning=FALSE}
-
-cpue_plots[[6]]
-cpue_om_plots[[6]]
-cpue_all_plots[[6]]
-cpue_zoom_plots[[6]]
-cpue_zoom_plots_obs[[6]]
-
-```
-
-### CBT_PRSurv
-
-```{r, warning=FALSE}
-
-cpue_plots[[7]]
-cpue_om_plots[[7]]
-cpue_all_plots[[7]]
-cpue_zoom_plots[[7]]
-cpue_zoom_plots_obs[[7]]
-
-```
-
-### FWRI_RTD
-
-```{r, warning=FALSE}
-
-cpue_plots[[8]]
-cpue_om_plots[[8]]
-cpue_all_plots[[8]]
-cpue_zoom_plots[[8]]
-cpue_zoom_plots_obs[[8]]
-
-```
-
-:::
-
-## Selectivity Exploration Disc
-
-::: panel-tabset
-
-### Selectivity at length (points)
-
-```{r}
-scen_dat$disc_data %>%
-  ggplot(aes(as.numeric(length), selex)) + 
-  geom_point(aes(color = scenario, group = scenario)) +
-  ggtitle("Length Selectivity - Dead Rec Fleet")+
-  theme_bw()
-```
-
-### Selectivity at length (lines)
-
-```{r}
-scen_dat$disc_data %>%
-  ggplot(aes(as.numeric(length), selex)) + 
-  stat_summary(fun = "median", geom = "line", aes(color = scenario), linewidth = 1, alpha = 3) +
-  ggtitle("Length Selectivity - Dead Rec Fleet")+
-  theme_bw()
-  
-```
-
-### Zoomed in Selectivity at length
-
-
-```{r}
-scen_dat$disc_data <- scen_dat$disc_data %>%
-  mutate(is_highlighted = ifelse(scenario %in% c(OM_name), "Highlighted", "Other"))
-
-
-scen_dat$disc_data %>%
-  ggplot(aes(as.numeric(length), selex)) + 
-  stat_summary(fun = "median", geom = "line", aes(color = scenario), size = 1, alpha = 3) +
-  ggtitle("Length Selectivity - Dead Rec Fleet") +
-  coord_cartesian(xlim = c(10, 25), ylim = c(0,0.4)) +
-  theme_bw()
-  
-scen_dat$disc_data %>%
-  ggplot(aes(as.numeric(length), selex)) + 
-  stat_summary(fun = "median", geom = "line", aes(color = scenario), size = 1, alpha = 3) +
-  ggtitle("Length Selectivity - Dead Rec Fleet")+
-  coord_cartesian(xlim = c(30, 52))+
-  theme_bw()
-
-scen_dat$disc_data %>%
-  ggplot(aes(as.numeric(length), selex)) + 
-  stat_summary(fun = "median", geom = "line", aes(color = scenario), size = 1, alpha = 3) +
-  ggtitle("Length Selectivity - Dead Rec Fleet")+
-  coord_cartesian(xlim = c(50, 65))+
-  theme_bw()
-
-```
-
-### Zoomed in Selectivity at length with highlighted line
-
-```{r}
-
-scen_dat$disc_data %>%
-  ggplot(aes(as.numeric(length), selex)) + 
-  stat_summary(fun = "median", geom = "line", aes(color = scenario, size = is_highlighted), alpha = 3) +
-  scale_size_manual(values = c("Highlighted" = 2.0, "Other" = 0.5)) +
-  ggtitle("Length Selectivity - Dead Rec Fleet") +
-  coord_cartesian(xlim = c(10, 25)) +
-  theme_bw()
-
-scen_dat$disc_data %>%
-  ggplot(aes(as.numeric(length), selex)) + 
-  stat_summary(fun = "median", geom = "line", aes(color = scenario, size = is_highlighted), alpha = 3) +
-  scale_size_manual(values = c("Highlighted" = 2.0, "Other" = 0.5)) +  ggtitle("Length Selectivity - Dead Rec Fleet")+
-  coord_cartesian(xlim = c(25, 60))+
-  theme_bw()
-
-scen_dat$disc_data %>%
-  ggplot(aes(as.numeric(length), selex)) + 
-  stat_summary(fun = "median", geom = "line", aes(color = scenario, size = is_highlighted), alpha = 3) +
-  scale_size_manual(values = c("Highlighted" = 2.0, "Other" = 0.5)) +  ggtitle("Length Selectivity - Dead Rec Fleet")+
-  coord_cartesian(xlim = c(50, 65))+
-  theme_bw()
-
-
-```
-
-:::
-
-## Retention Exploration
-
-::: panel-tabset
-### Retention one iteration
-
-```{r}
-Mylogistic <- function(x,sl,inf,asym)  asym/(1+exp(-(1/sl)*(x-inf)))
-
-retain <- summary$scalar %>%
-  select(scenario, model_run, iteration, contains("Retain_L")) %>%
-  pivot_longer(
-    cols = starts_with("Retain_L_"),
-    names_to = c(".value", "fleet"),
-    names_pattern = "Retain_L_(asymptote_logit|infl|width)_(.*)"
-  ) %>%
-  rename(
-    asym = asymptote_logit,
-    sl = width
-  ) 
-
-plot_data <- expand_grid(
-  nesting(retain), 
-  x = seq(0, 100, 1)
-) %>%
-  mutate(
-    y = Mylogistic(x, sl, infl, asym)
-  )
-
-plot_data %>%
-  filter(str_detect(model_run, "2065|OM"), iteration == 1, !str_detect(fleet, "BLK"),) %>%
-  ggplot(aes(x = x, y = y, group = interaction(model_run, iteration, fleet))) +
-  geom_line(aes(color = fleet, linetype = model_run), linewidth = 1) +
-  facet_wrap(~scenario) +
-  labs(
-    title = "Logistic Retention Curves by Fleet (iter = 1)",
-    x = "Length",
-    y = "Retention Probability"
-  ) +
-  theme_bw()
-
-```
-
-### Retention median
-
-```{r}
-  
-plot_data %>%
-  filter(str_detect(model_run, "2065|OM"), !str_detect(fleet, "BLK"),) %>%
-  ggplot(aes(x = x, y = y)) +
-  stat_summary(fun = "median", geom = "line", aes(color = fleet, linetype = model_run), linewidth =1 ) +
-  facet_wrap(~scenario) +
-  labs(
-    title = "Logistic Retention Curves by Fleet (median, 10 iter)",
-    x = "Length",
-    y = "Retention Probability"
-  ) +
-  theme_bw()
-```
-
 :::
 
 
@@ -4965,7 +3636,6 @@ I think something is off about the EM:OM ratio in the previous plots so I'm goin
 
 ### Misc. TS Variables
 
-
 ```{r}
 
 ratio_df %>%
@@ -5022,9 +3692,7 @@ ratio_df %>%
 
 ```
 
-
 ### TS F
-
 
 ```{r}
 
@@ -5172,8 +3840,6 @@ plot_variable_ts(variable = "F_5", stat_type = "median")
 
 ```
 
-### Tabset of Quarterly Sales Tables 
-
 ::: {.panel-tabset}
 
 ```{r, results='asis'}
@@ -5274,8 +3940,6 @@ plot_variable_dq(variable = "Value.F", stat_type = "median"),
 plot_variable_dq(variable = "Value.Bratio", stat_type = "median")
 )
 ```
-
-### Tabset of Quarterly Sales Tables 
 
 ::: {.panel-tabset}
 
@@ -5720,12 +4384,12 @@ abs_error %>%
 
 ```
 
-
 ### More Variables Absolute Error
 
 ::: panel-tabset
 
 #### 2047
+
 ```{r}
 
 abs_error <- EM_runs %>%
@@ -5773,8 +4437,8 @@ abs_error %>%
 
 ```
 
-
 #### 2047 zoomed in
+
 ```{r}
 
 abs_error <- EM_runs %>%
@@ -5819,6 +4483,191 @@ abs_error %>%
   #coord_cartesian(ylim = c(0,3)) +
   coord_cartesian(xlim = c(2017, 2025)) +
   labs(color = "EM", fill = "EM", x = "Year", y = "Absolute Error")
+
+```
+
+:::
+
+
+### Residual Plots
+
+::: panel-tabset
+
+#### 2047
+```{r}
+
+residual_runs <- EM_runs %>%
+  filter(
+    str_detect(model_run, "_EM_2047")) %>%
+  rowwise()%>%
+  mutate(commercial = sum(retainB_1, retainB_2), recreational = retainB_4) %>%
+  left_join(OM_runs, by = c("year", "scenario", "iteration"), suffix = c("_em", "_om")) %>%
+  group_by(scenario, iteration, year) %>%
+  mutate(
+    res_Recruit_0 = Recruit_0_em-Recruit_0_om,
+    res_F_5 = F_5_em-F_5_om,
+    res_SpawnBio = SpawnBio_em-SpawnBio_om,
+    com_om = sum(retainB_1_om, retainB_2_om),
+    res_com = commercial-com_om,
+    res_rec = recreational-retainB_4_om,
+    res_dead_5 = deadB_5_em-deadB_5_om,
+    res_abundance = Bio_smry_em-Bio_smry_om
+  )
+
+residual_runs %>%
+  # Pivot the data longer
+  pivot_longer(
+    cols = c(res_com, res_rec, res_dead_5),
+    names_to = "variable",
+    values_to = "value",
+    names_transform = list(
+      variable = ~recode(
+        .x,
+        "res_com" = "Commercial Catch",
+        "res_rec" = "Recreational Catch",
+        "res_dead_5" = "Red Tide Dead"
+      )
+  )) %>%
+  ggplot(aes(year, value)) +
+  geom_vline(xintercept = c(2005, 2014, 2018, 2021), linetype = "dashed", color = "gray") +
+  geom_vline(xintercept = c(2016), color = "gray")+ # should this be the first predicted year?
+  stat_summary(fun = mean, geom = "line") +
+  stat_summary(fun.data = mean_cl_normal, geom = "ribbon", alpha = 0.3) +
+  facet_grid(variable~scenario, scales = "free") +
+  theme_bw()+ 
+  #coord_cartesian(ylim = c(0,3)) +
+  #coord_cartesian(xlim = c(2017, 2025)) +
+  labs(color = "EM", fill = "EM", x = "Year", y = "Residuals")
+
+```
+
+##### Long Term Residual Sums (1980-2050)
+
+```{r}
+residual_runs %>% 
+  filter(scenario %in% scen_list[1:4]) %>%
+  group_by(scenario) %>%
+  reframe(sum_res_com = sum(res_com), sum_res_rec = sum(res_rec), sum_res_dead_5 = sum(res_dead_5)) %>%
+  kable(
+    # Rename columns directly within kable
+    col.names = c("Scenario", "Commercial Catch Residual Sum", "Recreational Catch Residual Sum", "Red  Tide Discards Residual Sum"),
+    align = c("l", "c", "c", "c"), # Align columns (left, center, center, center)
+    digits = 0
+  ) %>%
+  kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed"), # Add bootstrap styling
+    full_width = FALSE # Don't stretch table to full page width
+  )
+```
+
+##### Short Term Residual Sums (2017-2027)
+
+```{r}
+residual_runs %>% 
+  filter(scenario %in% scen_list[1:4], year %in% seq(2017, 2027, 1)) %>%
+  group_by(scenario) %>%
+  reframe(sum_res_com = sum(res_com), sum_res_rec = sum(res_rec), sum_res_dead_5 = sum(res_dead_5)) %>%
+  kable(
+    # Rename columns directly within kable
+    col.names = c("Scenario", "Commercial Catch Residual Sum", "Recreational Catch Residual Sum", "Red  Tide Discards Residual Sum"),
+    align = c("l", "c", "c", "c"), # Align columns (left, center, center, center)
+    digits = 0
+  ) %>%
+  kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed"), # Add bootstrap styling
+    full_width = FALSE # Don't stretch table to full page width
+  )
+
+#what year is the mean positive, when does it become negative again?  
+
+```
+
+#### 2026
+
+```{r}
+residual_runs <- EM_runs %>%
+  filter(
+    str_detect(model_run, "_EM_2026")) %>%
+  rowwise()%>%
+  mutate(commercial = sum(retainB_1, retainB_2), recreational = retainB_4) %>%
+  left_join(OM_runs, by = c("year", "scenario", "iteration"), suffix = c("_em", "_om")) %>%
+  group_by(scenario, iteration, year) %>%
+  mutate(
+    res_Recruit_0 = Recruit_0_em-Recruit_0_om,
+    res_F_5 = F_5_em-F_5_om,
+    res_SpawnBio = SpawnBio_em-SpawnBio_om,
+    com_om = sum(retainB_1_om, retainB_2_om),
+    res_com = commercial-com_om,
+    res_rec = recreational-retainB_4_om,
+    res_dead_5 = deadB_5_em-deadB_5_om,
+    res_abundance = Bio_smry_em-Bio_smry_om
+  )
+
+residual_runs %>%
+  # Pivot the data longer
+  pivot_longer(
+    cols = c(res_com, res_rec, res_dead_5),
+    names_to = "variable",
+    values_to = "value",
+    names_transform = list(
+      variable = ~recode(
+        .x,
+        "res_com" = "Commercial Catch",
+        "res_rec" = "Recreational Catch",
+        "res_dead_5" = "Red Tide Dead"
+      )
+  )) %>%
+  #filter(scenario %in% scen_list[1:4]) %>%
+  ggplot(aes(year, value)) +
+  geom_vline(xintercept = c(2005, 2014, 2018, 2021), linetype = "dashed", color = "gray") +
+  geom_vline(xintercept = c(2016), color = "gray")+ # should this be the first predicted year?
+  stat_summary(fun = mean, geom = "line") +
+  stat_summary(fun.data = mean_cl_normal, geom = "ribbon", alpha = 0.3) +
+  facet_grid(variable~scenario, scales = "free") +
+  theme_bw()+ 
+  #coord_cartesian(ylim = c(0,3)) +
+  #coord_cartesian(xlim = c(2017, 2025)) +
+  labs(color = "EM", fill = "EM", x = "Year", y = "Residuals")
+```
+
+##### Long Term Residual Sums (1980-2026)
+
+```{r}
+residual_runs %>% 
+  filter(scenario %in% scen_list[1:4]) %>%
+  group_by(scenario) %>%
+  reframe(sum_res_com = sum(res_com), sum_res_rec = sum(res_rec), sum_res_dead_5 = sum(res_dead_5)) %>%
+  kable(
+    # Rename columns directly within kable
+    col.names = c("Scenario", "Commercial Catch Residual Sum", "Recreational Catch Residual Sum", "Red  Tide Discards Residual Sum"),
+    align = c("l", "c", "c", "c"), # Align columns (left, center, center, center)
+    digits = 0
+  ) %>%
+  kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed"), # Add bootstrap styling
+    full_width = FALSE # Don't stretch table to full page width
+  )
+```
+
+##### Short Term Residual Sums (2017-2027)
+
+```{r}
+residual_runs %>% 
+  filter(scenario %in% scen_list[1:4], year %in% seq(2017, 2027, 1)) %>%
+  group_by(scenario) %>%
+  reframe(sum_res_com = sum(res_com), sum_res_rec = sum(res_rec), sum_res_dead_5 = sum(res_dead_5)) %>%
+  kable(
+    # Rename columns directly within kable
+    col.names = c("Scenario", "Commercial Catch Residual Sum", "Recreational Catch Residual Sum", "Red  Tide Discards Residual Sum"),
+    align = c("l", "c", "c", "c"), # Align columns (left, center, center, center)
+    digits = 0
+  ) %>%
+  kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed"), # Add bootstrap styling
+    full_width = FALSE # Don't stretch table to full page width
+  )
+
+#what year is the mean positive, when does it become negative again?  
 
 ```
 
