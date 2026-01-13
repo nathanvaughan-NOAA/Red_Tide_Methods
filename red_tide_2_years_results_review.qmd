@@ -9,21 +9,6 @@ execute:
   echo: false
 ---
 
-## Comparing Future Red Tide Scenarios
-
-For this test run, I took the SEDAR Red Grouper stock assessment and used SSMSE to introduce future red tide events in the OM and EM. There were 8 total scenarios:
-
-1.  No red tide X no red tide: the base stock assessment with red tide events in 2005 and 2014.\
-2.  No red tide X 2 red tide: red tide in 2018 and 2021 in the EM.\
-3.  2 red tide X no red tide: red tide in 2018 and 2021 in the OM, but not in the EM.\
-4.  2 red tide X 2 red tide: red tide in 2018 and 2021 in the OM and EM, EM estimated.\
-5.  2 red tide X 2 red tide fixed: red tide in 2018 and 2021 in the OM and EM, EM fixed.\
-6.  No red tide X all years red tide: no red tide in OM, all years red tide in EM.\
-7.  2 red tide X all years red tide: red tide in 2018 and 2021 in OM, all years red tide in EM.\
-8.  red tide every 3 years X all years red tide: red tide every 3 years in OM starting in 2018, all years red tide in EM.
-
-Import the results and summary files from the cloud.
-
 ```{r, include = FALSE}
 library(tidyverse)
 library("nmfspalette")
@@ -99,6 +84,21 @@ scen_list <- c("no_rt", "no_rt_x_rt_2", "rt_2_x_no_rt", "rt_2_x_rt_2", "rt_2_x_r
                                  "rep_3_x_all_yrs")
 
 ```
+
+## Comparing Future Red Tide Scenarios
+
+These outputs are generated from the results_`{r} results_name` file. I took the SEDAR Red Grouper stock assessment and used SSMSE to introduce future red tide events in the OM and EM. There were 8 total scenarios:
+
+1.  No red tide X no red tide: the base stock assessment with red tide events in 2005 and 2014.\
+2.  No red tide X 2 red tide: red tide in 2018 and 2021 in the EM.\
+3.  2 red tide X no red tide: red tide in 2018 and 2021 in the OM, but not in the EM.\
+4.  2 red tide X 2 red tide: red tide in 2018 and 2021 in the OM and EM, EM estimated.\
+5.  2 red tide X 2 red tide fixed: red tide in 2018 and 2021 in the OM and EM, EM fixed.\
+6.  No red tide X all years red tide: no red tide in OM, all years red tide in EM.\
+7.  2 red tide X all years red tide: red tide in 2018 and 2021 in OM, all years red tide in EM.\
+8.  red tide every 3 years X all years red tide: red tide every 3 years in OM starting in 2018, all years red tide in EM.
+
+Import the results and summary files from the cloud.
 
 # Raw Data
 
@@ -203,7 +203,7 @@ F_5_summary <- summary$ts %>%
 
 ```
 
-Table 1. A summary of the Operating Model fleet 5 fishing mortality. These statistics only include values where F_5 > 0.   
+Table 1. A summary of the Operating Model fleet 5 fishing mortality. These statistics only include values where F_5 > 0 and years > 2017.   
 
 ```{r, echo = FALSE, warning = FALSE}
 F_5_summary %>%
@@ -221,7 +221,7 @@ F_5_summary %>%
 ```
 
 
-Table 2. A summary of the Estimated Model fleet 5 fishing mortality. These statistics only include values where F_5 > 0.   
+Table 2. A summary of the Estimated Model fleet 5 fishing mortality. These statistics only include values where F_5 > 0 and years > 2017.   
 
 ```{r, echo = FALSE, warning = FALSE}
 F_5_summary %>%
@@ -418,6 +418,8 @@ Figure 9. The total fishing mortality over time by scenario.  The default scenar
 :::
 
 # Ratio Time Series
+
+WARNING: EM:OM ratios do not work will with zeros in some fishing mortalities.  If the EM and OM are both zero, the ratio is forced to 1.  However, when the OM or EM is zero the result is either zero or na which has resulted in misleading F_5 plots.  We recommend the F.Value from dq plots to discuss overall changes in F across all fleets.  
 
 ## Fishing mortalities
 
@@ -663,124 +665,7 @@ for (q in 1:length(f_ts_plots)) {
 
 Figure 11. Red tide mortality ratio (EM:OM) over time by scenario.  The line indicates the median and the ribbon is the 25-75% quartiles.  Red tide mortality is consistently underestimated, it is more underestimated in future years where there is less data.  
 
-## F
-
-All the F's added together from the previous plots.  
-
-```{r}
-
-ratio_df <- 
-  left_join(EM_runs, OM_runs,
-                      by = c("year", "scenario", "iteration"),
-                      suffix = c("_em", "_om")) %>%
-  mutate(F_om = F_1_om + F_2_om + F_3_om + F_4_om + F_5_om, 
-         F_em = F_1_em + F_2_em + F_3_em + F_4_em + F_5_em) %>%
-  mutate(across(
-    .cols = where(is.numeric) & ends_with("_om"),
-    .fns = ~ {
-      # Get the name of the corresponding '_em' column
-      em_col_name <- str_replace(cur_column(), "_om", "_em")
-      # Get the value from the '_em' column for the current row
-      em_value <- get(em_col_name)
-      # Get the value from the current '_om' column (represented by .x)
-      om_value <- .x
-
-      # Conditional logic:
-      # If both '_em' and '_om' values are 0, set the ratio to 1.
-      # Otherwise, perform the division.
-      if_else(em_value == 0 & om_value == 0, 1, em_value / om_value)
-    },
-    .names = "{str_remove(.col, '_om')}_ratio"
-  )) %>%
-  select(year, scenario, iteration, model_run = model_run_em, ends_with("_ratio"))
-
-plot_f_ts <- function(scen) {
-  
-  fleet_ratios <- ratio_df %>%
-    filter(
-      # only looking at the projection
-      year >= 2017,
-      # one scenario at a time
-      scenario == scen,
-      # exclude init
-      !str_detect(model_run, "init")
-    ) %>% 
-    mutate(
-      end_year = as.numeric(str_extract(model_run, "\\d{4}$"))+3,
-      years_until_terminal = end_year - year
-    )
-  
-  rt_summary <- fleet_ratios %>%
-    # Group by year to calculate stats for each year
-    group_by(year) %>%
-    # Calculate the median and the 25th/75th percentiles for the ribbon
-    reframe(
-      median_ratio = median(F_ratio, na.rm = TRUE),
-      lower_quartile = quantile(F_ratio, 0.25, na.rm = TRUE),
-      upper_quartile = quantile(F_ratio, 0.75, na.rm = TRUE)
-    )
-  
-  
-  rt_terminal_ratio <- fleet_ratios %>%
-    ggplot() +
-    geom_point(aes(y = F_ratio, year),
-               color = "grey",
-               alpha = 0.5) + # Individual points
-    # Add the error ribbon using the summary data
-    geom_ribbon(
-      data = rt_summary,
-      aes(year, ymin = lower_quartile, ymax = upper_quartile),
-      fill = "lightblue",
-      alpha = 0.7
-    ) +
-    # Add the median line using the summary data
-    geom_line(
-      data = rt_summary,
-      aes(y = median_ratio, year),
-      linewidth = 1,
-      color = "black"
-    ) +
-    geom_hline(yintercept = 1, linetype = "dashed") +
-    theme(axis.text.x = element_text(
-      angle = 90,
-      vjust = 0.5,
-      hjust = 1
-    )) +
-    ggtitle(scen) +
-    ylab("Ratio of F (EM:OM)") + xlab("Years") +
-    theme_bw()
-  
-  rt_terminal_ratio
-  
-}
-
-f_ts_plots <- map(scen_list, plot_f_ts)
-
-```
-
-::: {.panel-tabset}
-
-```{r, results='asis'}
-
-# Loop through the list and print each figure
-for (q in 1:length(f_ts_plots)) {
-  # 1. Print the tab name (required for this method)
-  cat('###', f_ts_plots[[q]]$labels$title, '\n\n') 
-  
-  # 2. Print the table content using kable
-  print(f_ts_plots[[q]])
-  
-  # Add a separator to ensure Quarto recognizes distinct outputs
-  cat('\n\n') 
-}
-
-```
-
-:::
-
-Figure 11B. Overall mortality ratio (EM:OM) over time by scenario.  The line indicates the median and the ribbon is the 25-75% quartiles.  Red tide mortality is consistently underestimated, it is more underestimated in future years where there is less data. 
-
-## Version #2 using the F.Value from dqs
+## F.Value from dqs
 
 ```{r}
 
