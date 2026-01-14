@@ -1673,47 +1673,30 @@ If the RE is NA (T = 0), the RE = 0.  This introduces issues in the _all year sc
 
 ```{r}
 
-OM_means <- summary$ts %>%
-  filter(year >= 2017, model_run == paste0(OM_name, "_OM")) %>%
-  select(year, Recruit_0, F_5, SpawnBio, iteration, retainB_1, retainB_2, retainB_4, deadB_5, F_1, F_2, F_4) %>%
-  rowwise()%>%
-  mutate(commercial = sum(retainB_1, retainB_2), recreational = retainB_4, com_f = sum(F_1, F_2), rec_f = F_4) %>%
-  group_by(year) %>%
-  reframe(OM_Recruit_0 = mean(Recruit_0), OM_F_5 = mean(F_5), OM_SpawnBio = mean(SpawnBio), OM_com = mean(commercial), OM_rec = mean(recreational), OM_dead_5 = mean(deadB_5), OM_com_f = mean(com_f), OM_rec_f = mean(rec_f))
+ratio_df_re <- left_join(EM_runs, OM_runs,
+                      by = c("year", "scenario", "iteration"),
+                      suffix = c("_em", "_om")) %>%
+  mutate(across(
+    .cols = where(is.numeric) & ends_with("_om"),
+    .fns = ~ {
+      # Get the name of the corresponding '_em' column
+      em_col_name <- str_replace(cur_column(), "_om", "_em")
+      # Get the value from the '_em' column for the current row
+      em_value <- get(em_col_name)
+      # Get the value from the current '_om' column (represented by .x)
+      om_value <- .x
 
-EM_means <- summary$ts %>%
-  filter(
-    year >= 2017,
-    str_detect(model_run, "_EM"),!str_detect(model_run, "init")
-  ) %>%
-  left_join(OM_means, by = c("year")) %>%
-  rowwise()%>%
-  mutate(commercial = sum(retainB_1, retainB_2), recreational = retainB_4, com_f = sum(F_1, F_2), rec_f = F_4) %>%
-  group_by(scenario) %>%
-  mutate(
-    re_Recruit_0 = ifelse(
-      is.na((Recruit_0 - OM_Recruit_0) / OM_Recruit_0),
-      0,
-      (Recruit_0 - OM_Recruit_0) / OM_Recruit_0
-    ),
-    #this put zeros back in.
-    re_F_5 = ifelse(is.na((F_5 - OM_F_5) / OM_F_5), 0, (F_5 - OM_F_5) /
-                      OM_F_5),
-    re_SpawnBio = ifelse(is.na((SpawnBio - OM_SpawnBio) / OM_SpawnBio), 0, (SpawnBio - OM_SpawnBio) /
-                      OM_SpawnBio),
-        re_com = ifelse(is.na((commercial - OM_com) / OM_com), 0, (commercial - OM_com) /
-                      OM_com),
-        re_rec = ifelse(is.na((recreational - OM_rec) / OM_rec), 0, (recreational - OM_rec) /
-                      OM_rec),
-        re_dead_5 = ifelse(is.na((deadB_5 - OM_dead_5) / OM_dead_5), 0, (deadB_5 - OM_dead_5) /
-                      OM_dead_5),
-        re_com_f = ifelse(is.na((com_f - OM_com_f) / OM_com_f), 0, (com_f - OM_com_f) /
-                      OM_com_f),
-        re_rec_f = ifelse(is.na((rec_f - OM_rec_f) / OM_rec_f), 0, (rec_f - OM_rec_f) /
-                      OM_rec_f),
-    end_year = as.numeric(str_extract(model_run, "\\d{4}$"))+3,
-    years_until_terminal = end_year - year
-  )
+      # Conditional logic:
+      # If both '_em' and '_om' values are 0, set the ratio to 1.
+      # Otherwise, perform the division.
+      if_else(em_value == 0 & om_value == 0, 1, (em_value-om_value) / om_value)
+    },
+    .names = "{str_remove(.col, '_om')}_re"
+  )) %>%
+  select(year, scenario, iteration, model_run = model_run_em, ends_with("_re"))
+
+EM_means <- ratio_df_re %>%
+  filter(year >= 2017)
 
 
 ```
@@ -1722,7 +1705,7 @@ EM_means <- summary$ts %>%
 ### Recruitment
 
 ```{r}
-recruit <- EM_means %>% ggplot(aes(re_Recruit_0, scenario)) +
+recruit <- EM_means %>% ggplot(aes(Recruit_0_re, scenario)) +
   geom_boxplot() +
   geom_vline(xintercept = 0)+
   theme_bw() + 
@@ -1734,7 +1717,7 @@ recruit
 
 ```{r}
 spawn <- EM_means %>% 
-  ggplot(aes(re_SpawnBio, scenario)) +
+  ggplot(aes(SpawnBio_re, scenario)) +
   geom_boxplot() +
   geom_vline(xintercept = 0) +
   theme_bw()+ 
@@ -1747,7 +1730,8 @@ spawn
 ```{r}
 
 f_com<-EM_means %>% 
-  ggplot(aes(re_com_f, scenario)) +
+  mutate(f_com_re = F_1_re+F_2_re) %>%
+  ggplot(aes(f_com_re, scenario)) +
   geom_boxplot() +
   geom_vline(xintercept = 0) +
   theme_bw()+ 
@@ -1759,7 +1743,7 @@ f_com
 
 ```{r}
 f_rec <- EM_means %>% 
-  ggplot(aes(re_rec_f, scenario)) +
+  ggplot(aes(F_4_re, scenario)) +
   geom_boxplot() +
   geom_vline(xintercept = 0) +
   theme_bw()+ 
@@ -1769,21 +1753,13 @@ f_rec
 
 ### F_5
 
-```{r}
-f5 <- EM_means %>% 
-  filter(F_5 > 0) %>%
-  ggplot(aes(re_F_5, scenario)) +
-  geom_boxplot() +
-  geom_vline(xintercept = 0) +
-  theme_bw()+ 
-  ggtitle("Red Tide Mortality (F_5)") + xlab("Relative error")
-f5
-```
+Cannot be produced because there are zeros in the OM and EM.  
 
 ### Com Catch
 
 ```{r}
 com_c <- EM_means %>% 
+  mutate(re_com = retainB_1_re+retainB_2_re) %>%
   ggplot(aes(re_com, scenario)) +
   geom_boxplot() +
   geom_vline(xintercept = 0) +
@@ -1797,7 +1773,7 @@ com_c
 ```{r}
 
 rec_c <- EM_means %>% 
-  ggplot(aes(re_rec, scenario)) +
+  ggplot(aes(retainB_4_re, scenario)) +
   geom_boxplot() +
   geom_vline(xintercept = 0) +
   theme_bw()+ 
@@ -1807,17 +1783,8 @@ rec_c
 
 ### Red Tide Discards
 
-```{r, warning = FALSE}
+Cannot be calculated because of zeros in the EM and OM.  
 
-rt_c <-EM_means %>% 
-  filter(F_5 > 0) %>%
-  ggplot(aes(re_dead_5, scenario)) +
-  geom_boxplot() +
-  geom_vline(xintercept = 0) +
-  theme_bw()+ 
-  ggtitle("Red Tide Discards (Biomass)") + xlab("Relative error")
-rt_c
-```
 :::
 
 
@@ -1832,17 +1799,13 @@ recruit <- recruit +
   theme(axis.text.y = element_blank()) 
 f_rec <- f_rec +
   theme(axis.text.y = element_blank()) + ggtitle("Rec F")
-f5 <- f5 +
-  theme(axis.text.y = element_blank()) + ggtitle("F_5")
 rec_c <- rec_c +
   theme(axis.text.y = element_blank()) + ggtitle("Rec catch")
-rt_c <- rt_c +
-  theme(axis.text.y = element_blank()) + ggtitle("RT catch")
 spawn <- spawn 
 f_com <- f_com  + ggtitle("Com F")
 com_c <- com_c  + ggtitle("Com catch")
 
-(spawn + recruit) / (f_com + f_rec + f5) / (com_c + rec_c + rt_c)
+(spawn + recruit) / (f_com + f_rec) / (com_c + rec_c)
 
 ```
 
@@ -1852,24 +1815,20 @@ Figure 22. Relative error plots of each variable of interest on the same patchwo
 
 ```{r, warning = FALSE, message =FALSE}
 recruit <- recruit +
-  theme(axis.text.y = element_blank()) + xlim(-2,5)
+  theme(axis.text.y = element_blank()) + xlim(-1,1)
 f_rec <- f_rec +
-  theme(axis.text.y = element_blank()) + xlim(-2,5)+ ggtitle("Rec F")
-f5 <- f5 +
-  theme(axis.text.y = element_blank()) + xlim(-2,5)+ ggtitle("F_5")
+  theme(axis.text.y = element_blank()) + xlim(-1,1)+ ggtitle("Rec F")
 rec_c <- rec_c +
-  theme(axis.text.y = element_blank()) + xlim(-2,5)+ ggtitle("Rec catch")
-rt_c <- rt_c +
-  theme(axis.text.y = element_blank()) + xlim(-2,5)+ ggtitle("RT catch")
-spawn <- spawn + xlim(-2,5)
-f_com <- f_com + xlim(-2,5) + ggtitle("Com F")
-com_c <- com_c + xlim(-2,5) + ggtitle("Com catch")
+  theme(axis.text.y = element_blank()) + xlim(-1,1)+ ggtitle("Rec catch")
+spawn <- spawn + xlim(-1,1)
+f_com <- f_com + xlim(-1,1) + ggtitle("Com F")
+com_c <- com_c + xlim(-1,1) + ggtitle("Com catch")
 
-(spawn + recruit) / (f_com + f_rec + f5) / (com_c + rec_c + rt_c)
+(spawn + recruit) / (f_com + f_rec) / (com_c + rec_c)
 
 ```
 
-Figure 23. Relative error plots of each variable of interest with fixed x-limits between -2 and 5.  
+Figure 23. Relative error plots of each variable of interest with fixed x-limits between -1 and 1.  
 
 :::
 
