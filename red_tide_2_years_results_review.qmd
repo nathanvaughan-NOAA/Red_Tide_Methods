@@ -1832,44 +1832,6 @@ Figure 23. Relative error plots of each variable of interest with fixed x-limits
 
 :::
 
-## Red Tide Magnitudes and Frequencies
-
-The sums and counts of each red tide treatment to see which are comparable.  
-
-```{r}
-
-#calculate the "magnitude" of red tides
-
-red_tide_magnitudes <- summary$ts %>% 
-  filter(year >= 2017, 
-         str_detect(model_run, "_EM"),
-         !str_detect(model_run, "init")) %>%
-  group_by(scenario) %>%
-  reframe(F_5_sum = sum(F_5), 
-          catch_sum = sum(deadB_5))
-
-red_tide_years <- summary$ts %>% 
-  filter(year >= 2017, 
-         F_5 > 0,
-         model_run == paste0(OM_name, "_OM"), 
-         iteration == 1) %>% 
-  group_by(scenario) %>%
-  reframe(n_years = n_distinct(year)) %>%
-  ungroup() %>%
-  right_join(red_tide_magnitudes, join_by(scenario))
-
-red_tide_years %>%
-  kable(
-    align = c("l", "c", "c", "c") # Align columns (left, center, center, center)
-  ) %>%
-  kable_styling(
-    bootstrap_options = c("striped", "hover", "condensed"), # Add bootstrap styling
-    full_width = FALSE # Don't stretch table to full page width
-  )
-```
-
-Table 3. The magnitudes and frequencies of each scenario with the summarized catch to demonstrate scale differences.  
-
 ## MAPE
 
 Mean Average Percentage Error
