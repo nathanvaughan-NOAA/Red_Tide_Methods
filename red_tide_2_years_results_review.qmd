@@ -1672,9 +1672,9 @@ Figure 18. Recruitment ratio (EM:OM) over time by scenario.  The line indicates 
 
 Figure 19. SSB ratio (EM:OM) over the years from the terminal year by scenario.  The line indicates the mean and the ribbon is the 25-75% quartiles.  SSB is underestimated when red tide is introduced, with higher variability in the terminal year of the default model.  
 
-# Management
+# Management Terms
 
-## Term Plots
+## Line Plots
 
 ```{r}
 
@@ -1772,7 +1772,7 @@ for (q in 1:length(all_term_plots)) {
 
 Figure 20. Term plots are meant to be a "short term" (2000-2030) and "long term" (1989-2067) look at a few key parameters from the time series dataset.  These plots demonstrate that red tide events correspond with SPR Ratio spikes, and can slowly decrease retained biomass or spawning biomass in the short term.  In the long term, there are no trends.  
 
-## Management Term Plots
+## Point Plots
 
 ```{r}
 
@@ -1871,6 +1871,309 @@ for (q in 1:length(all_term_plots)) {
 :::
 
 Figure 21. Management Term plots are meant to be a "short term" (2000-2027) and "long term" (1989-2067) look at a few key parameters from the time series dataset.  These plots demonstrate that red tide events correspond with SPR Ratio spikes, and can slowly decrease retained biomass or spawning biomass in the short term.  In the long term, there are no trends.  I tried to add median trend lines for the OM and EM but they aren't very clear because of how the lines are colored.  
+
+# Residual Error Plots
+
+Residuals = EM - OM
+
+This calculation does not have issues with zeros and estimates the error introduced to each variable by the different scenarios.  
+
+::: panel-tabset
+
+### 2047 DeadB
+
+::: panel-tabset
+
+#### All
+
+```{r}
+
+residual_runs <- EM_runs %>%
+  filter(
+    str_detect(model_run, "_EM_2047")) %>%
+  rowwise()%>%
+  mutate(commercial = sum(deadB_1, deadB_2), recreational = deadB_4) %>%
+  left_join(OM_runs, by = c("year", "scenario", "iteration"), suffix = c("_em", "_om")) %>%
+  group_by(scenario, iteration, year) %>%
+  mutate(
+    res_Recruit_0 = Recruit_0_em-Recruit_0_om,
+    res_F_5 = F_5_em-F_5_om,
+    res_SpawnBio = SpawnBio_em-SpawnBio_om,
+    com_om = sum(deadB_1_om, deadB_2_om),
+    res_com = commercial-com_om,
+    res_rec = recreational-deadB_4_om,
+    res_dead_5 = deadB_5_em-deadB_5_om,
+    res_abundance = Bio_smry_em-Bio_smry_om
+  )
+
+residual_runs %>%
+  # Pivot the data longer
+  pivot_longer(
+    cols = c(res_com, res_rec, res_dead_5),
+    names_to = "variable",
+    values_to = "value",
+    names_transform = list(
+      variable = ~recode(
+        .x,
+        "res_com" = "Commercial Catch",
+        "res_rec" = "Recreational Catch",
+        "res_dead_5" = "Red Tide Dead"
+      )
+  )) %>%
+  ggplot(aes(year, value)) +
+  geom_vline(xintercept = c(2005, 2014, 2018, 2021), linetype = "dashed", color = "gray") +
+  geom_vline(xintercept = c(2016), color = "gray")+ # should this be the first predicted year?
+  stat_summary(fun = mean, geom = "line") +
+  stat_summary(fun.data = mean_cl_normal, geom = "ribbon", alpha = 0.3) +
+  facet_grid(variable~scenario, scales = "free") +
+  theme_bw()+ 
+  #coord_cartesian(ylim = c(0,3)) +
+  #coord_cartesian(xlim = c(2017, 2025)) +
+  labs(color = "EM", fill = "EM", x = "Year", y = "Residuals")
+
+```
+
+#### Scenarios 1-4
+
+``` {r}
+
+residual_runs %>%
+  # Pivot the data longer
+  pivot_longer(
+    cols = c(res_com, res_rec, res_dead_5),
+    names_to = "variable",
+    values_to = "value",
+    names_transform = list(
+      variable = ~recode(
+        .x,
+        "res_com" = "Commercial Catch",
+        "res_rec" = "Recreational Catch",
+        "res_dead_5" = "Red Tide Dead"
+      )
+  )) %>%
+  filter(scenario %in% scen_list[1:4]) %>%
+  ggplot(aes(year, value)) +
+  geom_vline(xintercept = c(2005, 2014, 2018, 2021), linetype = "dashed", color = "gray") +
+  geom_vline(xintercept = c(2016), color = "gray")+ # should this be the first predicted year?
+  stat_summary(fun = mean, geom = "line") +
+  stat_summary(fun.data = mean_cl_normal, geom = "ribbon", alpha = 0.3) +
+  facet_grid(variable~scenario, scales = "free") +
+  theme_bw()+ 
+  #coord_cartesian(ylim = c(0,3)) +
+  #coord_cartesian(xlim = c(2017, 2025)) +
+  labs(color = "EM", fill = "EM", x = "Year", y = "Residuals")
+```
+
+#### Scenarios 6-8
+
+```{r}
+residual_runs %>%
+  # Pivot the data longer
+  pivot_longer(
+    cols = c(res_com, res_rec, res_dead_5),
+    names_to = "variable",
+    values_to = "value",
+    names_transform = list(
+      variable = ~recode(
+        .x,
+        "res_com" = "Commercial Catch",
+        "res_rec" = "Recreational Catch",
+        "res_dead_5" = "Red Tide Dead"
+      )
+  )) %>%
+  filter(scenario %in% scen_list[6:8]) %>%
+  ggplot(aes(year, value)) +
+  geom_vline(xintercept = c(2005, 2014, 2018, 2021), linetype = "dashed", color = "gray") +
+  geom_vline(xintercept = c(2016), color = "gray")+ # should this be the first predicted year?
+  stat_summary(fun = mean, geom = "line") +
+  stat_summary(fun.data = mean_cl_normal, geom = "ribbon", alpha = 0.3) +
+  facet_grid(variable~scenario, scales = "free") +
+  theme_bw()+ 
+  #coord_cartesian(ylim = c(0,3)) +
+  #coord_cartesian(xlim = c(2017, 2025)) +
+  labs(color = "EM", fill = "EM", x = "Year", y = "Residuals")
+
+
+```
+
+:::
+
+#### Long Term Residual Sums (1980-2050)
+
+```{r}
+residual_runs %>% 
+  group_by(scenario) %>%
+  reframe(sum_res_com = sum(res_com)/10, sum_res_rec = sum(res_rec)/10, sum_res_dead_5 = sum(res_dead_5)/10) %>%
+  kable(
+    # Rename columns directly within kable
+    col.names = c("Scenario", "Commercial Catch Residual Sum", "Recreational Catch Residual Sum", "Red  Tide Discards Residual Sum"),
+    align = c("l", "c", "c", "c"), # Align columns (left, center, center, center)
+    digits = 0
+  ) %>%
+  kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed"), # Add bootstrap styling
+    full_width = FALSE # Don't stretch table to full page width
+  )
+```
+
+#### Short Term Residual Sums (2017-2022)
+
+```{r}
+residual_runs %>% 
+  filter(year %in% seq(2017, 2022, 1)) %>%
+  group_by(scenario) %>%
+  reframe(sum_res_com = sum(res_com)/10, sum_res_rec = sum(res_rec)/10, sum_res_dead_5 = sum(res_dead_5)/10) %>%
+  kable(
+    # Rename columns directly within kable
+    col.names = c("Scenario", "Commercial Catch Residual Sum", "Recreational Catch Residual Sum", "Red  Tide Discards Residual Sum"),
+    align = c("l", "c", "c", "c"), # Align columns (left, center, center, center)
+    digits = 0
+  ) %>%
+  kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed"), # Add bootstrap styling
+    full_width = FALSE # Don't stretch table to full page width
+  )
+
+#what year is the mean positive, when does it become negative again?  
+
+```
+
+#### Short Term Residual Proportions (2017-2022)
+
+```{r}
+
+residual_runs_prop <- EM_runs %>%
+  filter(
+    str_detect(model_run, "_EM_2047")) %>%
+  rowwise()%>%
+  mutate(commercial = sum(deadB_1, deadB_2), recreational = deadB_4) %>%
+  left_join(OM_runs, by = c("year", "scenario", "iteration"), suffix = c("_em", "_om")) %>%
+  group_by(scenario, iteration, year) %>%
+  mutate(
+    res_Recruit_0 = Recruit_0_em-Recruit_0_om,
+    res_F_5 = F_5_em-F_5_om,
+    res_SpawnBio = SpawnBio_em-SpawnBio_om,
+    com_om = sum(deadB_1_om, deadB_2_om),
+    res_com = commercial-com_om,
+    res_rec = recreational-deadB_4_om,
+    res_dead_5 = deadB_5_em-deadB_5_om,
+    res_abundance = Bio_smry_em-Bio_smry_om
+  )
+
+residual_runs_prop %>% 
+  filter(year %in% seq(2017, 2022, 1)) %>%
+  group_by(scenario) %>%
+  reframe(
+    prop_com = (sum(res_com) / sum(com_om))*100,
+    prop_rec = (sum(res_rec) / sum(deadB_4_om))*100,
+    prop_red = (sum(res_dead_5) /  sum(deadB_5_om))*100,
+    raw_total = (sum(res_com)/10+sum(res_rec)/10+sum(res_dead_5)/10),
+    raw_prop = (sum(res_com)+sum(res_rec)+sum(res_dead_5)) /  (sum(com_om)+sum(deadB_4_om) + sum(deadB_5_om)) *100
+  ) %>% 
+  kable(
+    # Rename columns directly within kable
+    col.names = c("Scenario", "Commercial Catch Residual Sum (MT)", "Recreational Catch Residual Sum (MT)", "Red Tide Discards Residual Sum (MT)", "Total Removals Residual Sum (MT)", "Proportion of Residuals to Total (%)"),
+    align = c("l", "c", "c", "c", "c", "c"), # Align columns (left, center, center, center)
+    digits = 2
+  ) %>%
+  kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed"), # Add bootstrap styling
+    full_width = FALSE # Don't stretch table to full page width
+  )
+```
+
+### 2026
+
+```{r}
+residual_runs <- EM_runs %>%
+  filter(
+    str_detect(model_run, "_EM_2026")) %>%
+  rowwise()%>%
+  mutate(commercial = sum(deadB_1, deadB_2), recreational = deadB_4) %>%
+  left_join(OM_runs, by = c("year", "scenario", "iteration"), suffix = c("_em", "_om")) %>%
+  group_by(scenario, iteration, year) %>%
+  mutate(
+    res_Recruit_0 = Recruit_0_em-Recruit_0_om,
+    res_F_5 = F_5_em-F_5_om,
+    res_SpawnBio = SpawnBio_em-SpawnBio_om,
+    com_om = sum(deadB_1_om, deadB_2_om),
+    res_com = commercial-com_om,
+    res_rec = recreational-deadB_4_om,
+    res_dead_5 = deadB_5_em-deadB_5_om,
+    res_abundance = Bio_smry_em-Bio_smry_om
+  )
+
+residual_runs %>%
+  # Pivot the data longer
+  pivot_longer(
+    cols = c(res_com, res_rec, res_dead_5),
+    names_to = "variable",
+    values_to = "value",
+    names_transform = list(
+      variable = ~recode(
+        .x,
+        "res_com" = "Commercial Catch",
+        "res_rec" = "Recreational Catch",
+        "res_dead_5" = "Red Tide Dead"
+      )
+  )) %>%
+  #filter(scenario %in% scen_list[1:4]) %>%
+  ggplot(aes(year, value)) +
+  geom_vline(xintercept = c(2005, 2014, 2018, 2021), linetype = "dashed", color = "gray") +
+  geom_vline(xintercept = c(2016), color = "gray")+ # should this be the first predicted year?
+  stat_summary(fun = mean, geom = "line") +
+  stat_summary(fun.data = mean_cl_normal, geom = "ribbon", alpha = 0.3) +
+  facet_grid(variable~scenario, scales = "free") +
+  theme_bw()+ 
+  #coord_cartesian(ylim = c(0,3)) +
+  #coord_cartesian(xlim = c(2017, 2025)) +
+  labs(color = "EM", fill = "EM", x = "Year", y = "Residuals")
+```
+
+#### Long Term Residual Sums (1980-2026)
+
+```{r}
+residual_runs %>% 
+  filter(scenario %in% scen_list[1:4]) %>%
+  group_by(scenario) %>%
+  reframe(sum_res_com = sum(res_com), sum_res_rec = sum(res_rec), sum_res_dead_5 = sum(res_dead_5)) %>%
+  kable(
+    # Rename columns directly within kable
+    col.names = c("Scenario", "Commercial Catch Residual Sum", "Recreational Catch Residual Sum", "Red  Tide Discards Residual Sum"),
+    align = c("l", "c", "c", "c"), # Align columns (left, center, center, center)
+    digits = 0
+  ) %>%
+  kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed"), # Add bootstrap styling
+    full_width = FALSE # Don't stretch table to full page width
+  )
+```
+
+#### Short Term Residual Sums (2017-2022)
+
+```{r}
+residual_runs %>% 
+  filter(year %in% seq(2017, 2022, 1)) %>%
+  group_by(scenario) %>%
+  reframe(sum_res_com = sum(res_com)/10, sum_res_rec = sum(res_rec)/10, sum_res_dead_5 = sum(res_dead_5)/10) %>%
+  kable(
+    # Rename columns directly within kable
+    col.names = c("Scenario", "Commercial Catch Residual Sum", "Recreational Catch Residual Sum", "Red  Tide Discards Residual Sum"),
+    align = c("l", "c", "c", "c"), # Align columns (left, center, center, center)
+    digits = 0
+  ) %>%
+  kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed"), # Add bootstrap styling
+    full_width = FALSE # Don't stretch table to full page width
+  )
+
+#what year is the mean positive, when does it become negative again?  
+
+```
+
+:::
+
+# Other Error Plots
 
 ## Relative Error Plots
 
@@ -2947,80 +3250,7 @@ EM_runs %>%
 
 :::
 
-## New content 
-
-### Threshold Table
-
-My goal with these tables is to test setting a "threshold" of accepted deviation from the mean.  In this case, I chose 10%, so a model_run or scenario is flagged when the EM is within 10% of the OM value.  This could help when arguing for a "best" model and the threshold and variable could be changed depending on our goals.  
-
-```{r}
-
-# OM_lines should work well for this because it's the mean/median for each variable by year and scenario.  
-
-# We then want to see if the EM_runs value is within 10% of the OM_lines value in the scenario and year combo.  
-
-threshold_table <- EM_runs %>%
-  left_join(OM_lines, join_by(year, scenario)) %>%
-  mutate(
-    # 1. Calculate the 10% tolerance band based on OM_value
-    lower_bound = F_5_mean * 0.90,
-    upper_bound = F_5_mean * 1.10,
-    
-    # 2. Evaluate the condition
-    is_within_10_percent = (F_5 >= lower_bound) & (F_5 <= upper_bound),
-    
-    # Optional: Calculate the actual percentage difference (for reporting)
-    percent_diff = (F_5 - F_5_mean) / F_5_mean * 100
-  ) %>%
-  # Select key columns for easy viewing
-  select(model_run, year, scenario, F_5_mean, F_5, is_within_10_percent, percent_diff)
-  
-threshold_table %>%
-  group_by(scenario, year) %>%
-  filter(model_run == "default_sigmaR_EM_2047") %>%
-  count(is_within_10_percent) %>%
-  rename(count = n) %>%
-  ungroup() %>%
-  group_by(scenario, is_within_10_percent) %>%
-  summarise(scenario_sum = sum(count)) %>%
-  kable(
-    # Rename columns directly within kable
-    align = c("l", "c", "c", "c") # Align columns (left, center, center, center)
-  ) %>%
-  kable_styling(
-    bootstrap_options = c("striped", "hover", "condensed"), # Add bootstrap styling
-    full_width = FALSE # Don't stretch table to full page width
-  )
-
-threshold_table %>% 
-  filter(year %in% c(2018, 2021), model_run == "default_sigmaR_EM_2047") %>%
-  group_by(scenario, year) %>%
-  count(is_within_10_percent) %>%
-  rename(count = n) %>%
-  ungroup() %>%
-  group_by(year, scenario, is_within_10_percent) %>%
-  summarise(scenario_sum = sum(count))%>%
-  pivot_wider(
-    names_from = is_within_10_percent,  
-    values_from = scenario_sum,          
-    names_prefix = "is_within_"          # Optional: Adds a prefix to the new column names
-  ) %>%
-  # Optional: Rename the columns to match your desired 'TRUE' and 'FALSE' format
-  rename(
-    'Is within 10%' = is_within_TRUE,
-    'Is outside 10%' = is_within_FALSE
-  ) %>%
-  kable(
-    # Rename columns directly within kable
-    align = c("l", "c", "c", "c") # Align columns (left, center, center, center)
-  ) %>%
-  kable_styling(
-    bootstrap_options = c("striped", "hover", "condensed"), # Add bootstrap styling
-    full_width = FALSE # Don't stretch table to full page width
-  )
-```
-
-### Absolute Error Test
+## Absolute Error Plots
 
 AE = abs(EM - OM)
 
@@ -3028,7 +3258,7 @@ This is a unidirectional error.  So we ended up preferring Residual Sums.  But I
 
 ::: panel-tabset
 
-#### 2047
+### 2047
 ```{r}
 
 abs_error <- EM_runs %>%
@@ -3076,7 +3306,7 @@ abs_error %>%
 
 ```
 
-#### 2026
+### 2026
 
 ```{r}
 
@@ -3125,7 +3355,7 @@ abs_error %>%
 
 ```
 
-#### 2047 zoomed (2017-2025)
+### 2047 zoomed (2017-2025)
 ```{r}
 
 abs_error <- EM_runs %>%
@@ -3173,13 +3403,7 @@ abs_error %>%
 
 ```
 
-:::
-
-### More Variables Absolute Error
-
-::: panel-tabset
-
-#### 2047
+### 2047 More Variables
 
 ```{r}
 
@@ -3228,7 +3452,7 @@ abs_error %>%
 
 ```
 
-#### 2047 zoomed in
+### 2047 More variables, zoomed in
 
 ```{r}
 
@@ -3274,191 +3498,6 @@ abs_error %>%
   #coord_cartesian(ylim = c(0,3)) +
   coord_cartesian(xlim = c(2017, 2025)) +
   labs(color = "EM", fill = "EM", x = "Year", y = "Absolute Error")
-
-```
-
-:::
-
-
-### Residual Plots
-
-::: panel-tabset
-
-#### 2047
-```{r}
-
-residual_runs <- EM_runs %>%
-  filter(
-    str_detect(model_run, "_EM_2047")) %>%
-  rowwise()%>%
-  mutate(commercial = sum(retainB_1, retainB_2), recreational = retainB_4) %>%
-  left_join(OM_runs, by = c("year", "scenario", "iteration"), suffix = c("_em", "_om")) %>%
-  group_by(scenario, iteration, year) %>%
-  mutate(
-    res_Recruit_0 = Recruit_0_em-Recruit_0_om,
-    res_F_5 = F_5_em-F_5_om,
-    res_SpawnBio = SpawnBio_em-SpawnBio_om,
-    com_om = sum(retainB_1_om, retainB_2_om),
-    res_com = commercial-com_om,
-    res_rec = recreational-retainB_4_om,
-    res_dead_5 = deadB_5_em-deadB_5_om,
-    res_abundance = Bio_smry_em-Bio_smry_om
-  )
-
-residual_runs %>%
-  # Pivot the data longer
-  pivot_longer(
-    cols = c(res_com, res_rec, res_dead_5),
-    names_to = "variable",
-    values_to = "value",
-    names_transform = list(
-      variable = ~recode(
-        .x,
-        "res_com" = "Commercial Catch",
-        "res_rec" = "Recreational Catch",
-        "res_dead_5" = "Red Tide Dead"
-      )
-  )) %>%
-  ggplot(aes(year, value)) +
-  geom_vline(xintercept = c(2005, 2014, 2018, 2021), linetype = "dashed", color = "gray") +
-  geom_vline(xintercept = c(2016), color = "gray")+ # should this be the first predicted year?
-  stat_summary(fun = mean, geom = "line") +
-  stat_summary(fun.data = mean_cl_normal, geom = "ribbon", alpha = 0.3) +
-  facet_grid(variable~scenario, scales = "free") +
-  theme_bw()+ 
-  #coord_cartesian(ylim = c(0,3)) +
-  #coord_cartesian(xlim = c(2017, 2025)) +
-  labs(color = "EM", fill = "EM", x = "Year", y = "Residuals")
-
-```
-
-##### Long Term Residual Sums (1980-2050)
-
-```{r}
-residual_runs %>% 
-  filter(scenario %in% scen_list[1:4]) %>%
-  group_by(scenario) %>%
-  reframe(sum_res_com = sum(res_com), sum_res_rec = sum(res_rec), sum_res_dead_5 = sum(res_dead_5)) %>%
-  kable(
-    # Rename columns directly within kable
-    col.names = c("Scenario", "Commercial Catch Residual Sum", "Recreational Catch Residual Sum", "Red  Tide Discards Residual Sum"),
-    align = c("l", "c", "c", "c"), # Align columns (left, center, center, center)
-    digits = 0
-  ) %>%
-  kable_styling(
-    bootstrap_options = c("striped", "hover", "condensed"), # Add bootstrap styling
-    full_width = FALSE # Don't stretch table to full page width
-  )
-```
-
-##### Short Term Residual Sums (2017-2027)
-
-```{r}
-residual_runs %>% 
-  filter(scenario %in% scen_list[1:4], year %in% seq(2017, 2027, 1)) %>%
-  group_by(scenario) %>%
-  reframe(sum_res_com = sum(res_com), sum_res_rec = sum(res_rec), sum_res_dead_5 = sum(res_dead_5)) %>%
-  kable(
-    # Rename columns directly within kable
-    col.names = c("Scenario", "Commercial Catch Residual Sum", "Recreational Catch Residual Sum", "Red  Tide Discards Residual Sum"),
-    align = c("l", "c", "c", "c"), # Align columns (left, center, center, center)
-    digits = 0
-  ) %>%
-  kable_styling(
-    bootstrap_options = c("striped", "hover", "condensed"), # Add bootstrap styling
-    full_width = FALSE # Don't stretch table to full page width
-  )
-
-#what year is the mean positive, when does it become negative again?  
-
-```
-
-#### 2026
-
-```{r}
-residual_runs <- EM_runs %>%
-  filter(
-    str_detect(model_run, "_EM_2026")) %>%
-  rowwise()%>%
-  mutate(commercial = sum(retainB_1, retainB_2), recreational = retainB_4) %>%
-  left_join(OM_runs, by = c("year", "scenario", "iteration"), suffix = c("_em", "_om")) %>%
-  group_by(scenario, iteration, year) %>%
-  mutate(
-    res_Recruit_0 = Recruit_0_em-Recruit_0_om,
-    res_F_5 = F_5_em-F_5_om,
-    res_SpawnBio = SpawnBio_em-SpawnBio_om,
-    com_om = sum(retainB_1_om, retainB_2_om),
-    res_com = commercial-com_om,
-    res_rec = recreational-retainB_4_om,
-    res_dead_5 = deadB_5_em-deadB_5_om,
-    res_abundance = Bio_smry_em-Bio_smry_om
-  )
-
-residual_runs %>%
-  # Pivot the data longer
-  pivot_longer(
-    cols = c(res_com, res_rec, res_dead_5),
-    names_to = "variable",
-    values_to = "value",
-    names_transform = list(
-      variable = ~recode(
-        .x,
-        "res_com" = "Commercial Catch",
-        "res_rec" = "Recreational Catch",
-        "res_dead_5" = "Red Tide Dead"
-      )
-  )) %>%
-  #filter(scenario %in% scen_list[1:4]) %>%
-  ggplot(aes(year, value)) +
-  geom_vline(xintercept = c(2005, 2014, 2018, 2021), linetype = "dashed", color = "gray") +
-  geom_vline(xintercept = c(2016), color = "gray")+ # should this be the first predicted year?
-  stat_summary(fun = mean, geom = "line") +
-  stat_summary(fun.data = mean_cl_normal, geom = "ribbon", alpha = 0.3) +
-  facet_grid(variable~scenario, scales = "free") +
-  theme_bw()+ 
-  #coord_cartesian(ylim = c(0,3)) +
-  #coord_cartesian(xlim = c(2017, 2025)) +
-  labs(color = "EM", fill = "EM", x = "Year", y = "Residuals")
-```
-
-##### Long Term Residual Sums (1980-2026)
-
-```{r}
-residual_runs %>% 
-  filter(scenario %in% scen_list[1:4]) %>%
-  group_by(scenario) %>%
-  reframe(sum_res_com = sum(res_com), sum_res_rec = sum(res_rec), sum_res_dead_5 = sum(res_dead_5)) %>%
-  kable(
-    # Rename columns directly within kable
-    col.names = c("Scenario", "Commercial Catch Residual Sum", "Recreational Catch Residual Sum", "Red  Tide Discards Residual Sum"),
-    align = c("l", "c", "c", "c"), # Align columns (left, center, center, center)
-    digits = 0
-  ) %>%
-  kable_styling(
-    bootstrap_options = c("striped", "hover", "condensed"), # Add bootstrap styling
-    full_width = FALSE # Don't stretch table to full page width
-  )
-```
-
-##### Short Term Residual Sums (2017-2027)
-
-```{r}
-residual_runs %>% 
-  filter(scenario %in% scen_list[1:4], year %in% seq(2017, 2027, 1)) %>%
-  group_by(scenario) %>%
-  reframe(sum_res_com = sum(res_com), sum_res_rec = sum(res_rec), sum_res_dead_5 = sum(res_dead_5)) %>%
-  kable(
-    # Rename columns directly within kable
-    col.names = c("Scenario", "Commercial Catch Residual Sum", "Recreational Catch Residual Sum", "Red  Tide Discards Residual Sum"),
-    align = c("l", "c", "c", "c"), # Align columns (left, center, center, center)
-    digits = 0
-  ) %>%
-  kable_styling(
-    bootstrap_options = c("striped", "hover", "condensed"), # Add bootstrap styling
-    full_width = FALSE # Don't stretch table to full page width
-  )
-
-#what year is the mean positive, when does it become negative again?  
 
 ```
 
