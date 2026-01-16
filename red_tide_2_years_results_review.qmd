@@ -3169,14 +3169,14 @@ ratio_df %>%
 # # maybe a boxplot with the OM value across all years and EM values across all years will show how much they match up (or not)
 # 
 # summary$ts %>%
-#   filter(model_run %in% c("default_sigmaR_OM", "default_sigmaR_EM_2047")) %>%
+#   filter(model_run %in% c(paste0(OM_name, "_OM"), paste0(OM_name, "_EM_2047"))) %>%
 #   ggplot(aes(factor(year), F_5)) + 
 #   geom_boxplot(aes(color = model_run)) + 
 #   facet_wrap(~scenario)
 
 # maybe these plots would look nice if I only do 2005, 2014, 2018, 2021 as a demonstration of how well it captures just those 4 years with red tide.  
 summary$ts %>%
-  filter(model_run %in% c("default_sigmaR_OM", "default_sigmaR_EM_2047"), year %in% c(2005, 2014, 2018, 2021)) %>%
+  filter(model_run %in% c(paste0(OM_name, "_OM"), paste0(OM_name, "_EM_2047")), year %in% c(2005, 2014, 2018, 2021)) %>%
   ggplot(aes(factor(year), F_5)) + 
   geom_boxplot(aes(color = model_run)) + 
   facet_wrap(~scenario) +
@@ -3187,7 +3187,7 @@ summary$ts %>%
 
 ```{r}
 summary$ts %>%
-  filter(model_run %in% c("default_sigmaR_OM", "default_sigmaR_EM_2023"), year %in% c(2005, 2014, 2018, 2021)) %>%
+  filter(model_run %in% c(paste0(OM_name, "_OM"), "default_sigmaR_EM_2023"), year %in% c(2005, 2014, 2018, 2021)) %>%
   ggplot(aes(factor(year), F_5)) + 
   geom_boxplot(aes(color = model_run)) + 
   facet_wrap(~scenario) +
@@ -3199,7 +3199,7 @@ summary$ts %>%
 
 ```{r}
 summary$ts %>%
-  filter(model_run %in% c("default_sigmaR_OM", "default_sigmaR_EM_2047"), year %in% c(2005, 2014, 2018, 2021)) %>%
+  filter(model_run %in% c(paste0(OM_name, "_OM"), paste0(OM_name, "_EM_2047")), year %in% c(2005, 2014, 2018, 2021)) %>%
   group_by(year, model_run, scenario) %>%
   reframe(F_5_mean = mean(F_5), F_5_median = median(F_5), F_5_sd = sd(F_5)) %>%
   select(model_run, year, scenario, F_5_mean) %>%
@@ -3209,8 +3209,8 @@ summary$ts %>%
   ) %>%
   # Optional: Rename the columns to match your desired 'TRUE' and 'FALSE' format
   rename(
-    'EM_2047' = default_sigmaR_EM_2047,
-    'OM' = default_sigmaR_OM
+    'EM_2047' = paste0(OM_name, "_EM_2047"),
+    'OM' = paste0(OM_name, "_OM")
   ) %>%
   mutate(Residual = EM_2047 - OM) %>%
   kable(
