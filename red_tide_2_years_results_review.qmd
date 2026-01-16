@@ -2855,11 +2855,99 @@ ratio_df %>%
 
 ```
 
+## Red Tide Year Comparisons
+
+::: panel-tabset
+
+### 2047 Boxplot of F_5
+
+```{r}
+
+# # maybe a boxplot with the OM value across all years and EM values across all years will show how much they match up (or not)
+# 
+# summary$ts %>%
+#   filter(model_run %in% c("default_sigmaR_OM", "default_sigmaR_EM_2047")) %>%
+#   ggplot(aes(factor(year), F_5)) + 
+#   geom_boxplot(aes(color = model_run)) + 
+#   facet_wrap(~scenario)
+
+# maybe these plots would look nice if I only do 2005, 2014, 2018, 2021 as a demonstration of how well it captures just those 4 years with red tide.  
+summary$ts %>%
+  filter(model_run %in% c("default_sigmaR_OM", "default_sigmaR_EM_2047"), year %in% c(2005, 2014, 2018, 2021)) %>%
+  ggplot(aes(factor(year), F_5)) + 
+  geom_boxplot(aes(color = model_run)) + 
+  facet_wrap(~scenario) +
+  ggtitle("model_run = 2047")
+```
+
+### 2023 Boxplot of F_5
+
+```{r}
+summary$ts %>%
+  filter(model_run %in% c("default_sigmaR_OM", "default_sigmaR_EM_2023"), year %in% c(2005, 2014, 2018, 2021)) %>%
+  ggplot(aes(factor(year), F_5)) + 
+  geom_boxplot(aes(color = model_run)) + 
+  facet_wrap(~scenario) +
+  ggtitle("model_run = 2023")
+
+```
+
+### Table of Mean F_5 by red tide year and scenario
+
+```{r}
+summary$ts %>%
+  filter(model_run %in% c("default_sigmaR_OM", "default_sigmaR_EM_2047"), year %in% c(2005, 2014, 2018, 2021)) %>%
+  group_by(year, model_run, scenario) %>%
+  reframe(F_5_mean = mean(F_5), F_5_median = median(F_5), F_5_sd = sd(F_5)) %>%
+  select(model_run, year, scenario, F_5_mean) %>%
+  pivot_wider(
+    names_from = model_run,  
+    values_from = F_5_mean         # Optional: Adds a prefix to the new column names
+  ) %>%
+  # Optional: Rename the columns to match your desired 'TRUE' and 'FALSE' format
+  rename(
+    'EM_2047' = default_sigmaR_EM_2047,
+    'OM' = default_sigmaR_OM
+  ) %>%
+  mutate(Residual = EM_2047 - OM) %>%
+  kable(
+    # Rename columns directly within kable
+    align = c("l", "c", "c", "c", "c"), # Align columns (left, center, center, center)
+    digits = 3
+  ) %>%
+  kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed"), # Add bootstrap styling
+    full_width = FALSE # Don't stretch table to full page width
+  )
+  
+```
+
+### Histogram of red tide years (and 2024)
+
+The OM mean is the solid line, the EM mean is the dashed line.  
+
+```{r}
+
+# what if I did a histogram, with the OM as the line, and the EM as the bars, to see how the EM distribution compares to the OM.  
+
+OM_lines_subset <- OM_lines %>% 
+  filter(year %in% c(2005, 2014, 2018, 2021, 2024))
+EM_lines_subset <- EM_lines %>% 
+  filter(year %in% c(2005, 2014, 2018, 2021, 2024))
+
+EM_runs %>%
+  filter(year %in% c(2005, 2014, 2018, 2021, 2024)) %>%
+  ggplot(aes(F_5)) +
+  geom_histogram(bins = 10) + 
+  geom_vline(data = OM_lines_subset, aes(xintercept = F_5_mean)) +
+  geom_vline(data = EM_lines_subset, aes(xintercept = F_5_mean), linetype = "dashed") +
+  facet_grid(scenario~year) + ggtitle("Histograms of F_5 from EM")
+
+```
+
+:::
+
 ## New content 
-
-
-
-
 
 ### Threshold Table
 
@@ -2932,83 +3020,11 @@ threshold_table %>%
   )
 ```
 
-### Boxplot Tests
-
-```{r}
-
-# maybe a boxplot with the OM value across all years and EM values across all years will show how much they match up (or not)
-
-summary$ts %>%
-  filter(model_run %in% c("default_sigmaR_OM", "default_sigmaR_EM_2047")) %>%
-  ggplot(aes(factor(year), F_5)) + 
-  geom_boxplot(aes(color = model_run)) + 
-  facet_wrap(~scenario)
-
-# maybe these plots would look nice if I only do 2005, 2014, 2018, 2021 as a demonstration of how well it captures just those 4 years with red tide.  
-summary$ts %>%
-  filter(model_run %in% c("default_sigmaR_OM", "default_sigmaR_EM_2047"), year %in% c(2005, 2014, 2018, 2021)) %>%
-  ggplot(aes(factor(year), F_5)) + 
-  geom_boxplot(aes(color = model_run)) + 
-  facet_wrap(~scenario) +
-  ggtitle("model_run = 2047")
-
-summary$ts %>%
-  filter(model_run %in% c("default_sigmaR_OM", "default_sigmaR_EM_2023"), year %in% c(2005, 2014, 2018, 2021)) %>%
-  ggplot(aes(factor(year), F_5)) + 
-  geom_boxplot(aes(color = model_run)) + 
-  facet_wrap(~scenario) +
-  ggtitle("model_run = 2023")
-  
-summary$ts %>%
-  filter(model_run %in% c("default_sigmaR_OM", "default_sigmaR_EM_2047"), year %in% c(2005, 2014, 2018, 2021)) %>%
-  group_by(year, model_run, scenario) %>%
-  reframe(F_5_mean = mean(F_5), F_5_median = median(F_5), F_5_sd = sd(F_5)) %>%
-  select(model_run, year, scenario, F_5_mean) %>%
-  pivot_wider(
-    names_from = model_run,  
-    values_from = F_5_mean         # Optional: Adds a prefix to the new column names
-  ) %>%
-  # Optional: Rename the columns to match your desired 'TRUE' and 'FALSE' format
-  rename(
-    'EM_2047' = default_sigmaR_EM_2047,
-    'OM' = default_sigmaR_OM
-  ) %>%
-  kable(
-    # Rename columns directly within kable
-    align = c("l", "c", "c", "c"), # Align columns (left, center, center, center)
-    digits = 3
-  ) %>%
-  kable_styling(
-    bootstrap_options = c("striped", "hover", "condensed"), # Add bootstrap styling
-    full_width = FALSE # Don't stretch table to full page width
-  )
-  
-```
-
-### Histogram Tests
-
-The OM mean is the solid line, the EM mean is the dashed line.  
-
-```{r}
-
-# what if I did a histogram, with the OM as the line, and the EM as the bars, to see how the EM distribution compares to the OM.  
-
-OM_lines_subset <- OM_lines %>% 
-  filter(year %in% c(2005, 2014, 2018, 2021, 2024))
-EM_lines_subset <- EM_lines %>% 
-  filter(year %in% c(2005, 2014, 2018, 2021, 2024))
-
-EM_runs %>%
-  filter(year %in% c(2005, 2014, 2018, 2021, 2024)) %>%
-  ggplot(aes(F_5)) +
-  geom_histogram(bins = 10) + 
-  geom_vline(data = OM_lines_subset, aes(xintercept = F_5_mean)) +
-  geom_vline(data = EM_lines_subset, aes(xintercept = F_5_mean), linetype = "dashed") +
-  facet_grid(scenario~year) + ggtitle("Histograms of F_5 from EM")
-
-```
-
 ### Absolute Error Test
+
+AE = abs(EM - OM)
+
+This is a unidirectional error.  So we ended up preferring Residual Sums.  But I've kept these plots for reference.  Mean Absolute Error (MAE) and Symmetric Mean Absolute Percentage Error (SMAPE) were removed because they had issues with zeros in the red tide fleet.  
 
 ::: panel-tabset
 
@@ -3158,131 +3174,6 @@ abs_error %>%
 ```
 
 :::
-
-### Mean Absolute Error (MAE)
-
-#### 2047
-```{r, warning = FALSE}
-n_iterations = 10
-
-abs_error <- EM_runs %>%
-  filter(
-    str_detect(model_run, "_EM_2047")) %>%
-  rowwise()%>%
-  mutate(commercial = sum(retainB_1, retainB_2), recreational = retainB_4) %>%
-  left_join(OM_runs, by = c("year", "scenario", "iteration"), suffix = c("_em", "_om")) %>%
-  group_by(scenario, iteration, year) %>%
-  mutate(
-    ae_Recruit_0 = abs(Recruit_0_em-Recruit_0_om),
-    ae_F_5 = abs(F_5_em-F_5_om),
-    ae_SpawnBio = abs(SpawnBio_em-SpawnBio_om),
-    com_om = sum(retainB_1_om, retainB_2_om),
-    ae_com = abs(commercial-com_om),
-    ae_rec = abs(recreational-retainB_4_om),
-    ae_dead_5 = abs(deadB_5_em-deadB_5_om),
-    ae_abundance = abs(Bio_smry_em-Bio_smry_om)
-  ) %>%
-  group_by(scenario, year) %>%
-  reframe(
-    mae_Recruit_0 = sum(ae_Recruit_0)/n_iterations,
-    mae_F_5 = sum(ae_F_5)/n_iterations,
-    mae_SpawnBio = sum(ae_SpawnBio)/n_iterations,
-    mae_com = sum(ae_com)/n_iterations,
-    mae_rec = sum(ae_rec)/n_iterations,
-    mae_dead_5 = sum(ae_dead_5)/n_iterations,
-    mae_abundance = sum(ae_abundance)/n_iterations
-  )
-
-abs_error %>%
-  # Pivot the data longer
-  pivot_longer(
-    cols = c(mae_com, mae_rec, mae_dead_5),
-    names_to = "variable",
-    values_to = "value",
-    names_transform = list(
-      variable = ~recode(
-        .x,
-        "mae_com" = "Commercial Catch",
-        "mae_rec" = "Recreational Catch",
-        "mae_dead_5" = "Red Tide Dead"
-      )
-  )) %>%
-  ggplot(aes(year, value)) +
-  geom_vline(xintercept = c(2005, 2014, 2018, 2021), linetype = "dashed", color = "gray") +
-  geom_vline(xintercept = c(2016), color = "gray")+ # should this be the first predicted year?
-  stat_summary(fun = mean, geom = "line") +
-  stat_summary(fun.data = mean_cl_normal, geom = "ribbon", alpha = 0.3) +
-  facet_grid(variable~scenario, scales = "free") +
-  theme_bw()+ 
-  #coord_cartesian(ylim = c(0,3)) +
-  #coord_cartesian(xlim = c(2017, 2025)) +
-  labs(color = "EM", fill = "EM", x = "Year", y = "Mean Absolute Error")
-
-```
-
-### Symmetric Mean Absolute Percentage Error (SMAPE)
-
-#### 2047
-```{r}
-n_iterations = 10
-
-smape <- function(em, om) {
-  abs(em-om)/(abs(om)+abs(em))
-}
-
-abs_error <- EM_runs %>%
-  filter(
-    str_detect(model_run, "_EM_2047")) %>%
-  rowwise()%>%
-  mutate(commercial = sum(retainB_1, retainB_2), recreational = retainB_4) %>%
-  left_join(OM_runs, by = c("year", "scenario", "iteration"), suffix = c("_em", "_om")) %>%
-  group_by(scenario, iteration, year) %>%
-  mutate(
-    ae_Recruit_0 = smape(Recruit_0_em, Recruit_0_om),
-    ae_F_5 = smape(F_5_em,F_5_om),
-    ae_SpawnBio = smape(SpawnBio_em,SpawnBio_om),
-    com_om = sum(retainB_1_om, retainB_2_om),
-    ae_com = smape(commercial, com_om),
-    ae_rec = smape(recreational, retainB_4_om),
-    ae_dead_5 = smape(deadB_5_em, deadB_5_om),
-    ae_abundance = smape(Bio_smry_em, Bio_smry_om)
-  ) %>%
-  group_by(scenario, year) %>%
-  reframe(
-    mae_Recruit_0 = sum(ae_Recruit_0)*2/n_iterations,
-    mae_F_5 = sum(ae_F_5)*2/n_iterations,
-    mae_SpawnBio = sum(ae_SpawnBio)*2/n_iterations,
-    mae_com = sum(ae_com)*2/n_iterations,
-    mae_rec = sum(ae_rec)*2/n_iterations,
-    mae_dead_5 = sum(ae_dead_5)*2/n_iterations,
-    mae_abundance = sum(ae_abundance)*2/n_iterations
-  )
-
-abs_error %>%
-  # Pivot the data longer
-  pivot_longer(
-    cols = c(mae_com, mae_rec, mae_dead_5),
-    names_to = "variable",
-    values_to = "value",
-    names_transform = list(
-      variable = ~recode(
-        .x,
-        "mae_com" = "Commercial Catch",
-        "mae_rec" = "Recreational Catch",
-        "mae_dead_5" = "Red Tide Dead"
-      )
-  )) %>%
-  ggplot(aes(year, value)) +
-  geom_vline(xintercept = c(2005, 2014, 2018, 2021), linetype = "dashed", color = "gray") +
-  geom_vline(xintercept = c(2016), color = "gray")+ # should this be the first predicted year?
-  geom_line()+
-  facet_grid(variable~scenario, scales = "free") +
-  theme_bw()+ 
-  #coord_cartesian(ylim = c(0,3)) +
-  #coord_cartesian(xlim = c(2017, 2025)) +
-  labs(color = "EM", fill = "EM", x = "Year", y = "SMAPE")
-
-```
 
 ### More Variables Absolute Error
 
