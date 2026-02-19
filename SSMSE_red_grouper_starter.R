@@ -24,9 +24,12 @@ if (!dir.exists(run_res_path)) {
   dir.create(run_res_path, recursive = TRUE)
 }
 
-# scenario names
+# OM locations
 model_SSMSE_dir <- file.path("base_models")
 default <- file.path(model_SSMSE_dir, "default_sigmaR")
+
+# number of simulation years
+projyrs<-30
 
 # to get the names of parameter values
 ctl <- r4ss::SS_readctl(file.path(default, "red_grouper_1986_2017_RedTideFleet.ctl"), 
@@ -56,7 +59,6 @@ future_OM_list_recdevs<-list(rec_dev_specify)
 
 ##### sample structure #####
 datfile<-dat
-projyrs<-30
 #sample_struct<-create_sample_struct(dat=datfile, nyrs=projyrs)
 sample_struct<-SSMSE:::create_sample_struct_envir(dat=datfile, nyrs=projyrs)
 # LOTS OF WARNINGS/ERRORS, so need to go input by input and enter errors
@@ -265,7 +267,7 @@ base_params <- list(
   out_dir_scen_vec = normalizePath(run_res_path),
   run_EM_last_yr  = TRUE,
   MS_vec          = "EnvirEM",
-  nyrs_vec        = 30,
+  nyrs_vec        = projyrs,
   nyrs_assess_vec = 3,
   future_om_list  = future_OM_list_recdevs,
   run_parallel    = TRUE,
@@ -319,8 +321,6 @@ saveRDS(summary, file = file.path(run_SSMSE_dir, paste0("results_summary_", resu
 # end timer
 end_time <- Sys.time()
 end_time - start_time
-
-
 
 ##### Email when done #####
 
