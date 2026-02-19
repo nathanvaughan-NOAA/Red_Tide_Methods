@@ -17,11 +17,15 @@ packageVersion("ss3sim")
 packageVersion("SSMSE")
 
 # Create a folder for the output in the working directory.
-run_SSMSE_dir <- file.path("runs_output")
+run_SSMSE_dir <- file.path(".")
+run_res_path <- file.path(run_SSMSE_dir, "results_rt_2")
+if (!dir.exists(run_res_path)) {
+  dir.create(run_res_path, recursive = TRUE)
+}
 
 # scenario names
 model_SSMSE_dir <- file.path("base_models")
-default <- file.path(run_SSMSE_dir, "default_sigmaR")
+default <- file.path(model_SSMSE_dir, "default_sigmaR")
 
 # to get the names of parameter values
 ctl <- r4ss::SS_readctl(file.path(default, "red_grouper_1986_2017_RedTideFleet.ctl"), 
@@ -240,7 +244,6 @@ sample_struct_rt_2_x_all_yrs <- add_sample_struct_FixedCatches(sample_struct, rt
 sample_struct_rep_3_x_all_yrs <- add_sample_struct_FixedCatches(sample_struct, rt_year_om = seq(from = 2018, to = 2047, by = 3), rt_year_em = seq(from = 2018, to = 2047, by = 1))
 sample_struct_rt_2_x_rt_2_fixed <- add_sample_struct_FixedCatches(sample_struct, em_fixed = 1)
 
-
 # create a list of sample structures for each OM/MP run. 
 sample_struct_list_all <- list(
   "no_rt" = sample_struct,
@@ -253,39 +256,71 @@ sample_struct_list_all <- list(
   "rt_2_x_rt_2_fixed" = sample_struct_rt_2_x_rt_2_fixed
 )
 
+##### Scenario Selection #####
+
+# global settings for all SSMSE runs
+base_params <- list(
+  iter_vec        = 10,
+  out_dir_scen_vec = normalizePath(run_res_path),
+  run_EM_last_yr  = TRUE,
+  MS_vec          = "EnvirEM",
+  nyrs_vec        = 30,
+  nyrs_assess_vec = 3,
+  future_om_list  = future_OM_list_recdevs,
+  run_parallel    = TRUE,
+  seed            = 12345,
+  # Normalize these once here
+  OM_in_dir_vec   = normalizePath(default),
+  EM_in_dir_vec   = normalizePath(default)
+)
+
+# use modifyList() to adjust the run_SSMSE parameters
+
+# Core 4
+no_rt <- modifyList(base_params, list(scen_name_vec = "no_rt", sample_struct_list = list("no_rt" = sample_struct)))
+no_rt_x_rt_2 <- modifyList(base_params, list(scen_name_vec = "no_rt_x_rt_2", sample_struct_list = list("no_rt_x_rt_2" = sample_struct_no_rt_x_rt_2)))
+rt_2_x_no_rt <- modifyList(base_params, list(scen_name_vec = "rt_2_x_no_rt", sample_struct_list = list("rt_2_x_no_rt" = sample_struct_rt_2_x_no_rt)))
+rt_2_x_rt_2 <- modifyList(base_params, list(scen_name_vec = "rt_2_x_rt_2", sample_struct_list = list("rt_2_x_rt_2" = sample_struct_rt_2_x_rt_2)))
+
+# All years
+no_rt_x_all_yrs <- modifyList(base_params, list(scen_name_vec = "no_rt_x_all_yrs", sample_struct_list = list("no_rt_x_all_yrs" = sample_struct_no_rt_x_all_yrs)))
+rt_2_x_all_yrs <- modifyList(base_params, list(scen_name_vec = "rt_2_x_all_yrs", sample_struct_list = list("rt_2_x_all_yrs" = sample_struct_rt_2_x_all_yrs)))
+rep_3_x_all_yrs <- modifyList(base_params, list(scen_name_vec = "rep_3_x_all_yrs", sample_struct_list = list("rep_3_x_all_yrs" = sample_struct_rep_3_x_all_yrs)))
+
+# Fixed EM
+rt_2_x_rt_2_fixed <- modifyList(base_params, list(scen_name_vec = "rt_2_x_rt_2_fixed", sample_struct_list = list("rt_2_x_rt_2_fixed" = sample_struct_rt_2_x_rt_2_fixed)))
+
+
+# put your scenarios into a list
+all_scenarios <- list(
+  no_rt, 
+  no_rt_x_rt_2,
+  rt_2_x_no_rt,
+  rt_2_x_rt_2, 
+  no_rt_x_all_yrs,
+  rt_2_x_all_yrs,
+  rep_3_x_all_yrs,
+  rt_2_x_rt_2_fixed
+)
+
 ##### RUN SSMSE #####
 
+# start timer
 start_time <- Sys.time()
 
-run_res_path <- file.path(run_SSMSE_dir, "results_rt_2")
-dir.create(run_res_path)
-res<-SSMSE::run_SSMSE(
-  scen_name_vec=c("no_rt", "no_rt_x_rt_2", "rt_2_x_no_rt", "rt_2_x_rt_2", "no_rt_x_all_yrs", "rt_2_x_all_yrs", "rep_3_x_all_yrs", "rt_2_x_rt_2_fixed"), # name of the scenario
-  out_dir_scen_vec = run_res_path, # directory in which to run the scenario
-  iter_vec = c(10, 10, 10, 10, 10, 10, 10, 10), # run with X iterations each
-  OM_name_vec = NULL, # specify directories instead
-  OM_in_dir_vec = c(normalizePath(default), normalizePath(default), normalizePath(default), normalizePath(default),normalizePath(default), normalizePath(default),normalizePath(default), normalizePath(default)), # OM files
-  EM_name_vec = NULL, # specify directories instead
-  EM_in_dir_vec = c(normalizePath(default), normalizePath(default), normalizePath(default), normalizePath(default),normalizePath(default), normalizePath(default),normalizePath(default), normalizePath(default)), # EM files
-  run_EM_last_yr = TRUE,
-  MS_vec = c("EnvirEM", "EnvirEM","EnvirEM", "EnvirEM","EnvirEM","EnvirEM", "EnvirEM", "EnvirEM"), # The management strategy is specified in the EM
-  nyrs_vec = c(projyrs, projyrs, projyrs, projyrs, projyrs, projyrs, projyrs,projyrs), # Years to project OM forward
-  nyrs_assess_vec = c(3, 3, 3, 3, 3, 3, 3, 3), # Years between assessments
-  future_om_list = future_OM_list_recdevs,
-  run_parallel = TRUE, # Run iterations in parallel
-  sample_struct_list = sample_struct_list_all, # How to sample data for running the EM.
-  #sample_struct_hist_list = sample_struct_hist, # because this is null, will just use sampling
-  # as in the current OM data file for the historical period.
-  seed = 12345
-) # Set a fixed integer seed that allows replication
+# walk through the scenario list and run_SSMSE
+walk(all_scenarios, ~exec(run_SSMSE, !!!.x))  # !!! makes the scenario list into arguements that can be used by a function
 
-end_time <- Sys.time()
-end_time - start_time
-
-saveRDS(res, file = file.path(run_SSMSE_dir, "results_rt_2.rda"))
+# make a summary with all the outputs in the same folder
 summary <- SSMSE::SSMSE_summary_all(run_res_path)
 saveRDS(summary, file = file.path(run_SSMSE_dir, "results_summary_rt_2.rda"))
 
+# end timer
+end_time <- Sys.time()
+end_time - start_time
+
+
+# send email to indicate the run is done
 library(blastula)
 
 # Create the email
