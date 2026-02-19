@@ -21,7 +21,7 @@ run_SSMSE_dir <- file.path("runs_output")
 
 # scenario names
 model_SSMSE_dir <- file.path("base_models")
-default <- file.path(model_SSMSE_dir, "default_OM")
+default <- file.path(run_SSMSE_dir, "default_sigmaR")
 
 # to get the names of parameter values
 ctl <- r4ss::SS_readctl(file.path(default, "red_grouper_1986_2017_RedTideFleet.ctl"), 
@@ -51,7 +51,7 @@ future_OM_list_recdevs<-list(rec_dev_specify)
 
 ##### sample structure #####
 datfile<-dat
-projyrs<-5
+projyrs<-30
 #sample_struct<-create_sample_struct(dat=datfile, nyrs=projyrs)
 sample_struct<-SSMSE:::create_sample_struct_envir(dat=datfile, nyrs=projyrs)
 # LOTS OF WARNINGS/ERRORS, so need to go input by input and enter errors
@@ -232,44 +232,25 @@ sample_struct$MeanSize_at_Age_obs
 
 # Adjusting sample structure to include future red tide events
 
-rt_year <- c(2018, 2021)
-rt_fleet <- 5
-rt_mortality <- 0.1
-
-#Add fixed catches in the EM
-sample_struct_fc <- SSMSE::create_sample_struct_envir(dat=datfile, nyrs=projyrs, FixedCatches = TRUE, FixedCatchesEM = TRUE)
-sample_struct_copy <- sample_struct
-sample_struct_copy$FixedCatchEM <- sample_struct_fc$FixedCatchEM
-sample_struct_copy$FixedCatchEM <- sample_struct_copy$FixedCatchEM %>% 
-  filter(FltSvy == rt_fleet) 
-sample_struct_copy$FixedCatchEM <- sample_struct_copy$FixedCatchEM %>%
-  mutate(Catch = if_else(FltSvy == rt_fleet & Yr %in% rt_year, rt_mortality, Catch))
-
-sample_struct_no_rt_x_rt_2 <- sample_struct_copy
-
-#Add fixed catches in the OM
-sample_struct_fc <- SSMSE::create_sample_struct_envir(dat=datfile, nyrs=projyrs, FixedCatches = TRUE, FixedCatchesEM = TRUE)
-sample_struct_copy <- sample_struct
-sample_struct_copy$FixedCatch <- sample_struct_fc$FixedCatch %>% 
-  filter(FltSvy == rt_fleet) 
-sample_struct_copy$FixedCatch <- sample_struct_copy$FixedCatch %>%
-  mutate(Catch = if_else(FltSvy == rt_fleet & Yr %in% rt_year, rt_mortality, Catch))
-
-#Add fixed catches in the EM
-sample_struct_copy$FixedCatchEM <- sample_struct_fc$FixedCatchEM
-sample_struct_copy$FixedCatchEM <- sample_struct_copy$FixedCatchEM %>% 
-  filter(FltSvy == rt_fleet) 
-sample_struct_copy$FixedCatchEM <- sample_struct_copy$FixedCatchEM %>%
-  mutate(Catch = if_else(FltSvy == rt_fleet & Yr %in% rt_year, rt_mortality, Catch))
-
-sample_struct_rt_2_x_rt_2 <- sample_struct_copy
+sample_struct_no_rt_x_rt_2 <- add_sample_struct_FixedCatches(sample_struct, om_on = FALSE)
+sample_struct_rt_2_x_no_rt <- add_sample_struct_FixedCatches(sample_struct, em_on = FALSE)
+sample_struct_rt_2_x_rt_2 <- add_sample_struct_FixedCatches(sample_struct)
+sample_struct_no_rt_x_all_yrs <- add_sample_struct_FixedCatches(sample_struct, om_on = FALSE, rt_year_em = seq(from = 2018, to = 2047, by = 1))
+sample_struct_rt_2_x_all_yrs <- add_sample_struct_FixedCatches(sample_struct, rt_year_em = seq(from = 2018, to = 2047, by = 1))
+sample_struct_rep_3_x_all_yrs <- add_sample_struct_FixedCatches(sample_struct, rt_year_om = seq(from = 2018, to = 2047, by = 3), rt_year_em = seq(from = 2018, to = 2047, by = 1))
+sample_struct_rt_2_x_rt_2_fixed <- add_sample_struct_FixedCatches(sample_struct, em_fixed = 1)
 
 
 # create a list of sample structures for each OM/MP run. 
 sample_struct_list_all <- list(
   "no_rt" = sample_struct,
   "no_rt_x_rt_2" = sample_struct_no_rt_x_rt_2,
-  "rt_2_x_rt_2" = sample_struct_rt_2_x_rt_2
+  "rt_2_x_no_rt" = sample_struct_rt_2_x_no_rt,
+  "rt_2_x_rt_2" = sample_struct_rt_2_x_rt_2,
+  "no_rt_x_all_yrs" = sample_struct_no_rt_x_all_yrs,
+  "rt_2_x_all_yrs" = sample_struct_rt_2_x_all_yrs, 
+  "rep_3_x_all_yrs" = sample_struct_rep_3_x_all_yrs, 
+  "rt_2_x_rt_2_fixed" = sample_struct_rt_2_x_rt_2_fixed
 )
 
 ##### RUN SSMSE #####
@@ -279,17 +260,17 @@ start_time <- Sys.time()
 run_res_path <- file.path(run_SSMSE_dir, "results_rt_2")
 dir.create(run_res_path)
 res<-SSMSE::run_SSMSE(
-  scen_name_vec=c("no_rt", "no_rt_x_rt_2", "rt_2_x_rt_2"), # name of the scenario
+  scen_name_vec=c("no_rt", "no_rt_x_rt_2", "rt_2_x_no_rt", "rt_2_x_rt_2", "no_rt_x_all_yrs", "rt_2_x_all_yrs", "rep_3_x_all_yrs", "rt_2_x_rt_2_fixed"), # name of the scenario
   out_dir_scen_vec = run_res_path, # directory in which to run the scenario
-  iter_vec = c(1,1,1), # run with X iterations each
+  iter_vec = c(10, 10, 10, 10, 10, 10, 10, 10), # run with X iterations each
   OM_name_vec = NULL, # specify directories instead
-  OM_in_dir_vec = c(normalizePath(default), normalizePath(default), normalizePath(default)), # OM files
+  OM_in_dir_vec = c(normalizePath(default), normalizePath(default), normalizePath(default), normalizePath(default),normalizePath(default), normalizePath(default),normalizePath(default), normalizePath(default)), # OM files
   EM_name_vec = NULL, # specify directories instead
-  EM_in_dir_vec = c(normalizePath(default), normalizePath(default), normalizePath(default)), # EM files
+  EM_in_dir_vec = c(normalizePath(default), normalizePath(default), normalizePath(default), normalizePath(default),normalizePath(default), normalizePath(default),normalizePath(default), normalizePath(default)), # EM files
   run_EM_last_yr = TRUE,
-  MS_vec = c("EnvirEM", "EnvirEM", "EnvirEM"), # The management strategy is specified in the EM
-  nyrs_vec = c(projyrs, projyrs, projyrs), # Years to project OM forward
-  nyrs_assess_vec = c(3, 3, 3), # Years between assessments
+  MS_vec = c("EnvirEM", "EnvirEM","EnvirEM", "EnvirEM","EnvirEM","EnvirEM", "EnvirEM", "EnvirEM"), # The management strategy is specified in the EM
+  nyrs_vec = c(projyrs, projyrs, projyrs, projyrs, projyrs, projyrs, projyrs,projyrs), # Years to project OM forward
+  nyrs_assess_vec = c(3, 3, 3, 3, 3, 3, 3, 3), # Years between assessments
   future_om_list = future_OM_list_recdevs,
   run_parallel = TRUE, # Run iterations in parallel
   sample_struct_list = sample_struct_list_all, # How to sample data for running the EM.
