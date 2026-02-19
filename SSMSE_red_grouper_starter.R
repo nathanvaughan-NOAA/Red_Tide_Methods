@@ -292,7 +292,7 @@ rep_3_x_all_yrs <- modifyList(base_params, list(scen_name_vec = "rep_3_x_all_yrs
 rt_2_x_rt_2_fixed <- modifyList(base_params, list(scen_name_vec = "rt_2_x_rt_2_fixed", sample_struct_list = list("rt_2_x_rt_2_fixed" = sample_struct_rt_2_x_rt_2_fixed)))
 
 
-# put your scenarios into a list
+# put the scenarios you want to run into a list
 all_scenarios <- list(
   no_rt, 
   no_rt_x_rt_2,
@@ -320,6 +320,9 @@ saveRDS(summary, file = file.path(run_SSMSE_dir, paste0("results_summary_", resu
 end_time <- Sys.time()
 end_time - start_time
 
+
+
+##### Email when done #####
 
 # send email to indicate the run is done
 library(blastula)
