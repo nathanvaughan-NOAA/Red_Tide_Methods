@@ -17,7 +17,7 @@ packageVersion("ss3sim")
 packageVersion("SSMSE")
 
 # Create a folder for the output in the working directory.
-run_SSMSE_dir <- file.path(".")
+run_SSMSE_dir <- file.path("./runs_output")
 run_res_path <- file.path(run_SSMSE_dir, "results_rt_2")
 if (!dir.exists(run_res_path)) {
   dir.create(run_res_path, recursive = TRUE)
