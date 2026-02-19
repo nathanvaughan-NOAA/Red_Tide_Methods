@@ -17,8 +17,9 @@ packageVersion("ss3sim")
 packageVersion("SSMSE")
 
 # Create a folder for the output in the working directory.
+results_name <- "rt_2"
 run_SSMSE_dir <- file.path("./runs_output")
-run_res_path <- file.path(run_SSMSE_dir, "results_rt_2")
+run_res_path <- file.path(run_SSMSE_dir, paste0("results_", results_name))
 if (!dir.exists(run_res_path)) {
   dir.create(run_res_path, recursive = TRUE)
 }
@@ -313,7 +314,7 @@ walk(all_scenarios, ~exec(run_SSMSE, !!!.x))  # !!! makes the scenario list into
 
 # make a summary with all the outputs in the same folder
 summary <- SSMSE::SSMSE_summary_all(run_res_path)
-saveRDS(summary, file = file.path(run_SSMSE_dir, "results_summary_rt_2.rda"))
+saveRDS(summary, file = file.path(run_SSMSE_dir, paste0("results_summary_", results_name, ".rda")))
 
 # end timer
 end_time <- Sys.time()
