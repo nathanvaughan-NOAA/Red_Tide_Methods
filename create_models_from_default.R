@@ -6,6 +6,17 @@
 library(r4ss)
 library(tidyverse)
 
+# Download ss.exe if linux workstation
+
+exe_path <- "base_models/default_sigmaR/ss.exe"
+
+if (!file.exists(exe_path)) {
+  get_ss3_exe(dest_dir = "base_models/default_sigmaR/")
+  if (.Platform$OS.type == "unix") {
+    system(paste("chmod +x", exe_path))
+  }
+}
+
 # Initial model to modify
 mod_path <- file.path("base_models", "default_sigmaR")
 
