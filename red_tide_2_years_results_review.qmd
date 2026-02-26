@@ -15,20 +15,43 @@ library("nmfspalette")
 library(patchwork)
 library(knitr)
 library(kableExtra)
+# OM locations
 
-#name of the OM
+#name of the first OM
 OM_name <- "default"
-run_SSMSE_dir <- file.path("C:/Users/apn26/Documents/CIMAS/Personal Notes/test_cloud_computing/testing_cloud")
-default <- file.path(run_SSMSE_dir, OM_name)
+model_SSMSE_dir <- file.path("base_models")
+default <- file.path(model_SSMSE_dir, "default_sigmaR")
+run_SSMSE_dir <- file.path("runs_output")
 
 #name of the results files
-results_name <- "_rt_2_fixed_2021"
+results_name <- "_selectivity"
+
+#create a list of scenarios for plot generation, usually the default order is fine.  
+#scen_list <- unique(summary$ts$scenario)
+#hard coded in a specific order.  
+scen_list <- c(
+  "rt_2_x_rt_2",
+  "flat_x_flat_rt_2",
+  "young_x_young_rt_2",
+  "old_x_old_rt_2",
+  "domed_x_domed_rt_2",
+  "flat_x_young_rt_2",
+  "flat_x_old_rt_2",
+  "flat_x_domed_rt_2",
+  "young_x_flat_rt_2",
+  "young_x_old_rt_2",
+  "young_x_domed_rt_2",
+  "old_x_flat_rt_2",
+  "old_x_young_rt_2",
+  "old_x_domed_rt_2",
+  "domed_x_flat_rt_2",
+  "domed_x_young_rt_2",
+  "domed_x_old_rt_2"
+)
 
 #pull the summary and dat files, the dat file isn't actually that important.  
-cc_storage <- file.path("C:/Users/apn26/Documents/CIMAS/Personal Notes/cc_storage")
-summary <- readRDS(file = file.path(cc_storage, paste0("results_summary", results_name, ".rda")))
+summary <- readRDS(file = file.path(run_SSMSE_dir, paste0("results_summary", results_name, ".rda")))
 dat <- r4ss::SS_readdat(file.path(default, "red_grouper_1986_2017_RedTideFleet.dat"))
-
 
 summary$ts <- summary$ts %>%
   filter(model_run != "", !str_detect(model_run, "Base")) %>% #remove "Base" model 
@@ -39,14 +62,7 @@ summary$ts <- summary$ts %>%
     TRUE ~ TRUE # Keep all other rows if no _EM
   )) %>%
   mutate(
-    scenario = factor(scenario, 
-                      levels = c("no_rt", 
-                                 "no_rt_x_rt_2", 
-                                 "rt_2_x_no_rt", 
-                                 "rt_2_x_rt_2", "rt_2_x_rt_2_fixed",
-                                 "no_rt_x_all_yrs", 
-                                 "rt_2_x_all_yrs",
-                                 "rep_3_x_all_yrs"))
+    scenario = factor(scenario, scen_list)
   )
 
 summary$dq <- summary$dq %>%
@@ -58,30 +74,13 @@ summary$dq <- summary$dq %>%
     TRUE ~ TRUE # Keep all other rows if no _EM
   )) %>%
   mutate(
-    scenario = factor(scenario, 
-                      levels = c("no_rt", 
-                                 "no_rt_x_rt_2", 
-                                 "rt_2_x_no_rt", 
-                                 "rt_2_x_rt_2", "rt_2_x_rt_2_fixed",
-                                 "no_rt_x_all_yrs", 
-                                 "rt_2_x_all_yrs",
-                                 "rep_3_x_all_yrs"))
+    scenario = factor(scenario, scen_list)
   )
 summary$scalar <- summary$scalar %>%
   filter(model_run != "", !str_detect(model_run, "Base")) 
 
 #rename the OM if it's different from default
 OM_name <- "default_sigmaR"
-
-```
-
-```{r}
-#create a list of scenarios for plot generation, usually the default order is fine.  
-#scen_list <- unique(summary$ts$scenario)
-#hard coded in a specific order.  
-scen_list <- c("no_rt", "no_rt_x_rt_2", "rt_2_x_no_rt", "rt_2_x_rt_2", "rt_2_x_rt_2_fixed", "no_rt_x_all_yrs", 
-                                 "rt_2_x_all_yrs",
-                                 "rep_3_x_all_yrs")
 
 ```
 
@@ -276,11 +275,11 @@ ssb_ts_plot <- summary$ts %>%
   ggplot(aes(x = year, y = retainB_all)) +
   geom_vline(xintercept = dat$endyr, color = "gray") +
   geom_line(ggplot2::aes(linetype = as.character(iteration), color = model_run))+
-  scale_color_manual(values = c("#D65F00", "black",'blue','green')) +
-  scale_linetype_manual(values = rep("solid", 100)) +
+  scale_color_manual(values = c("#D65F00", "black","#D65F00", "black","#D65F00", "black","#D65F00", "black","#D65F00", "black")) +
+  scale_linetype_manual(values = rep("solid", 1000)) +
   guides(linetype = FALSE) +
   labs(color = "Model Runs") +
-  facet_wrap(. ~ scenario, ncol=2, nrow=4) +
+  facet_wrap(. ~ scenario) +
   ggtitle("All retained biomass overtime") +
   theme_bw()
 ssb_ts_plot
@@ -1951,7 +1950,7 @@ residual_runs %>%
         "res_dead_5" = "Red Tide Dead"
       )
   )) %>%
-  filter(scenario %in% scen_list[1:4]) %>%
+  filter(scenario %in% scen_list[1:5]) %>%
   ggplot(aes(year, value)) +
   geom_vline(xintercept = c(2005, 2014, 2018, 2021), linetype = "dashed", color = "gray") +
   geom_vline(xintercept = c(2016), color = "gray")+ # should this be the first predicted year?
@@ -1967,31 +1966,31 @@ residual_runs %>%
 #### Scenarios 6-8
 
 ```{r}
-residual_runs %>%
-  # Pivot the data longer
-  pivot_longer(
-    cols = c(res_com, res_rec, res_dead_5),
-    names_to = "variable",
-    values_to = "value",
-    names_transform = list(
-      variable = ~recode(
-        .x,
-        "res_com" = "Commercial Catch",
-        "res_rec" = "Recreational Catch",
-        "res_dead_5" = "Red Tide Dead"
-      )
-  )) %>%
-  filter(scenario %in% scen_list[6:8]) %>%
-  ggplot(aes(year, value)) +
-  geom_vline(xintercept = c(2005, 2014, 2018, 2021), linetype = "dashed", color = "gray") +
-  geom_vline(xintercept = c(2016), color = "gray")+ # should this be the first predicted year?
-  stat_summary(fun = mean, geom = "line") +
-  stat_summary(fun.data = mean_cl_normal, geom = "ribbon", alpha = 0.3) +
-  facet_grid(variable~scenario, scales = "free") +
-  theme_bw()+ 
-  #coord_cartesian(ylim = c(0,3)) +
-  #coord_cartesian(xlim = c(2017, 2025)) +
-  labs(color = "EM", fill = "EM", x = "Year", y = "Residuals")
+# residual_runs %>%
+#   # Pivot the data longer
+#   pivot_longer(
+#     cols = c(res_com, res_rec, res_dead_5),
+#     names_to = "variable",
+#     values_to = "value",
+#     names_transform = list(
+#       variable = ~recode(
+#         .x,
+#         "res_com" = "Commercial Catch",
+#         "res_rec" = "Recreational Catch",
+#         "res_dead_5" = "Red Tide Dead"
+#       )
+#   )) %>%
+#   filter(scenario %in% scen_list[6:8]) %>%
+#   ggplot(aes(year, value)) +
+#   geom_vline(xintercept = c(2005, 2014, 2018, 2021), linetype = "dashed", color = "gray") +
+#   geom_vline(xintercept = c(2016), color = "gray")+ # should this be the first predicted year?
+#   stat_summary(fun = mean, geom = "line") +
+#   stat_summary(fun.data = mean_cl_normal, geom = "ribbon", alpha = 0.3) +
+#   facet_grid(variable~scenario, scales = "free") +
+#   theme_bw()+ 
+#   #coord_cartesian(ylim = c(0,3)) +
+#   #coord_cartesian(xlim = c(2017, 2025)) +
+#   labs(color = "EM", fill = "EM", x = "Year", y = "Residuals")
 
 
 ```
@@ -2134,7 +2133,7 @@ residual_runs %>%
 
 ```{r}
 residual_runs %>% 
-  filter(scenario %in% scen_list[1:4]) %>%
+  filter(scenario %in% scen_list[1:5]) %>%
   group_by(scenario) %>%
   reframe(sum_res_com = sum(res_com), sum_res_rec = sum(res_rec), sum_res_dead_5 = sum(res_dead_5)) %>%
   kable(
@@ -2355,7 +2354,7 @@ WARNING: The equation for MAPE = abs(EM-OM)/OM so this can result in NA or Inf w
 ```{r}
 
 OM_means <- summary$ts %>%
-  filter(model_run == paste0(OM_name, "_OM")) %>%
+  filter(model_run == str_detect(model_run, "_OM")) %>%
   select(scenario, year, Recruit_0, F_5, SpawnBio, iteration, retainB_1, retainB_2, retainB_4, deadB_5, F_1, F_2, F_4, Bio_smry) %>%
   rowwise() %>%
   mutate(commercial = sum(retainB_1, retainB_2), recreational = retainB_4, com_f = sum(F_1, F_2), rec_f = F_4) %>%
