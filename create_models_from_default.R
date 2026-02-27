@@ -277,10 +277,10 @@ r4ss::SS_write(inputs, dir = new_mod_path, overwrite = TRUE)
 
 r4ss::run(new_mod_path, exe = normalizePath("base_models/default_sigmaR/ss.exe"))
 
-##### Domed Model #####
+##### mid Model #####
 
 # Create a new directory to put a new, modified version of the model
-new_mod_path <- file.path("base_models", "domed")
+new_mod_path <- file.path("base_models", "mid")
 
 # Copy default_SigmaR to Emperical_new folder
 copy_SS_inputs(dir.old = mod_path, dir.new = new_mod_path)

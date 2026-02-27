@@ -299,28 +299,28 @@ rt_2_x_rt_2_fixed <- modifyList(base_params, list(scen_name_vec = "rt_2_x_rt_2_f
 flat <- file.path(model_SSMSE_dir, "flat")
 young <- file.path(model_SSMSE_dir, "young")
 old <- file.path(model_SSMSE_dir, "old")
-domed <- file.path(model_SSMSE_dir, "domed")
+mid <- file.path(model_SSMSE_dir, "mid")
 
 flat_x_flat_all_yrs <- modifyList(base_params, list(scen_name_vec = "flat_x_flat_all_yrs", sample_struct_list = list("flat_x_flat_all_yrs" = sample_struct_rt_2_x_all_yrs), OM_in_dir_vec = normalizePath(flat), EM_in_dir_vec = normalizePath(flat)))
 young_x_young_all_yrs <- modifyList(base_params, list(scen_name_vec = "young_x_young_all_yrs", sample_struct_list = list("young_x_young_all_yrs" = sample_struct_rt_2_x_all_yrs), OM_in_dir_vec = normalizePath(young), EM_in_dir_vec = normalizePath(young)))
 old_x_old_all_yrs <- modifyList(base_params, list(scen_name_vec = "old_x_old_all_yrs", sample_struct_list = list("old_x_old_all_yrs" = sample_struct_rt_2_x_all_yrs), OM_in_dir_vec = normalizePath(old), EM_in_dir_vec = normalizePath(old)))
-domed_x_domed_all_yrs <- modifyList(base_params, list(scen_name_vec = "domed_x_domed_all_yrs", sample_struct_list = list("domed_x_domed_all_yrs" = sample_struct_rt_2_x_all_yrs), OM_in_dir_vec = normalizePath(domed), EM_in_dir_vec = normalizePath(domed)))
+mid_x_mid_all_yrs <- modifyList(base_params, list(scen_name_vec = "mid_x_mid_all_yrs", sample_struct_list = list("mid_x_mid_all_yrs" = sample_struct_rt_2_x_all_yrs), OM_in_dir_vec = normalizePath(mid), EM_in_dir_vec = normalizePath(mid)))
 
 flat_x_young_all_yrs <- modifyList(base_params, list(scen_name_vec = "flat_x_young_all_yrs", sample_struct_list = list("flat_x_young_all_yrs" = sample_struct_rt_2_x_all_yrs), OM_in_dir_vec = normalizePath(flat), EM_in_dir_vec = normalizePath(young)))
 flat_x_old_all_yrs <- modifyList(base_params, list(scen_name_vec = "flat_x_old_all_yrs", sample_struct_list = list("flat_x_old_all_yrs" = sample_struct_rt_2_x_all_yrs), OM_in_dir_vec = normalizePath(flat), EM_in_dir_vec = normalizePath(old)))
-flat_x_domed_all_yrs <- modifyList(base_params, list(scen_name_vec = "flat_x_domed_all_yrs", sample_struct_list = list("flat_x_domed_all_yrs" = sample_struct_rt_2_x_all_yrs), OM_in_dir_vec = normalizePath(flat), EM_in_dir_vec = normalizePath(domed)))
+flat_x_mid_all_yrs <- modifyList(base_params, list(scen_name_vec = "flat_x_mid_all_yrs", sample_struct_list = list("flat_x_mid_all_yrs" = sample_struct_rt_2_x_all_yrs), OM_in_dir_vec = normalizePath(flat), EM_in_dir_vec = normalizePath(mid)))
 
 young_x_flat_all_yrs <- modifyList(base_params, list(scen_name_vec = "young_x_flat_all_yrs", sample_struct_list = list("young_x_flat_all_yrs" = sample_struct_rt_2_x_all_yrs), OM_in_dir_vec = normalizePath(young), EM_in_dir_vec = normalizePath(flat)))
 young_x_old_all_yrs <- modifyList(base_params, list(scen_name_vec = "young_x_old_all_yrs", sample_struct_list = list("young_x_old_all_yrs" = sample_struct_rt_2_x_all_yrs), OM_in_dir_vec = normalizePath(young), EM_in_dir_vec = normalizePath(old)))
-young_x_domed_all_yrs <- modifyList(base_params, list(scen_name_vec = "young_x_domed_all_yrs", sample_struct_list = list("young_x_domed_all_yrs" = sample_struct_rt_2_x_all_yrs), OM_in_dir_vec = normalizePath(young), EM_in_dir_vec = normalizePath(domed)))
+young_x_mid_all_yrs <- modifyList(base_params, list(scen_name_vec = "young_x_mid_all_yrs", sample_struct_list = list("young_x_mid_all_yrs" = sample_struct_rt_2_x_all_yrs), OM_in_dir_vec = normalizePath(young), EM_in_dir_vec = normalizePath(mid)))
 
 old_x_flat_all_yrs <- modifyList(base_params, list(scen_name_vec = "old_x_flat_all_yrs", sample_struct_list = list("old_x_flat_all_yrs" = sample_struct_rt_2_x_all_yrs), OM_in_dir_vec = normalizePath(old), EM_in_dir_vec = normalizePath(flat)))
 old_x_young_all_yrs <- modifyList(base_params, list(scen_name_vec = "old_x_young_all_yrs", sample_struct_list = list("old_x_young_all_yrs" = sample_struct_rt_2_x_all_yrs), OM_in_dir_vec = normalizePath(old), EM_in_dir_vec = normalizePath(young)))
-old_x_domed_all_yrs <- modifyList(base_params, list(scen_name_vec = "old_x_domed_all_yrs", sample_struct_list = list("old_x_domed_all_yrs" = sample_struct_rt_2_x_all_yrs), OM_in_dir_vec = normalizePath(old), EM_in_dir_vec = normalizePath(domed)))
+old_x_mid_all_yrs <- modifyList(base_params, list(scen_name_vec = "old_x_mid_all_yrs", sample_struct_list = list("old_x_mid_all_yrs" = sample_struct_rt_2_x_all_yrs), OM_in_dir_vec = normalizePath(old), EM_in_dir_vec = normalizePath(mid)))
 
-domed_x_flat_all_yrs <- modifyList(base_params, list(scen_name_vec = "domed_x_flat_all_yrs", sample_struct_list = list("domed_x_flat_all_yrs" = sample_struct_rt_2_x_all_yrs), OM_in_dir_vec = normalizePath(domed), EM_in_dir_vec = normalizePath(flat)))
-domed_x_young_all_yrs <- modifyList(base_params, list(scen_name_vec = "domed_x_young_all_yrs", sample_struct_list = list("domed_x_young_all_yrs" = sample_struct_rt_2_x_all_yrs), OM_in_dir_vec = normalizePath(domed), EM_in_dir_vec = normalizePath(young)))
-domed_x_old_all_yrs <- modifyList(base_params, list(scen_name_vec = "domed_x_old_all_yrs", sample_struct_list = list("domed_x_old_all_yrs" = sample_struct_rt_2_x_all_yrs), OM_in_dir_vec = normalizePath(domed), EM_in_dir_vec = normalizePath(old)))
+mid_x_flat_all_yrs <- modifyList(base_params, list(scen_name_vec = "mid_x_flat_all_yrs", sample_struct_list = list("mid_x_flat_all_yrs" = sample_struct_rt_2_x_all_yrs), OM_in_dir_vec = normalizePath(mid), EM_in_dir_vec = normalizePath(flat)))
+mid_x_young_all_yrs <- modifyList(base_params, list(scen_name_vec = "mid_x_young_all_yrs", sample_struct_list = list("mid_x_young_all_yrs" = sample_struct_rt_2_x_all_yrs), OM_in_dir_vec = normalizePath(mid), EM_in_dir_vec = normalizePath(young)))
+mid_x_old_all_yrs <- modifyList(base_params, list(scen_name_vec = "mid_x_old_all_yrs", sample_struct_list = list("mid_x_old_all_yrs" = sample_struct_rt_2_x_all_yrs), OM_in_dir_vec = normalizePath(mid), EM_in_dir_vec = normalizePath(old)))
 
 # put the scenarios you want to run into a list
 
@@ -342,19 +342,19 @@ all_scenarios <- list(
   flat_x_flat_all_yrs,
   young_x_young_all_yrs,
   old_x_old_all_yrs,
-  domed_x_domed_all_yrs,
+  mid_x_mid_all_yrs,
   flat_x_young_all_yrs,
   flat_x_old_all_yrs,
-  flat_x_domed_all_yrs,
+  flat_x_mid_all_yrs,
   young_x_flat_all_yrs,
   young_x_old_all_yrs,
-  young_x_domed_all_yrs,
+  young_x_mid_all_yrs,
   old_x_flat_all_yrs,
   old_x_young_all_yrs,
-  old_x_domed_all_yrs,
-  domed_x_flat_all_yrs,
-  domed_x_young_all_yrs,
-  domed_x_old_all_yrs
+  old_x_mid_all_yrs,
+  mid_x_flat_all_yrs,
+  mid_x_young_all_yrs,
+  mid_x_old_all_yrs
 )
 
 ##### RUN SSMSE #####
