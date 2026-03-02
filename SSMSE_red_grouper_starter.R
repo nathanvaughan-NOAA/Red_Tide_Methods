@@ -295,32 +295,41 @@ rt_2_x_rt_2_fixed <- modifyList(base_params, list(scen_name_vec = "rt_2_x_rt_2_f
 
 # Selectivity
 
-# get selectivity models
-flat <- file.path(model_SSMSE_dir, "flat")
-young <- file.path(model_SSMSE_dir, "young")
-old <- file.path(model_SSMSE_dir, "old")
-mid <- file.path(model_SSMSE_dir, "mid")
+scenario_factorial <- function(model_names = c("flat", "young"), type_name = NULL, type_struct = NULL) {
+  
+  # create a grid of all model combos
+  grid <- expand.grid(OM = model_names, EM = model_names, stringsAsFactors = FALSE)
+  
+  # create an SSMSE scenario for each model combo
+  scenarios <- lapply(1:nrow(grid), function(i) {
+    # create scen_name_vec
+    combo <- grid[i, ]
+    scen_name <- paste0(combo$OM, "_x_", combo$EM, type_name)
+    
+    # create or fetch sample_struct
+    if(is.null(type_name)) {
+      type_struct <- paste0("sample_struct_", scen_name)
+      struct_obj <- get(type_struct)
+    } else {
+      struct_obj <- type_struct
+    }
+    
+    # add new adjustments to SSMSE_run list and OM/EM locations
+    modifyList(base_params, list(
+      scen_name_vec = scen_name,
+      sample_struct_list = setNames(list(struct_obj), scen_name),
+      OM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, combo$OM)),
+      EM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, combo$EM))
+    ))
+  }
+  )
+}
 
-flat_x_flat_all_yrs <- modifyList(base_params, list(scen_name_vec = "flat_x_flat_all_yrs", sample_struct_list = list("flat_x_flat_all_yrs" = sample_struct_rt_2_x_all_yrs), OM_in_dir_vec = normalizePath(flat), EM_in_dir_vec = normalizePath(flat)))
-young_x_young_all_yrs <- modifyList(base_params, list(scen_name_vec = "young_x_young_all_yrs", sample_struct_list = list("young_x_young_all_yrs" = sample_struct_rt_2_x_all_yrs), OM_in_dir_vec = normalizePath(young), EM_in_dir_vec = normalizePath(young)))
-old_x_old_all_yrs <- modifyList(base_params, list(scen_name_vec = "old_x_old_all_yrs", sample_struct_list = list("old_x_old_all_yrs" = sample_struct_rt_2_x_all_yrs), OM_in_dir_vec = normalizePath(old), EM_in_dir_vec = normalizePath(old)))
-mid_x_mid_all_yrs <- modifyList(base_params, list(scen_name_vec = "mid_x_mid_all_yrs", sample_struct_list = list("mid_x_mid_all_yrs" = sample_struct_rt_2_x_all_yrs), OM_in_dir_vec = normalizePath(mid), EM_in_dir_vec = normalizePath(mid)))
-
-flat_x_young_all_yrs <- modifyList(base_params, list(scen_name_vec = "flat_x_young_all_yrs", sample_struct_list = list("flat_x_young_all_yrs" = sample_struct_rt_2_x_all_yrs), OM_in_dir_vec = normalizePath(flat), EM_in_dir_vec = normalizePath(young)))
-flat_x_old_all_yrs <- modifyList(base_params, list(scen_name_vec = "flat_x_old_all_yrs", sample_struct_list = list("flat_x_old_all_yrs" = sample_struct_rt_2_x_all_yrs), OM_in_dir_vec = normalizePath(flat), EM_in_dir_vec = normalizePath(old)))
-flat_x_mid_all_yrs <- modifyList(base_params, list(scen_name_vec = "flat_x_mid_all_yrs", sample_struct_list = list("flat_x_mid_all_yrs" = sample_struct_rt_2_x_all_yrs), OM_in_dir_vec = normalizePath(flat), EM_in_dir_vec = normalizePath(mid)))
-
-young_x_flat_all_yrs <- modifyList(base_params, list(scen_name_vec = "young_x_flat_all_yrs", sample_struct_list = list("young_x_flat_all_yrs" = sample_struct_rt_2_x_all_yrs), OM_in_dir_vec = normalizePath(young), EM_in_dir_vec = normalizePath(flat)))
-young_x_old_all_yrs <- modifyList(base_params, list(scen_name_vec = "young_x_old_all_yrs", sample_struct_list = list("young_x_old_all_yrs" = sample_struct_rt_2_x_all_yrs), OM_in_dir_vec = normalizePath(young), EM_in_dir_vec = normalizePath(old)))
-young_x_mid_all_yrs <- modifyList(base_params, list(scen_name_vec = "young_x_mid_all_yrs", sample_struct_list = list("young_x_mid_all_yrs" = sample_struct_rt_2_x_all_yrs), OM_in_dir_vec = normalizePath(young), EM_in_dir_vec = normalizePath(mid)))
-
-old_x_flat_all_yrs <- modifyList(base_params, list(scen_name_vec = "old_x_flat_all_yrs", sample_struct_list = list("old_x_flat_all_yrs" = sample_struct_rt_2_x_all_yrs), OM_in_dir_vec = normalizePath(old), EM_in_dir_vec = normalizePath(flat)))
-old_x_young_all_yrs <- modifyList(base_params, list(scen_name_vec = "old_x_young_all_yrs", sample_struct_list = list("old_x_young_all_yrs" = sample_struct_rt_2_x_all_yrs), OM_in_dir_vec = normalizePath(old), EM_in_dir_vec = normalizePath(young)))
-old_x_mid_all_yrs <- modifyList(base_params, list(scen_name_vec = "old_x_mid_all_yrs", sample_struct_list = list("old_x_mid_all_yrs" = sample_struct_rt_2_x_all_yrs), OM_in_dir_vec = normalizePath(old), EM_in_dir_vec = normalizePath(mid)))
-
-mid_x_flat_all_yrs <- modifyList(base_params, list(scen_name_vec = "mid_x_flat_all_yrs", sample_struct_list = list("mid_x_flat_all_yrs" = sample_struct_rt_2_x_all_yrs), OM_in_dir_vec = normalizePath(mid), EM_in_dir_vec = normalizePath(flat)))
-mid_x_young_all_yrs <- modifyList(base_params, list(scen_name_vec = "mid_x_young_all_yrs", sample_struct_list = list("mid_x_young_all_yrs" = sample_struct_rt_2_x_all_yrs), OM_in_dir_vec = normalizePath(mid), EM_in_dir_vec = normalizePath(young)))
-mid_x_old_all_yrs <- modifyList(base_params, list(scen_name_vec = "mid_x_old_all_yrs", sample_struct_list = list("mid_x_old_all_yrs" = sample_struct_rt_2_x_all_yrs), OM_in_dir_vec = normalizePath(mid), EM_in_dir_vec = normalizePath(old)))
+model_names = c("flat", "young", "old", "mid")
+type_name = "_all_yrs"
+type_struct = sample_struct_rt_2_x_all_yrs
+all_yrs_scenarios <- scenario_factorial(model_names = model_names, type_name = type_name, type_struct = sample_struct_rt_2_x_all_yrs)    
+rt_2_scenarios <- scenario_factorial(model_names = model_names, type_name = "_rt_2", type_struct = sample_struct_rt_2_x_rt_2)    
 
 # put the scenarios you want to run into a list
 
@@ -337,25 +346,16 @@ mid_x_old_all_yrs <- modifyList(base_params, list(scen_name_vec = "mid_x_old_all
 # )
 
 # selectivity
-all_scenarios <- list(
-  rt_2_x_rt_2,
-  flat_x_flat_all_yrs,
-  young_x_young_all_yrs,
-  old_x_old_all_yrs,
-  mid_x_mid_all_yrs,
-  flat_x_young_all_yrs,
-  flat_x_old_all_yrs,
-  flat_x_mid_all_yrs,
-  young_x_flat_all_yrs,
-  young_x_old_all_yrs,
-  young_x_mid_all_yrs,
-  old_x_flat_all_yrs,
-  old_x_young_all_yrs,
-  old_x_mid_all_yrs,
-  mid_x_flat_all_yrs,
-  mid_x_young_all_yrs,
-  mid_x_old_all_yrs
+# all_scenarios <- c(
+#   rt_2_scenarios, 
+#   list(rt_2_x_rt_2)
+# )
+
+all_scenarios <- c(
+  all_yrs_scenarios, 
+  list(rt_2_x_all_yrs)
 )
+
 
 ##### RUN SSMSE #####
 
