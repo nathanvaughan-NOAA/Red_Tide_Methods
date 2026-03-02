@@ -5,17 +5,7 @@
 # Load packages
 library(r4ss)
 library(tidyverse)
-
-# Download ss.exe if linux workstation
-
-exe_path <- "base_models/default_sigmaR/ss.exe"
-
-if (!file.exists(exe_path)) {
-  get_ss3_exe(dest_dir = "base_models/default_sigmaR/")
-  if (.Platform$OS.type == "unix") {
-    system(paste("chmod +x", exe_path))
-  }
-}
+library(SSMSE)
 
 # Initial model to modify
 mod_path <- file.path("base_models", "default_sigmaR")
@@ -105,7 +95,7 @@ inputs$ctl <- ctl
 # Write file
 r4ss::SS_write(inputs, dir = new_mod_path, overwrite = TRUE)
 
-r4ss::run(new_mod_path, exe = normalizePath("base_models/default_sigmaR/ss.exe"))
+SSMSE::run_ss_model(new_mod_path)
 
 
 ##### Young Model #####
@@ -193,7 +183,7 @@ inputs$ctl <- ctl
 # Write file
 r4ss::SS_write(inputs, dir = new_mod_path, overwrite = TRUE)
 
-r4ss::run(new_mod_path, exe = normalizePath("base_models/default_sigmaR/ss.exe"))
+SSMSE::run_ss_model(new_mod_path)
 
 ##### Old Model #####
 
@@ -275,7 +265,7 @@ inputs$ctl <- ctl
 # Write file
 r4ss::SS_write(inputs, dir = new_mod_path, overwrite = TRUE)
 
-r4ss::run(new_mod_path, exe = normalizePath("base_models/default_sigmaR/ss.exe"))
+SSMSE::run_ss_model(new_mod_path)
 
 ##### mid Model #####
 
@@ -357,4 +347,4 @@ inputs$ctl <- ctl
 # Write file
 r4ss::SS_write(inputs, dir = new_mod_path, overwrite = TRUE)
 
-r4ss::run(new_mod_path, exe = normalizePath("base_models/default_sigmaR/ss.exe"))
+SSMSE::run_ss_model(new_mod_path)
