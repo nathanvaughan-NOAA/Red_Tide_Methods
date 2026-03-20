@@ -21,18 +21,46 @@ library(knitr)
 library(kableExtra)
 
 #name of the OM
-OM_name <- "default"
-run_SSMSE_dir <- file.path("C:/Users/apn26/Documents/CIMAS/Personal Notes/test_cloud_computing/testing_cloud")
-default <- file.path(run_SSMSE_dir, OM_name)
+OM_name <- "default_sigmaR"
+model_SSMSE_dir <- file.path("base_models")
+default <- file.path(model_SSMSE_dir, OM_name)
 
 #name of the results files
-results_name <- "_rt_2_fixed_2021"
+results_name <- "_selectivity"
+run_SSMSE_dir <- file.path("runs_output")
 
 #pull the summary and dat files, the dat file isn't actually that important.  
-cc_storage <- file.path("C:/Users/apn26/Documents/CIMAS/Personal Notes/cc_storage")
-summary <- readRDS(file = file.path(cc_storage, paste0("results_summary", results_name, ".rda")))
+run_SSMSE_dir <- file.path("runs_output")
+summary <- readRDS(file = file.path(run_SSMSE_dir, paste0("results_summary", results_name, ".rda")))
 dat <- r4ss::SS_readdat(file.path(default, "red_grouper_1986_2017_RedTideFleet.dat"))
 
+
+#create a list of scenarios for plot generation, usually the default order is fine.  
+#scen_list <- unique(summary$ts$scenario)
+#hard coded in a specific order.  
+scen_list <- c(
+  "rt_2_x_rt_2",
+  "flat_x_flat_rt_2",
+  "young_x_young_rt_2",
+  "old_x_old_rt_2",
+  "mid_x_mid_rt_2",
+  "flat_x_young_rt_2",
+  "flat_x_old_rt_2",
+  "flat_x_mid_rt_2",
+  "young_x_flat_rt_2",
+  "young_x_old_rt_2",
+  "young_x_mid_rt_2",
+  "old_x_flat_rt_2",
+  "old_x_young_rt_2",
+  "old_x_mid_rt_2",
+  "mid_x_flat_rt_2",
+  "mid_x_young_rt_2",
+  "mid_x_old_rt_2"
+)
+
+#pull the summary and dat files, the dat file isn't actually that important.  
+summary <- readRDS(file = file.path(run_SSMSE_dir, paste0("results_summary", results_name, ".rda")))
+dat <- r4ss::SS_readdat(file.path(default, "red_grouper_1986_2017_RedTideFleet.dat"))
 
 summary$ts <- summary$ts %>%
   filter(model_run != "", !str_detect(model_run, "Base")) %>% #remove "Base" model 
@@ -43,14 +71,7 @@ summary$ts <- summary$ts %>%
     TRUE ~ TRUE # Keep all other rows if no _EM
   )) %>%
   mutate(
-    scenario = factor(scenario, 
-                      levels = c("no_rt", 
-                                 "no_rt_x_rt_2", 
-                                 "rt_2_x_no_rt", 
-                                 "rt_2_x_rt_2", "rt_2_x_rt_2_fixed",
-                                 "no_rt_x_all_yrs", 
-                                 "rt_2_x_all_yrs",
-                                 "rep_3_x_all_yrs"))
+    scenario = factor(scenario, scen_list)
   )
 
 summary$dq <- summary$dq %>%
@@ -62,37 +83,13 @@ summary$dq <- summary$dq %>%
     TRUE ~ TRUE # Keep all other rows if no _EM
   )) %>%
   mutate(
-    scenario = factor(scenario, 
-                      levels = c("no_rt", 
-                                 "no_rt_x_rt_2", 
-                                 "rt_2_x_no_rt", 
-                                 "rt_2_x_rt_2", "rt_2_x_rt_2_fixed",
-                                 "no_rt_x_all_yrs", 
-                                 "rt_2_x_all_yrs",
-                                 "rep_3_x_all_yrs"))
+    scenario = factor(scenario, scen_list)
   )
 summary$scalar <- summary$scalar %>%
   filter(model_run != "", !str_detect(model_run, "Base")) 
 
 #rename the OM if it's different from default
-OM_name <- "default_sigmaR"
-
-```
-
-```{r}
-#create a list of scenarios for plot generation, usually the default order is fine.  
-#scen_list <- unique(summary$ts$scenario)
-#hard coded in a specific order.  
-scen_list <- c(
-  "no_rt",
-  "no_rt_x_rt_2",
-  "rt_2_x_no_rt",
-  "rt_2_x_rt_2",
-  "rt_2_x_rt_2_fixed",
-  "no_rt_x_all_yrs",
-  "rt_2_x_all_yrs",
-  "rep_3_x_all_yrs"
-)
+OM_name <- "mid"
 
 ```
 
@@ -106,30 +103,26 @@ library(r4ss)
 
 iter = 1
 bonus_scen <- scen_list
+scen = "flat_x_mid_rt_2"
 
 size_sel_plots <- function(scen_list) {
   scenario_results_list <- map(scen_list, function(scen) {
     iteration_results_list <- map(1:10, function(iter) {
-      selectivity_run <- file.path(
-        cc_storage,
+      parent_dir <- file.path(
+        run_SSMSE_dir,
         paste0("results", results_name),
         scen,
-        iter,
-        paste0(OM_name, "_EM_2047")
+        iter
       )
-      if (!dir.exists(selectivity_run)) {
-        warning(paste(
-          "Directory not found:",
-          selectivity_run,
-          "- Skipping this run."
-        ))
-        return(NULL) # Return NULL if directory doesn't exist, will be handled by list_rbind
-      }
+      
+      # find the directory that ends in "_EM_2047"
+      # full.names = TRUE gives us the whole path for SS_output
+      all_dirs <- list.dirs(parent_dir, full.names = TRUE, recursive = FALSE)
+      selectivity_run <- grep("_EM_2047$", all_dirs, value = TRUE)
       
       selectivity_res <- SS_output(selectivity_run,
                                    printstats = FALSE,
                                    verbose = FALSE)
-      
       
       size_selectivity <- selectivity_res$sizeselex %>%
         filter(Label == "2047_4_Lsel") %>%
@@ -141,7 +134,7 @@ size_sel_plots <- function(scen_list) {
         mutate(scenario = scen, iteration = iter)
       
       age_selectivity <- selectivity_res$ageselex %>%
-        filter(Label == "2047_4_Asel2") %>%
+        filter(Label == "2047_5_Asel2") %>%
         pivot_longer(
           cols = matches("^\\d+$"),
           names_to = "age",
@@ -266,21 +259,17 @@ scen_dat <- size_sel_plots(bonus_scen)
 size_sel_plots_OM <- function(scen_list) {
   scenario_results_list <- map(scen_list, function(scen) {
     iteration_results_list <- map(1:10, function(iter) {
-      selectivity_run <- file.path(
-        cc_storage,
+      parent_dir <- file.path(
+        run_SSMSE_dir,
         paste0("results", results_name),
         scen,
-        iter,
-        paste0(OM_name, "_OM")
+        iter
       )
-      if (!dir.exists(selectivity_run)) {
-        warning(paste(
-          "Directory not found:",
-          selectivity_run,
-          "- Skipping this run."
-        ))
-        return(NULL) # Return NULL if directory doesn't exist, will be handled by list_rbind
-      }
+      
+      # find the directory that ends in "_EM_2047"
+      # full.names = TRUE gives us the whole path for SS_output
+      all_dirs <- list.dirs(parent_dir, full.names = TRUE, recursive = FALSE)
+      selectivity_run <- grep("_OM$", all_dirs, value = TRUE)
       
       selectivity_res <- SS_output(selectivity_run,
                                    printstats = FALSE,
@@ -297,7 +286,7 @@ size_sel_plots_OM <- function(scen_list) {
         mutate(scenario = scen, iteration = iter)
       
       age_selectivity <- selectivity_res$ageselex %>%
-        filter(Label == "2047_4_Asel2") %>%
+        filter(Label == "2047_5_Asel2") %>%
         pivot_longer(
           cols = matches("^\\d+$"),
           names_to = "age",
