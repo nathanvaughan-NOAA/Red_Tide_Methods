@@ -2,7 +2,7 @@
 
 # Load packages
 
-#devtools::load_all("/SSMSE/")  # needs to be the cloned SSMSE repo
+#devtools::load_all("/SSMSE")  # needs to be the cloned SSMSE repo
 
 library(tidyverse)
 library(SSMSE)
@@ -17,7 +17,7 @@ packageVersion("ss3sim")
 packageVersion("SSMSE")
 
 # Create a folder for the output in the working directory.
-results_name <- "selectivity_all_yrs"
+results_name <- "random_tests"
 run_SSMSE_dir <- file.path("./runs_output")
 run_res_path <- file.path(run_SSMSE_dir, paste0("results_", results_name))
 if (!dir.exists(run_res_path)) {
@@ -29,7 +29,8 @@ model_SSMSE_dir <- file.path("base_models")
 default <- file.path(model_SSMSE_dir, "default_sigmaR")
 
 # number of simulation years
-projyrs<-30
+projyrs <- 5
+my_niter <- 3
 
 # to get the names of parameter values
 ctl <- r4ss::SS_readctl(file.path(default, "red_grouper_1986_2017_RedTideFleet.ctl"), 
@@ -260,10 +261,9 @@ sample_struct_list_all <- list(
 )
 
 ##### Scenario Selection #####
-
 # global settings for all SSMSE runs
 base_params <- list(
-  iter_vec        = 10,
+  iter_vec        = my_niter,
   out_dir_scen_vec = normalizePath(run_res_path),
   run_EM_last_yr  = TRUE,
   MS_vec          = "EnvirEM",
@@ -331,6 +331,72 @@ type_struct = sample_struct_rt_2_x_all_yrs
 all_yrs_scenarios <- scenario_factorial(model_names = model_names, type_name = type_name, type_struct = sample_struct_rt_2_x_all_yrs)    
 rt_2_scenarios <- scenario_factorial(model_names = model_names, type_name = "_rt_2", type_struct = sample_struct_rt_2_x_rt_2)    
 
+# Random OM 
+
+create_RandomFixedCatch <- function (my_niter,
+                                     FixedCatch,
+                                     rt_fleet,
+                                     n_rt_years,
+                                     min_mortality,
+                                     max_mortality,
+                                     mean_mortality)
+{
+  FixedCatch <- FixedCatch %>% filter(FltSvy == rt_fleet)
+  RandomFixedCatch <- list()
+  rt_year_om = sample(1:length(FixedCatch[, 1]), length(FixedCatch[, 1])) # random years
+  for (i in 1:my_niter) {
+    this_iter_rt <- rt_year_om[1:n_rt_years]
+    rt_year_om <- rt_year_om[-c(1:n_rt_years)]
+    
+    if(length(rt_year_om) < n_rt_years ){
+      rt_year_om <- c(rt_year_om, sample(c(1:length(FixedCatch[,1]))[which(!is.element(1:length(FixedCatch[,1]),rt_year_om))], length(c(1:length(FixedCatch[,1]))[which(!is.element(1:length(FixedCatch[,1]),rt_year_om))])))
+    }
+
+    RandomFixedCatch[[i]] <- FixedCatch
+    
+    rt_mortality_om = runif(n_rt_years, min_mortality, max_mortality) # random mortality
+    rt_mortality_om = rt_mortality_om * (mean_mortality / mean(rt_mortality_om)) # rescale to the mean
+    
+    RandomFixedCatch[[i]][this_iter_rt, "Catch"] <- rt_mortality_om
+  }
+  return(RandomFixedCatch)
+}
+
+sample_struct_fc <- SSMSE::create_sample_struct_envir(
+  dat = datfile,
+  nyrs = projyrs,
+  FixedCatches = TRUE,
+  FixedCatchesEM = TRUE
+)
+extras <- list()
+extras$RandomFixedCatch <- create_RandomFixedCatch(
+  my_niter = my_niter,
+  FixedCatch = sample_struct_fc$FixedCatch,
+  rt_fleet = 5,
+  n_rt_years = 2,
+  min_mortality = 0.01,
+  max_mortality = 0.2,
+  mean_mortality = 0.1
+)
+
+# use RandomFixedCatch to fill in the numbers for RandomFixedCatchEM
+# start by making a perfect copy
+
+extras$RandomFixedCatchEM <- extras$RandomFixedCatch
+
+for(i in 1:my_niter){
+  names(extras$RandomFixedCatchEM[[i]])[5] <- "catch_se"
+  rt_catch_se <- rep(0.01, length=nrow(extras$RandomFixedCatchEM[[i]]))
+  extras$RandomFixedCatchEM[[i]]$catch_se <- rt_catch_se
+  extras$RandomFixedCatchEM[[i]]$fixed <- rep(0, length=nrow(extras$RandomFixedCatchEM[[i]])) # a new column that indicates if the EM's catch is estimated or not.  
+}
+
+random_2_x_random_2 <- modifyList(base_params, list(scen_name_vec = "random_2_x_random_2", sample_struct_list = list("random_2_x_random_2" = sample_struct_rt_2_x_rt_2), extras = list(extras)))
+random_2_x_all_years <- modifyList(base_params, list(scen_name_vec = "random_2_x_all_years", sample_struct_list = list("random_2_x_all_years" = sample_struct_rt_2_x_all_yrs), extras = list(extras[-2])))
+
+# Future Idea: then maybe have some wrong years
+
+
 # put the scenarios you want to run into a list
 
 # 4 core, all_years, fixed
@@ -351,17 +417,21 @@ rt_2_scenarios <- scenario_factorial(model_names = model_names, type_name = "_rt
 #   list(rt_2_x_rt_2)
 # )
 
-all_scenarios <- c(
-  all_yrs_scenarios, 
-  list(rt_2_x_all_yrs)
-)
+# all_scenarios <- c(
+#   all_yrs_scenarios, 
+#   list(rt_2_x_all_yrs)
+# )
 
+# 4 core, all_years, fixed
+all_scenarios <- list(
+  random_2_x_random_2,
+  random_2_x_all_years
+)
 
 ##### RUN SSMSE #####
 
 # start timer
 start_time <- Sys.time()
-
 # walk through the scenario list and run_SSMSE
 walk(all_scenarios, ~exec(run_SSMSE, !!!.x))  # !!! makes the scenario list into arguements that can be used by a function
 

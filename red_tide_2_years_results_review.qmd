@@ -24,51 +24,14 @@ default <- file.path(model_SSMSE_dir, OM_name)
 run_SSMSE_dir <- file.path("runs_output")
 
 #name of the results files
-results_name <- "_all_10"
+results_name <- "_random_tests"
 
 #create a list of scenarios for plot generation, usually the default order is fine.  
 #scen_list <- unique(summary$ts$scenario)
 #hard coded in a specific order.  
 scen_list <- c(
-  "no_rt",
-  "no_rt_x_rt_2",
-  "rt_2_x_no_rt",
-  "rt_2_x_rt_2", 
-  "no_rt_x_all_yrs",
-  "rep_3_x_all_yrs",
-  "rt_2_x_all_yrs",
-  "flat_x_flat_rt_2",
-  "young_x_young_rt_2",
-  "old_x_old_rt_2",
-  "mid_x_mid_rt_2",
-  "flat_x_young_rt_2",
-  "flat_x_old_rt_2",
-  "flat_x_mid_rt_2",
-  "young_x_flat_rt_2",
-  "young_x_old_rt_2",
-  "young_x_mid_rt_2",
-  "old_x_flat_rt_2",
-  "old_x_young_rt_2",
-  "old_x_mid_rt_2",
-  "mid_x_flat_rt_2",
-  "mid_x_young_rt_2",
-  "mid_x_old_rt_2",
-  "flat_x_flat_all_yrs",
-  "young_x_young_all_yrs",
-  "old_x_old_all_yrs",
-  "mid_x_mid_all_yrs",
-  "flat_x_young_all_yrs",
-  "flat_x_old_all_yrs",
-  "flat_x_mid_all_yrs",
-  "young_x_flat_all_yrs",
-  "young_x_old_all_yrs",
-  "young_x_mid_all_yrs",
-  "old_x_flat_all_yrs",
-  "old_x_young_all_yrs",
-  "old_x_mid_all_yrs",
-  "mid_x_flat_all_yrs",
-  "mid_x_young_all_yrs",
-  "mid_x_old_all_yrs"
+  "random_2_x_random_2",
+  "random_2_x_all_years"
 )
 
 #pull the summary and dat files, the dat file isn't actually that important.  
@@ -434,29 +397,29 @@ Figure 9. The total fishing mortality over time by scenario. The default scenari
 
 ```{r}
 
-base_selectivities <- summary$scalar %>% 
-  select(model_run, starts_with("AgeSel"),-ends_with("1986")) %>%
-  pivot_longer(
-    cols = starts_with("AgeSel"),       # Selects Par1, Par2, etc.
-    names_to = "age",                # New column name
-    names_pattern = "AgeSel_P(\\d+)_RedTide_5",
-    values_to = "selectivity",       # Where the cell values go
-    names_transform = list(age = as.numeric) # Optional: converts "1", "2" to numbers
-  ) %>%
-  filter(
-    str_detect(model_run, "_OM"),
-    !is.na(selectivity)  # This drops any row where selectivity is NA
-  ) %>%
-  mutate(model_run = str_remove(model_run, "_OM")) %>%
-  distinct()
-
-base_selectivities %>%
-  ggplot(aes(age, selectivity)) +
-  geom_line() +
-  geom_point() +
-  theme_bw() + 
-  ggtitle("Red tide selectivity at Age") +
-  facet_wrap(~model_run)
+# base_selectivities <- summary$scalar %>% 
+#   select(model_run, starts_with("AgeSel"),-ends_with("1986")) %>%
+#   pivot_longer(
+#     cols = starts_with("AgeSel"),       # Selects Par1, Par2, etc.
+#     names_to = "age",                # New column name
+#     names_pattern = "AgeSel_P(\\d+)_RedTide_5",
+#     values_to = "selectivity",       # Where the cell values go
+#     names_transform = list(age = as.numeric) # Optional: converts "1", "2" to numbers
+#   ) %>%
+#   filter(
+#     str_detect(model_run, "_OM"),
+#     !is.na(selectivity)  # This drops any row where selectivity is NA
+#   ) %>%
+#   mutate(model_run = str_remove(model_run, "_OM")) %>%
+#   distinct()
+# 
+# base_selectivities %>%
+#   ggplot(aes(age, selectivity)) +
+#   geom_line() +
+#   geom_point() +
+#   theme_bw() + 
+#   ggtitle("Red tide selectivity at Age") +
+#   facet_wrap(~model_run)
 
 ```
 
@@ -1931,7 +1894,7 @@ Residuals = EM - OM
 This calculation does not have issues with zeros and estimates the error introduced to each variable by the different scenarios.
 
 :::: panel-tabset
-### 2047 DeadB
+### 2020 DeadB
 
 ::: panel-tabset
 #### All
@@ -1940,7 +1903,7 @@ This calculation does not have issues with zeros and estimates the error introdu
 
 residual_runs <- EM_runs %>%
   filter(
-    str_detect(model_run, "_EM_2047")) %>%
+    str_detect(model_run, "_EM_2020")) %>%
   rowwise()%>%
   mutate(commercial = sum(deadB_1, deadB_2), recreational = deadB_4) %>%
   left_join(OM_runs, by = c("year", "scenario", "iteration"), suffix = c("_em", "_om")) %>%
@@ -2093,7 +2056,7 @@ residual_runs %>%
 
 residual_runs_prop <- EM_runs %>%
   filter(
-    str_detect(model_run, "_EM_2047")) %>%
+    str_detect(model_run, "_EM_2020")) %>%
   rowwise()%>%
   mutate(commercial = sum(deadB_1, deadB_2), recreational = deadB_4) %>%
   left_join(OM_runs, by = c("year", "scenario", "iteration"), suffix = c("_em", "_om")) %>%
@@ -2131,94 +2094,6 @@ residual_runs_prop %>%
   )
 ```
 
-### 2026
-
-```{r}
-residual_runs <- EM_runs %>%
-  filter(
-    str_detect(model_run, "_EM_2026")) %>%
-  rowwise()%>%
-  mutate(commercial = sum(deadB_1, deadB_2), recreational = deadB_4) %>%
-  left_join(OM_runs, by = c("year", "scenario", "iteration"), suffix = c("_em", "_om")) %>%
-  group_by(scenario, iteration, year) %>%
-  mutate(
-    res_Recruit_0 = Recruit_0_em-Recruit_0_om,
-    res_F_5 = F_5_em-F_5_om,
-    res_SpawnBio = SpawnBio_em-SpawnBio_om,
-    com_om = sum(deadB_1_om, deadB_2_om),
-    res_com = commercial-com_om,
-    res_rec = recreational-deadB_4_om,
-    res_dead_5 = deadB_5_em-deadB_5_om,
-    res_abundance = Bio_smry_em-Bio_smry_om
-  )
-
-residual_runs %>%
-  # Pivot the data longer
-  pivot_longer(
-    cols = c(res_com, res_rec, res_dead_5),
-    names_to = "variable",
-    values_to = "value",
-    names_transform = list(
-      variable = ~recode(
-        .x,
-        "res_com" = "Commercial Catch",
-        "res_rec" = "Recreational Catch",
-        "res_dead_5" = "Red Tide Dead"
-      )
-  )) %>%
-  #filter(scenario %in% scen_list[1:4]) %>%
-  ggplot(aes(year, value)) +
-  geom_vline(xintercept = c(2005, 2014, 2018, 2021), linetype = "dashed", color = "gray") +
-  geom_vline(xintercept = c(2016), color = "gray")+ # should this be the first predicted year?
-  stat_summary(fun = mean, geom = "line") +
-  stat_summary(fun.data = mean_cl_normal, geom = "ribbon", alpha = 0.3) +
-  facet_grid(variable~scenario, scales = "free") +
-  theme_bw()+ 
-  #coord_cartesian(ylim = c(0,3)) +
-  #coord_cartesian(xlim = c(2017, 2025)) +
-  labs(color = "EM", fill = "EM", x = "Year", y = "Residuals")
-```
-
-#### Long Term Residual Sums (1980-2026)
-
-```{r}
-residual_runs %>% 
-  filter(scenario %in% scen_list[1:5]) %>%
-  group_by(scenario) %>%
-  reframe(sum_res_com = sum(res_com), sum_res_rec = sum(res_rec), sum_res_dead_5 = sum(res_dead_5)) %>%
-  kable(
-    # Rename columns directly within kable
-    col.names = c("Scenario", "Commercial Catch Residual Sum", "Recreational Catch Residual Sum", "Red  Tide Discards Residual Sum"),
-    align = c("l", "c", "c", "c"), # Align columns (left, center, center, center)
-    digits = 0
-  ) %>%
-  kable_styling(
-    bootstrap_options = c("striped", "hover", "condensed"), # Add bootstrap styling
-    full_width = FALSE # Don't stretch table to full page width
-  )
-```
-
-#### Short Term Residual Sums (2017-2022)
-
-```{r}
-residual_runs %>% 
-  filter(year %in% seq(2017, 2022, 1)) %>%
-  group_by(scenario) %>%
-  reframe(sum_res_com = sum(res_com)/10, sum_res_rec = sum(res_rec)/10, sum_res_dead_5 = sum(res_dead_5)/10) %>%
-  kable(
-    # Rename columns directly within kable
-    col.names = c("Scenario", "Commercial Catch Residual Sum", "Recreational Catch Residual Sum", "Red  Tide Discards Residual Sum"),
-    align = c("l", "c", "c", "c"), # Align columns (left, center, center, center)
-    digits = 0
-  ) %>%
-  kable_styling(
-    bootstrap_options = c("striped", "hover", "condensed"), # Add bootstrap styling
-    full_width = FALSE # Don't stretch table to full page width
-  )
-
-#what year is the mean positive, when does it become negative again?  
-
-```
 ::::
 
 # Other Error Plots
@@ -2416,7 +2291,7 @@ OM_means <- summary$ts %>%
   )
 
 EM_means_re <- summary$ts %>%
-  filter(str_detect(model_run, "_EM_2047")) %>%
+  filter(str_detect(model_run, "_EM_2020")) %>%
   rowwise() %>%
   mutate(
     commercial = sum(retainB_1, retainB_2),
@@ -2462,7 +2337,7 @@ EM_means_re <- summary$ts %>%
   )
 
 EM_means <- summary$ts %>%
-  filter(str_detect(model_run, "_EM_2047")) %>%
+  filter(str_detect(model_run, "_EM_2020")) %>%
   rowwise() %>%
   mutate(
     commercial = sum(retainB_1, retainB_2),
@@ -3109,12 +2984,12 @@ ratio_R0 <- summary$scalar %>%
   select(iteration, scenario, model_run, SR_LN_R0) %>%
   mutate(r0 = exp(SR_LN_R0)) %>%
   select(!SR_LN_R0) %>%
-  filter(model_run %in% c(paste0(OM_name, "_OM"), paste0(OM_name, "_EM_2047"))) %>%
+  filter(model_run %in% c(paste0(OM_name, "_OM"), paste0(OM_name, "_EM_2020"))) %>%
   pivot_wider(
       names_from = model_run,  # this will create "OM" and "EM" columns
       values_from = r0
   ) %>%
-  rename("OM" = paste0(OM_name, "_OM") , "EM" = paste0(OM_name, "_EM_2047")) %>%
+  rename("OM" = paste0(OM_name, "_OM") , "EM" = paste0(OM_name, "_EM_2020")) %>%
   group_by(scenario, iteration) %>%
   mutate(ratio_R0 = EM/OM)
   
@@ -3131,7 +3006,7 @@ EM:OM ratios in the new format for variables that don't have zeros.
 ```{r}
 
 ratio_df %>%
-  filter(str_detect(model_run, "_EM_2047") | str_detect(model_run, "_OM")) %>%
+  filter(str_detect(model_run, "_EM_2020") | str_detect(model_run, "_OM")) %>%
   mutate(
     em_model = ifelse(
       scenario %in% c("no_rt", "rt_2_x_no_rt", "rt_2_x_no_rt_high"),
@@ -3187,25 +3062,25 @@ ratio_df %>%
 ## Red Tide Year Comparisons
 
 ::: panel-tabset
-### 2047 Boxplot of F_5
+### 2020 Boxplot of F_5
 
 ```{r}
 
 # # maybe a boxplot with the OM value across all years and EM values across all years will show how much they match up (or not)
 # 
 # summary$ts %>%
-#   filter(model_run %in% c(paste0(OM_name, "_OM"), paste0(OM_name, "_EM_2047"))) %>%
+#   filter(model_run %in% c(paste0(OM_name, "_OM"), paste0(OM_name, "_EM_2020"))) %>%
 #   ggplot(aes(factor(year), F_5)) + 
 #   geom_boxplot(aes(color = model_run)) + 
 #   facet_wrap(~scenario)
 
 # maybe these plots would look nice if I only do 2005, 2014, 2018, 2021 as a demonstration of how well it captures just those 4 years with red tide.  
 summary$ts %>%
-  filter(model_run %in% c(paste0(OM_name, "_OM"), paste0(OM_name, "_EM_2047")), year %in% c(2005, 2014, 2018, 2021)) %>%
+  filter(model_run %in% c(paste0(OM_name, "_OM"), paste0(OM_name, "_EM_2020")), year %in% c(2005, 2014, 2018, 2021)) %>%
   ggplot(aes(factor(year), F_5)) + 
   geom_boxplot(aes(color = model_run)) + 
   facet_wrap(~scenario) +
-  ggtitle("model_run = 2047")
+  ggtitle("model_run = 2020")
 ```
 
 ### 2023 Boxplot of F_5
@@ -3224,7 +3099,7 @@ summary$ts %>%
 
 ```{r}
 summary$ts %>%
-  filter(model_run %in% c(paste0(OM_name, "_OM"), paste0(OM_name, "_EM_2047")), year %in% c(2005, 2014, 2018, 2021)) %>%
+  filter(model_run %in% c(paste0(OM_name, "_OM"), paste0(OM_name, "_EM_2020")), year %in% c(2005, 2014, 2018, 2021)) %>%
   group_by(year, model_run, scenario) %>%
   reframe(F_5_mean = mean(F_5), F_5_median = median(F_5), F_5_sd = sd(F_5)) %>%
   select(model_run, year, scenario, F_5_mean) %>%
@@ -3234,10 +3109,10 @@ summary$ts %>%
   ) %>%
   # Optional: Rename the columns to match your desired 'TRUE' and 'FALSE' format
   rename(
-    'EM_2047' = paste0(OM_name, "_EM_2047"),
+    'EM_2020' = paste0(OM_name, "_EM_2020"),
     'OM' = paste0(OM_name, "_OM")
   ) %>%
-  mutate(Residual = EM_2047 - OM) %>%
+  mutate(Residual = EM_2020 - OM) %>%
   kable(
     # Rename columns directly within kable
     align = c("l", "c", "c", "c", "c"), # Align columns (left, center, center, center)
@@ -3281,13 +3156,13 @@ AE = abs(EM - OM)
 This is a unidirectional error. So we ended up preferring Residual Sums. But I've kept these plots for reference. Mean Absolute Error (MAE) and Symmetric Mean Absolute Percentage Error (SMAPE) were removed because they had issues with zeros in the red tide fleet.
 
 ::: panel-tabset
-### 2047
+### 2020
 
 ```{r}
 
 abs_error <- EM_runs %>%
   filter(
-    str_detect(model_run, "_EM_2047")) %>%
+    str_detect(model_run, "_EM_2020")) %>%
   rowwise()%>%
   mutate(commercial = sum(retainB_1, retainB_2), recreational = retainB_4) %>%
   left_join(OM_runs, by = c("year", "scenario", "iteration"), suffix = c("_em", "_om")) %>%
@@ -3330,160 +3205,13 @@ abs_error %>%
 
 ```
 
-### 2026
+### 2020 More variables, zoomed in
 
 ```{r}
 
 abs_error <- EM_runs %>%
   filter(
-    str_detect(model_run, "_EM_2026")) %>%
-  rowwise()%>%
-  mutate(commercial = sum(retainB_1, retainB_2), recreational = retainB_4) %>%
-  left_join(OM_runs, by = c("year", "scenario", "iteration"), suffix = c("_em", "_om")) %>%
-  group_by(scenario, iteration, year) %>%
-  mutate(
-    ae_Recruit_0 = abs(Recruit_0_em-Recruit_0_om),
-    ae_F_5 = abs(F_5_em-F_5_om),
-    ae_SpawnBio = abs(SpawnBio_em-SpawnBio_om),
-    com_om = sum(retainB_1_om, retainB_2_om),
-    ae_com = abs(commercial-com_om),
-    ae_rec = abs(recreational-retainB_4_om),
-    ae_dead_5 = abs(deadB_5_em-deadB_5_om),
-    ae_abundance = abs(Bio_smry_em-Bio_smry_om)
-  )
-
-abs_error %>%
-  # Pivot the data longer
-  pivot_longer(
-    cols = c(ae_com, ae_rec, ae_dead_5),
-    names_to = "variable",
-    values_to = "value",
-    names_transform = list(
-      variable = ~recode(
-        .x,
-        "ae_com" = "Commercial Catch",
-        "ae_rec" = "Recreational Catch",
-        "ae_dead_5" = "Red Tide Dead"
-      )
-  )) %>%
-  ggplot(aes(year, value)) +
-  geom_vline(xintercept = c(2005, 2014, 2018, 2021), linetype = "dashed", color = "gray") +
-  geom_vline(xintercept = c(2016), color = "gray")+ # should this be the first predicted year?
-  stat_summary(fun = mean, geom = "line") +
-  stat_summary(fun.data = mean_cl_normal, geom = "ribbon", alpha = 0.3) +
-  facet_grid(variable~scenario, scales = "free") +
-  theme_bw()+ 
-  #coord_cartesian(ylim = c(0,3)) +
-  #coord_cartesian(xlim = c(2017, 2025)) +
-  labs(color = "EM", fill = "EM", x = "Year", y = "Absolute Error")
-
-```
-
-### 2047 zoomed (2017-2025)
-
-```{r}
-
-abs_error <- EM_runs %>%
-  filter(
-    str_detect(model_run, "_EM_2047")) %>%
-  rowwise()%>%
-  mutate(commercial = sum(retainB_1, retainB_2), recreational = retainB_4) %>%
-  left_join(OM_runs, by = c("year", "scenario", "iteration"), suffix = c("_em", "_om")) %>%
-  group_by(scenario, iteration, year) %>%
-  mutate(
-    ae_Recruit_0 = abs(Recruit_0_em-Recruit_0_om),
-    ae_F_5 = abs(F_5_em-F_5_om),
-    ae_SpawnBio = abs(SpawnBio_em-SpawnBio_om),
-    com_om = sum(retainB_1_om, retainB_2_om),
-    ae_com = abs(commercial-com_om),
-    ae_rec = abs(recreational-retainB_4_om),
-    ae_dead_5 = abs(deadB_5_em-deadB_5_om),
-    ae_abundance = abs(Bio_smry_em-Bio_smry_om)
-  )
-
-abs_error %>%
-  # Pivot the data longer
-  pivot_longer(
-    cols = c(ae_com, ae_rec, ae_dead_5),
-    names_to = "variable",
-    values_to = "value",
-    names_transform = list(
-      variable = ~recode(
-        .x,
-        "ae_com" = "Commercial Catch",
-        "ae_rec" = "Recreational Catch",
-        "ae_dead_5" = "Red Tide Dead"
-      )
-  )) %>%
-  ggplot(aes(year, value)) +
-  geom_vline(xintercept = c(2005, 2014, 2018, 2021), linetype = "dashed", color = "gray") +
-  geom_vline(xintercept = c(2016), color = "gray")+ # should this be the first predicted year?
-  stat_summary(fun = mean, geom = "line") +
-  stat_summary(fun.data = mean_cl_normal, geom = "ribbon", alpha = 0.3) +
-  facet_grid(variable~scenario, scales = "free") +
-  theme_bw()+ 
-  #coord_cartesian(ylim = c(0,3)) +
-  coord_cartesian(xlim = c(2017, 2025)) +
-  labs(color = "EM", fill = "EM", x = "Year", y = "Absolute Error")
-
-```
-
-### 2047 More Variables
-
-```{r}
-
-abs_error <- EM_runs %>%
-  filter(
-    str_detect(model_run, "_EM_2047")) %>%
-  rowwise()%>%
-  mutate(commercial = sum(retainB_1, retainB_2), recreational = retainB_4) %>%
-  left_join(OM_runs, by = c("year", "scenario", "iteration"), suffix = c("_em", "_om")) %>%
-  group_by(scenario, iteration, year) %>%
-  mutate(
-    ae_Recruit_0 = abs(Recruit_0_em-Recruit_0_om),
-    ae_F_5 = abs(F_5_em-F_5_om),
-    ae_SpawnBio = abs(SpawnBio_em-SpawnBio_om),
-    com_om = sum(retainB_1_om, retainB_2_om),
-    ae_com = abs(commercial-com_om),
-    ae_rec = abs(recreational-retainB_4_om),
-    ae_dead_5 = abs(deadB_5_em-deadB_5_om),
-    ae_abundance = abs(Bio_smry_em-Bio_smry_om)
-  )
-
-abs_error %>%
-  # Pivot the data longer
-  pivot_longer(
-    cols = c(ae_Recruit_0, ae_SpawnBio, ae_F_5),
-    names_to = "variable",
-    values_to = "value",
-    names_transform = list(
-      variable = ~recode(
-        .x,
-        "ae_Recruit_0" = "Recruitment",
-        "ae_SpawnBio" = "SSB",
-        "ae_F_5" = "Red Tide F"
-      )
-  )) %>%
-  ggplot(aes(year, value)) +
-  geom_vline(xintercept = c(2005, 2014, 2018, 2021), linetype = "dashed", color = "gray") +
-  geom_vline(xintercept = c(2016), color = "gray")+ # should this be the first predicted year?
-  stat_summary(fun = mean, geom = "line") +
-  stat_summary(fun.data = mean_cl_normal, geom = "ribbon", alpha = 0.3) +
-  facet_grid(variable~scenario, scales = "free") +
-  theme_bw()+ 
-  #coord_cartesian(ylim = c(0,3)) +
-  #coord_cartesian(xlim = c(2017, 2025)) +
-  labs(color = "EM", fill = "EM", x = "Year", y = "Absolute Error")
-
-```
-
-### 2047 More variables, zoomed in
-
-```{r}
-
-abs_error <- EM_runs %>%
-  filter(
-    str_detect(model_run, "_EM_2047")) %>%
+    str_detect(model_run, "_EM_2020")) %>%
   rowwise()%>%
   mutate(commercial = sum(retainB_1, retainB_2), recreational = retainB_4) %>%
   left_join(OM_runs, by = c("year", "scenario", "iteration"), suffix = c("_em", "_om")) %>%
