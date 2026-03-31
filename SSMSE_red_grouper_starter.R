@@ -17,7 +17,7 @@ packageVersion("ss3sim")
 packageVersion("SSMSE")
 
 # Create a folder for the output in the working directory.
-results_name <- "random_tests"
+results_name <- "random_10_years"
 run_SSMSE_dir <- file.path("./runs_output")
 run_res_path <- file.path(run_SSMSE_dir, paste0("results_", results_name))
 if (!dir.exists(run_res_path)) {
@@ -29,8 +29,8 @@ model_SSMSE_dir <- file.path("base_models")
 default <- file.path(model_SSMSE_dir, "default_sigmaR")
 
 # number of simulation years
-projyrs <- 5
-my_niter <- 3
+projyrs <- 30
+my_niter <- 10
 
 # to get the names of parameter values
 ctl <- r4ss::SS_readctl(file.path(default, "red_grouper_1986_2017_RedTideFleet.ctl"), 
@@ -373,9 +373,9 @@ extras$RandomFixedCatch <- create_RandomFixedCatch(
   my_niter = my_niter,
   FixedCatch = sample_struct_fc$FixedCatch,
   rt_fleet = 5,
-  n_rt_years = 2,
-  min_mortality = 0.01,
-  max_mortality = 0.2,
+  n_rt_years = 10,
+  min_mortality = 0.05,
+  max_mortality = 0.25,
   mean_mortality = 0.1
 )
 
