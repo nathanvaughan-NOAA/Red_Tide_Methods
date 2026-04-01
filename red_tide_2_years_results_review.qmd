@@ -24,7 +24,7 @@ default <- file.path(model_SSMSE_dir, OM_name)
 run_SSMSE_dir <- file.path("runs_output")
 
 #name of the results files
-results_name <- "_random_tests"
+results_name <- "_random_10_years"
 
 #create a list of scenarios for plot generation, usually the default order is fine.  
 #scen_list <- unique(summary$ts$scenario)
