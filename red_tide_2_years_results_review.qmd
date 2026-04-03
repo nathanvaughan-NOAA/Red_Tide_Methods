@@ -27,6 +27,7 @@ OM_name <- "default_sigmaR"
 
 #the model_run you want to use, typically the final model_run
 end_yr <- 2047
+niter <- 10
 
 #name of the results files
 results_name <- "_random_10_years_old"
@@ -2018,12 +2019,13 @@ residual_runs %>%
 ```
 :::
 
-#### Long Term Residual Sums (1980-2050)
+#### Long Term Residual Sums (2017-2050)
 
 ```{r}
 residual_runs %>% 
+  filter(year > 2017) %>%
   group_by(scenario) %>%
-  reframe(sum_res_com = sum(res_com)/10, sum_res_rec = sum(res_rec)/10, sum_res_dead_5 = sum(res_dead_5)/10) %>%
+  reframe(sum_res_com = sum(res_com)/niter, sum_res_rec = sum(res_rec)/niter, sum_res_dead_5 = sum(res_dead_5)/niter) %>%
   kable(
     # Rename columns directly within kable
     col.names = c("Scenario", "Commercial Catch Residual Sum", "Recreational Catch Residual Sum", "Red  Tide Discards Residual Sum"),
@@ -2042,7 +2044,7 @@ residual_runs %>%
 residual_runs %>% 
   filter(year %in% seq(2017, 2022, 1)) %>%
   group_by(scenario) %>%
-  reframe(sum_res_com = sum(res_com)/10, sum_res_rec = sum(res_rec)/10, sum_res_dead_5 = sum(res_dead_5)/10) %>%
+  reframe(sum_res_com = sum(res_com)/niter, sum_res_rec = sum(res_rec)/niter, sum_res_dead_5 = sum(res_dead_5)/niter) %>%
   kable(
     # Rename columns directly within kable
     col.names = c("Scenario", "Commercial Catch Residual Sum", "Recreational Catch Residual Sum", "Red  Tide Discards Residual Sum"),
@@ -2087,12 +2089,12 @@ residual_runs_prop %>%
     prop_com = (sum(res_com) / sum(com_om))*100,
     prop_rec = (sum(res_rec) / sum(deadB_4_om))*100,
     prop_red = (sum(res_dead_5) /  sum(deadB_5_om))*100,
-    raw_total = (sum(res_com)/10+sum(res_rec)/10+sum(res_dead_5)/10),
+    raw_total = (sum(res_com)/niter+sum(res_rec)/niter+sum(res_dead_5)/niter),
     raw_prop = (sum(res_com)+sum(res_rec)+sum(res_dead_5)) /  (sum(com_om)+sum(deadB_4_om) + sum(deadB_5_om)) *100
   ) %>% 
   kable(
     # Rename columns directly within kable
-    col.names = c("Scenario", "Commercial Catch Residual Sum (MT)", "Recreational Catch Residual Sum (MT)", "Red Tide Discards Residual Sum (MT)", "Total Removals Residual Sum (MT)", "Proportion of Residuals to Total (%)"),
+    col.names = c("Scenario", "Commercial Catch Residual Sum (%)", "Recreational Catch Residual Sum (%)", "Red Tide Discards Residual Sum (%)", "Total Removals Residual Sum (MT)", "Proportion of Residuals to Total (%)"),
     align = c("l", "c", "c", "c", "c", "c"), # Align columns (left, center, center, center)
     digits = 2
   ) %>%
@@ -2101,6 +2103,116 @@ residual_runs_prop %>%
     full_width = FALSE # Don't stretch table to full page width
   )
 ```
+
+#### Short Term Residual Proportions (2017-2022) - New way?  
+
+```{r}
+
+residual_runs_prop <- EM_runs %>%
+  filter(
+    str_detect(model_run, paste0("_EM_", end_yr))) %>%
+  rowwise()%>%
+  mutate(commercial = sum(deadB_1, deadB_2), recreational = deadB_4) %>%
+  left_join(OM_runs, by = c("year", "scenario", "iteration"), suffix = c("_em", "_om")) %>%
+  group_by(scenario, iteration, year) %>%
+  mutate(
+    res_Recruit_0 = Recruit_0_em-Recruit_0_om,
+    res_F_5 = F_5_em-F_5_om,
+    res_SpawnBio = SpawnBio_em-SpawnBio_om,
+    com_om = sum(deadB_1_om, deadB_2_om),
+    res_com = commercial-com_om,
+    res_rec = recreational-deadB_4_om,
+    res_dead_5 = deadB_5_em-deadB_5_om,
+    res_abundance = Bio_smry_em-Bio_smry_om
+  )
+
+residual_runs_prop %>% 
+  filter(year %in% seq(2017, 2022, 1)) %>%
+  ggplot(aes(year, res_rec)) +
+  geom_point() + 
+  stat_summary(fun = mean, geom = "line") +
+  stat_summary(fun.data = mean_cl_normal, geom = "ribbon", alpha = 0.3) +
+  geom_hline(yintercept = 0, color = "black", linetype = "dashed") +
+  facet_wrap(~scenario) + 
+  ggtitle("Recreational Catch Residuals (2017-2022)") + xlab("Year") + ylab("Residuals")
+
+residual_runs_prop %>% 
+  filter(year %in% seq(2017, 2022, 1)) %>%
+  ggplot(aes(year, res_com)) +
+  geom_point() + 
+  stat_summary(fun = mean, geom = "line") +
+  stat_summary(fun.data = mean_cl_normal, geom = "ribbon", alpha = 0.3) +
+  geom_hline(yintercept = 0, color = "black", linetype = "dashed") +
+  facet_wrap(~scenario) + 
+  ggtitle("Commercial Catch Residuals (2017-2022)") + xlab("Year") + ylab("Residuals")
+
+residual_runs_prop %>% 
+  filter(year %in% seq(2017, 2022, 1)) %>%
+  ggplot(aes(year, res_dead_5)) +
+  geom_point() + 
+  stat_summary(fun = mean, geom = "line") +
+  stat_summary(fun.data = mean_cl_normal, geom = "ribbon", alpha = 0.3) +
+  geom_hline(yintercept = 0, color = "black", linetype = "dashed") +
+  facet_wrap(~scenario) + 
+  ggtitle("Red Tide Removal Residuals (2017-2022)") + xlab("Year") + ylab("Residuals")
+
+residual_runs_prop %>% 
+  filter(year %in% seq(2017, 2022, 1)) %>%
+  group_by(scenario) %>%
+  reframe(
+    prop_com = mean(res_com)/mean(commercial)*100,
+    prop_rec = mean(res_rec) / mean(deadB_4_om)*100,
+    prop_red = mean(res_dead_5) /  mean(deadB_5_om)*100,
+    raw_total = mean(res_com)+mean(res_rec)+mean(res_dead_5),
+    raw_prop = (mean(res_com)+mean(res_rec)+mean(res_dead_5)) /  (mean(com_om)+mean(deadB_4_om) + mean(deadB_5_om)) *100
+  ) %>% 
+  kable(
+    # Rename columns directly within kable
+    col.names = c("Scenario", "Commercial Catch Average Residuals (%)", "Recreational Catch Average Residuals (%)", "Red Tide Discards Average Residuals (%)", "Total Removals Average Residuals (MT)", "Proportion of Average Residuals (%)"),
+    align = c("l", "c", "c", "c", "c", "c"), # Align columns (left, center, center, center)
+    digits = 2
+  ) %>%
+  kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed"), # Add bootstrap styling
+    full_width = FALSE # Don't stretch table to full page width
+  )
+```
+```{r}
+residual_runs_prop %>% 
+  filter(year %in% seq(2017, 2047, 1)) %>%
+  ggplot(aes(year, res_rec)) +
+  geom_point() + 
+  stat_summary(fun = mean, geom = "line") +
+  stat_summary(fun.data = mean_cl_normal, geom = "ribbon", alpha = 0.3) +
+  geom_hline(yintercept = 0, color = "black", linetype = "dashed") +
+  facet_wrap(~scenario) + 
+  ggtitle("Recreational Catch Residuals (2017-2047)") + xlab("Year") + ylab("Residuals") + 
+  ylim(-10000,10000)
+
+residual_runs_prop %>% 
+  filter(year %in% seq(2017, 2047, 1)) %>%
+  ggplot(aes(year, res_com)) +
+  geom_point() + 
+  stat_summary(fun = mean, geom = "line") +
+  stat_summary(fun.data = mean_cl_normal, geom = "ribbon", alpha = 0.3) +
+  geom_hline(yintercept = 0, color = "black", linetype = "dashed") +
+  facet_wrap(~scenario) + 
+  ggtitle("Commercial Catch Residuals (2017-2047)") + xlab("Year") + ylab("Residuals")+ 
+  ylim(-10000,10000)
+
+residual_runs_prop %>% 
+  filter(year %in% seq(2017, 2047, 1)) %>%
+  ggplot(aes(year, res_dead_5)) +
+  geom_point() + 
+  stat_summary(fun = mean, geom = "line") +
+  stat_summary(fun.data = mean_cl_normal, geom = "ribbon", alpha = 0.3) +
+  geom_hline(yintercept = 0, color = "black", linetype = "dashed") +
+  facet_wrap(~scenario) + 
+  ggtitle("Red Tide Removal Residuals (2017-2047)") + xlab("Year") + ylab("Residuals")+ 
+  ylim(-10000,10000)
+
+```
+
 
 ::::
 
