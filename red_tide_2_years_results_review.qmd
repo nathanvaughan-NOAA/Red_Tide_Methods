@@ -1943,7 +1943,7 @@ residual_runs %>%
   )) %>%
   ggplot(aes(year, value)) +
   geom_vline(xintercept = c(2005, 2014, 2018, 2021), linetype = "dashed", color = "gray") +
-  geom_vline(xintercept = c(2016), color = "gray")+ # should this be the first predicted year?
+  geom_vline(xintercept = c(2017), color = "gray")+ # should this be the first predicted year?
   stat_summary(fun = mean, geom = "line") +
   stat_summary(fun.data = mean_cl_normal, geom = "ribbon", alpha = 0.3) +
   facet_grid(variable~scenario, scales = "free") +
@@ -1975,7 +1975,7 @@ residual_runs %>%
   filter(scenario %in% scen_list[1:5]) %>%
   ggplot(aes(year, value)) +
   geom_vline(xintercept = c(2005, 2014, 2018, 2021), linetype = "dashed", color = "gray") +
-  geom_vline(xintercept = c(2016), color = "gray")+ # should this be the first predicted year?
+  geom_vline(xintercept = c(2017), color = "gray")+ # should this be the first predicted year?
   stat_summary(fun = mean, geom = "line") +
   stat_summary(fun.data = mean_cl_normal, geom = "ribbon", alpha = 0.3) +
   facet_grid(variable~scenario, scales = "free") +
@@ -2005,7 +2005,7 @@ residual_runs %>%
 #   filter(scenario %in% scen_list[6:8]) %>%
 #   ggplot(aes(year, value)) +
 #   geom_vline(xintercept = c(2005, 2014, 2018, 2021), linetype = "dashed", color = "gray") +
-#   geom_vline(xintercept = c(2016), color = "gray")+ # should this be the first predicted year?
+#   geom_vline(xintercept = c(2017), color = "gray")+ # should this be the first predicted year?
 #   stat_summary(fun = mean, geom = "line") +
 #   stat_summary(fun.data = mean_cl_normal, geom = "ribbon", alpha = 0.3) +
 #   facet_grid(variable~scenario, scales = "free") +
@@ -3201,7 +3201,7 @@ abs_error %>%
   )) %>%
   ggplot(aes(year, value)) +
   geom_vline(xintercept = c(2005, 2014, 2018, 2021), linetype = "dashed", color = "gray") +
-  geom_vline(xintercept = c(2016), color = "gray")+ # should this be the first predicted year?
+  geom_vline(xintercept = c(2017), color = "gray")+ # should this be the first predicted year?
   stat_summary(fun = mean, geom = "line") +
   stat_summary(fun.data = mean_cl_normal, geom = "ribbon", alpha = 0.3) +
   facet_grid(variable~scenario, scales = "free") +
@@ -3250,7 +3250,7 @@ abs_error %>%
   )) %>%
   ggplot(aes(year, value)) +
   geom_vline(xintercept = c(2005, 2014, 2018, 2021), linetype = "dashed", color = "gray") +
-  geom_vline(xintercept = c(2016), color = "gray")+ # should this be the first predicted year?
+  geom_vline(xintercept = c(2017), color = "gray")+ # should this be the first predicted year?
   stat_summary(fun = mean, geom = "line") +
   stat_summary(fun.data = mean_cl_normal, geom = "ribbon", alpha = 0.3) +
   facet_grid(variable~scenario, scales = "free") +
