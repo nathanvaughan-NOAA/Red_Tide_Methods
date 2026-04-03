@@ -16,15 +16,20 @@ library(patchwork)
 library(knitr)
 library(kableExtra)
 # OM locations
-
 #name of the first OM
 OM_name <- "default_sigmaR"
 model_SSMSE_dir <- file.path("base_models")
 default <- file.path(model_SSMSE_dir, OM_name)
 run_SSMSE_dir <- file.path("runs_output")
 
+#rename the OM if it's different from default
+OM_name <- "default_sigmaR"
+
+#the model_run you want to use, typically the final model_run
+end_yr <- 2047
+
 #name of the results files
-results_name <- "_random_10_years"
+results_name <- "_random_10_years_old"
 
 #create a list of scenarios for plot generation, usually the default order is fine.  
 #scen_list <- unique(summary$ts$scenario)
@@ -64,8 +69,7 @@ summary$dq <- summary$dq %>%
 summary$scalar <- summary$scalar %>%
   filter(model_run != "", !str_detect(model_run, "Base")) 
 
-#rename the OM if it's different from default
-OM_name <- "default_sigmaR"
+
 
 ```
 
@@ -685,6 +689,8 @@ WARNING: EM:OM ratios do not work will with zeros in some fishing mortalities. I
 
 ## Fishing mortalities
 
+This was filtered to just the final run.  
+
 My new method for plotting EM:OM involves creating separate OM and EM data frames, joining them by year, scenario, and iteration, then dividing the EM value/ OM value for every variable. That way when plotted it is truly the EM for each model run, year and iteration divided by the OM from the same year and iteration but one model run. If the om and em value are zero I changed the ratio to 1 because that means that the EM = OM.
 
 ```{r}
@@ -695,17 +701,13 @@ ratio_df <- left_join(EM_runs, OM_runs,
   mutate(across(
     .cols = where(is.numeric) & ends_with("_om"),
     .fns = ~ {
-      # Get the name of the corresponding '_em' column
-      em_col_name <- str_replace(cur_column(), "_om", "_em")
-      # Get the value from the '_em' column for the current row
-      em_value <- get(em_col_name)
-      # Get the value from the current '_om' column (represented by .x)
-      om_value <- .x
-
+      em_col_name <- str_replace(cur_column(), "_om", "_em") # Get the name of the corresponding '_em' column
+      em_value <- get(em_col_name) # Get the value from the '_em' column for the current row
+      om_value <- .x # Get the value from the current '_om' column (represented by .x)
       # Conditional logic:
       # If both '_em' and '_om' values are 0, set the ratio to 1.
       # Otherwise, perform the division.
-      if_else(em_value == 0 & om_value == 0, 1, if_else(om_value == 0, em_value/0.001, em_value / om_value))
+      if_else(em_value == 0 & om_value == 0, 1, if_else(om_value == 0, em_value/0.001, em_value/om_value))
     },
     .names = "{str_remove(.col, '_om')}_ratio"
   )) %>%
@@ -720,11 +722,12 @@ plot_f_ts <- function(scen) {
   fleet_ratios <- ratio_df %>%
     filter(
       # only looking at the projection
-      year >= 2017,
+      year > 2017,
       # one scenario at a time
       scenario == scen,
       # exclude init
-      !str_detect(model_run, "init")
+      !str_detect(model_run, "init"), 
+      str_detect(model_run, paste0("_EM_", end_yr))
     ) %>% 
     pivot_longer(c(F_1_ratio, F_2_ratio, F_3_ratio, F_4_ratio, F_5_ratio),
                  names_to = "fleet",
@@ -825,11 +828,12 @@ plot_f_ts <- function(scen) {
   fleet_ratios <- ratio_df %>%
     filter(
       # only looking at the projection
-      year >= 2017,
+      year > 2017,
       # one scenario at a time
       scenario == scen,
       # exclude init
-      !str_detect(model_run, "init")
+      !str_detect(model_run, "init"), 
+      str_detect(model_run, paste0("_EM_", end_yr))
     ) %>% 
     pivot_longer(c(F_1_ratio, F_2_ratio, F_3_ratio, F_4_ratio, F_5_ratio),
                  names_to = "fleet",
@@ -950,11 +954,12 @@ plot_f_ts <- function(scen) {
   fleet_ratios <- ratio_df_dq %>%
     filter(
       # only looking at the projection
-      year >= 2017,
+      year > 2017,
       # one scenario at a time
       scenario == scen,
       # exclude init
-      !str_detect(model_run, "init")
+      !str_detect(model_run, "init"), 
+      str_detect(model_run, paste0("_EM_", end_yr))
     ) %>% 
     mutate(
       end_year = as.numeric(str_extract(model_run, "\\d{4}$"))+3,
@@ -1036,11 +1041,12 @@ plot_biomass_ts <- function(scen) {
   fleet_ratios <- ratio_df %>%
     filter(
       # only looking at the projection
-      year >= 2017,
+      year > 2017,
       # one scenario at a time
       scenario == scen,
       # exclude init
-      !str_detect(model_run, "init")
+      !str_detect(model_run, "init"), 
+      str_detect(model_run, paste0("_EM_", end_yr))
     ) %>% 
     pivot_longer(c(retainB_1_ratio, retainB_2_ratio, retainB_3_ratio, retainB_4_ratio, deadB_5_ratio),
                  names_to = "fleet",
@@ -1130,10 +1136,11 @@ Figure 12. Biomass ratio (EM:OM) over time by scenario. The line indicates the m
   fleet_ratios <- ratio_df %>%
     filter(
       # only looking at the projection
-      year >= 2017,
+      year > 2017,
       # one scenario at a time
       # exclude init
-      !str_detect(model_run, "init")
+      !str_detect(model_run, "init"), 
+      str_detect(model_run, paste0("_EM_", end_yr))
     ) %>% 
     select(year, Recruit_0_ratio, iteration, model_run, scenario) %>%
     rename(ratio_recruitment = Recruit_0_ratio) %>%
@@ -1197,10 +1204,11 @@ Figure 13. Recruitment ratio (EM:OM) over time by scenario. The line indicates t
   fleet_ratios <- ratio_df %>%
     filter(
       # only looking at the projection
-      year >= 2017,
+      year > 2017,
       # one scenario at a time
       # exclude init
-      !str_detect(model_run, "init")
+      !str_detect(model_run, "init"), 
+      str_detect(model_run, paste0("_EM_", end_yr))
     ) %>% 
     select(year, SpawnBio_ratio, iteration, model_run, scenario) %>%
     rename(ratio_ssb = SpawnBio_ratio) %>%
@@ -1269,7 +1277,7 @@ plot_f_ts <- function(scen) {
   fleet_ratios <- ratio_df %>%
     filter(
       # only looking at the projection
-      year >= 2017,
+      year > 2017,
       # one scenario at a time
       scenario == scen,
       # exclude init
@@ -1368,7 +1376,7 @@ plot_f_ts <- function(scen) {
   fleet_ratios <- ratio_df %>%
     filter(
       # only looking at the projection
-      year >= 2017,
+      year > 2017,
       # one scenario at a time
       scenario == scen,
       # exclude init
@@ -1466,7 +1474,7 @@ plot_biomass_ts <- function(scen) {
   fleet_ratios <- ratio_df %>%
     filter(
       # only looking at the projection
-      year >= 2017,
+      year > 2017,
       # one scenario at a time
       scenario == scen,
       # exclude init
@@ -1562,7 +1570,7 @@ Figure 17. Biomass ratio (EM:OM) over the years from terminal year by scenario. 
   fleet_ratios <- ratio_df %>%
     filter(
       # only looking at the projection
-      year >= 2017,
+      year > 2017,
       # one scenario at a time
       # exclude init
       !str_detect(model_run, "init")
@@ -1630,7 +1638,7 @@ Figure 18. Recruitment ratio (EM:OM) over time by scenario. The line indicates t
   fleet_ratios <- ratio_df %>%
     filter(
       # only looking at the projection
-      year >= 2017,
+      year > 2017,
       # one scenario at a time
       # exclude init
       !str_detect(model_run, "init")
@@ -1894,7 +1902,7 @@ Residuals = EM - OM
 This calculation does not have issues with zeros and estimates the error introduced to each variable by the different scenarios.
 
 :::: panel-tabset
-### 2020 DeadB
+### end_yr DeadB
 
 ::: panel-tabset
 #### All
@@ -1903,7 +1911,7 @@ This calculation does not have issues with zeros and estimates the error introdu
 
 residual_runs <- EM_runs %>%
   filter(
-    str_detect(model_run, "_EM_2020")) %>%
+    str_detect(model_run, paste0("_EM_", end_yr))) %>%
   rowwise()%>%
   mutate(commercial = sum(deadB_1, deadB_2), recreational = deadB_4) %>%
   left_join(OM_runs, by = c("year", "scenario", "iteration"), suffix = c("_em", "_om")) %>%
@@ -2056,7 +2064,7 @@ residual_runs %>%
 
 residual_runs_prop <- EM_runs %>%
   filter(
-    str_detect(model_run, "_EM_2020")) %>%
+    str_detect(model_run, paste0("_EM_", end_yr))) %>%
   rowwise()%>%
   mutate(commercial = sum(deadB_1, deadB_2), recreational = deadB_4) %>%
   left_join(OM_runs, by = c("year", "scenario", "iteration"), suffix = c("_em", "_om")) %>%
@@ -2133,7 +2141,7 @@ ratio_df_re <- left_join(EM_runs, OM_runs,
   select(year, scenario, iteration, model_run = model_run_em, ends_with("_re"))
 
 EM_means <- ratio_df_re %>%
-  filter(year >= 2017)
+  filter(year > 2017)
 
 
 ```
@@ -2291,7 +2299,7 @@ OM_means <- summary$ts %>%
   )
 
 EM_means_re <- summary$ts %>%
-  filter(str_detect(model_run, "_EM_2020")) %>%
+  filter(str_detect(model_run, paste0("_EM_", end_yr))) %>%
   rowwise() %>%
   mutate(
     commercial = sum(retainB_1, retainB_2),
@@ -2337,7 +2345,7 @@ EM_means_re <- summary$ts %>%
   )
 
 EM_means <- summary$ts %>%
-  filter(str_detect(model_run, "_EM_2020")) %>%
+  filter(str_detect(model_run, paste0("_EM_", end_yr))) %>%
   rowwise() %>%
   mutate(
     commercial = sum(retainB_1, retainB_2),
@@ -2984,12 +2992,13 @@ ratio_R0 <- summary$scalar %>%
   select(iteration, scenario, model_run, SR_LN_R0) %>%
   mutate(r0 = exp(SR_LN_R0)) %>%
   select(!SR_LN_R0) %>%
-  filter(model_run %in% c(paste0(OM_name, "_OM"), paste0(OM_name, "_EM_2020"))) %>%
+  filter(str_detect(model_run, paste0("_OM|_EM_", end_yr))) %>%
   pivot_wider(
       names_from = model_run,  # this will create "OM" and "EM" columns
       values_from = r0
   ) %>%
-  rename("OM" = paste0(OM_name, "_OM") , "EM" = paste0(OM_name, "_EM_2020")) %>%
+  rename_with(~ "OM", .cols = contains("_OM")) %>%
+  rename_with(~ "EM", .cols = contains(paste0("_EM_", end_yr))) %>%
   group_by(scenario, iteration) %>%
   mutate(ratio_R0 = EM/OM)
   
@@ -3006,7 +3015,7 @@ EM:OM ratios in the new format for variables that don't have zeros.
 ```{r}
 
 ratio_df %>%
-  filter(str_detect(model_run, "_EM_2020") | str_detect(model_run, "_OM")) %>%
+  filter(str_detect(model_run, paste0("_OM|_EM_", end_yr))) %>%
   mutate(
     em_model = ifelse(
       scenario %in% c("no_rt", "rt_2_x_no_rt", "rt_2_x_no_rt_high"),
@@ -3062,32 +3071,32 @@ ratio_df %>%
 ## Red Tide Year Comparisons
 
 ::: panel-tabset
-### 2020 Boxplot of F_5
+### end_yr Boxplot of F_5
 
 ```{r}
 
 # # maybe a boxplot with the OM value across all years and EM values across all years will show how much they match up (or not)
 # 
 # summary$ts %>%
-#   filter(model_run %in% c(paste0(OM_name, "_OM"), paste0(OM_name, "_EM_2020"))) %>%
+#   filter(str_detect(model_run, paste0("_OM|_EM_", end_yr))) %>%
 #   ggplot(aes(factor(year), F_5)) + 
 #   geom_boxplot(aes(color = model_run)) + 
 #   facet_wrap(~scenario)
 
 # maybe these plots would look nice if I only do 2005, 2014, 2018, 2021 as a demonstration of how well it captures just those 4 years with red tide.  
 summary$ts %>%
-  filter(model_run %in% c(paste0(OM_name, "_OM"), paste0(OM_name, "_EM_2020")), year %in% c(2005, 2014, 2018, 2021)) %>%
+  filter(str_detect(model_run, paste0("_OM|_EM_", end_yr)), year %in% c(2005, 2014, 2018, 2021)) %>%
   ggplot(aes(factor(year), F_5)) + 
   geom_boxplot(aes(color = model_run)) + 
   facet_wrap(~scenario) +
-  ggtitle("model_run = 2020")
+  ggtitle(paste0("model_run = ", end_yr))
 ```
 
 ### 2023 Boxplot of F_5
 
 ```{r}
 summary$ts %>%
-  filter(model_run %in% c(paste0(OM_name, "_OM"), "default_sigmaR_EM_2023"), year %in% c(2005, 2014, 2018, 2021)) %>%
+  filter(str_detect(model_run, paste0("_OM|_EM_", 2023)), year %in% c(2005, 2014, 2018, 2021)) %>%
   ggplot(aes(factor(year), F_5)) + 
   geom_boxplot(aes(color = model_run)) + 
   facet_wrap(~scenario) +
@@ -3099,7 +3108,7 @@ summary$ts %>%
 
 ```{r}
 summary$ts %>%
-  filter(model_run %in% c(paste0(OM_name, "_OM"), paste0(OM_name, "_EM_2020")), year %in% c(2005, 2014, 2018, 2021)) %>%
+  filter(str_detect(model_run, paste0("_OM|_EM_", end_yr)), year %in% c(2005, 2014, 2018, 2021)) %>%
   group_by(year, model_run, scenario) %>%
   reframe(F_5_mean = mean(F_5), F_5_median = median(F_5), F_5_sd = sd(F_5)) %>%
   select(model_run, year, scenario, F_5_mean) %>%
@@ -3107,12 +3116,9 @@ summary$ts %>%
     names_from = model_run,  
     values_from = F_5_mean         # Optional: Adds a prefix to the new column names
   ) %>%
-  # Optional: Rename the columns to match your desired 'TRUE' and 'FALSE' format
-  rename(
-    'EM_2020' = paste0(OM_name, "_EM_2020"),
-    'OM' = paste0(OM_name, "_OM")
-  ) %>%
-  mutate(Residual = EM_2020 - OM) %>%
+  rename_with(~ "OM", .cols = contains("_OM")) %>%
+  rename_with(~ "EM", .cols = contains(paste0("_EM_", end_yr))) %>%
+  mutate(Residual = EM - OM) %>%
   kable(
     # Rename columns directly within kable
     align = c("l", "c", "c", "c", "c"), # Align columns (left, center, center, center)
@@ -3156,13 +3162,14 @@ AE = abs(EM - OM)
 This is a unidirectional error. So we ended up preferring Residual Sums. But I've kept these plots for reference. Mean Absolute Error (MAE) and Symmetric Mean Absolute Percentage Error (SMAPE) were removed because they had issues with zeros in the red tide fleet.
 
 ::: panel-tabset
-### 2020
+
+### end_yr
 
 ```{r}
 
 abs_error <- EM_runs %>%
   filter(
-    str_detect(model_run, "_EM_2020")) %>%
+    str_detect(model_run, paste0("_EM_", end_yr ))) %>%
   rowwise()%>%
   mutate(commercial = sum(retainB_1, retainB_2), recreational = retainB_4) %>%
   left_join(OM_runs, by = c("year", "scenario", "iteration"), suffix = c("_em", "_om")) %>%
@@ -3205,13 +3212,13 @@ abs_error %>%
 
 ```
 
-### 2020 More variables, zoomed in
+### end_yr More variables, zoomed in
 
 ```{r}
 
 abs_error <- EM_runs %>%
   filter(
-    str_detect(model_run, "_EM_2020")) %>%
+    str_detect(model_run, paste0("_EM_", end_yr))) %>%
   rowwise()%>%
   mutate(commercial = sum(retainB_1, retainB_2), recreational = retainB_4) %>%
   left_join(OM_runs, by = c("year", "scenario", "iteration"), suffix = c("_em", "_om")) %>%
