@@ -17,7 +17,7 @@ packageVersion("ss3sim")
 packageVersion("SSMSE")
 
 # Create a folder for the output in the working directory.
-results_name <- "random_10_years"
+results_name <- "selectivity_rt_2_varied"
 run_SSMSE_dir <- file.path("./runs_output")
 run_res_path <- file.path(run_SSMSE_dir, paste0("results_", results_name))
 if (!dir.exists(run_res_path)) {
@@ -30,7 +30,7 @@ default <- file.path(model_SSMSE_dir, "default_sigmaR")
 
 # number of simulation years
 projyrs <- 30
-my_niter <- 10
+my_niter <- 100
 
 # to get the names of parameter values
 ctl <- r4ss::SS_readctl(file.path(default, "red_grouper_1986_2017_RedTideFleet.ctl"), 
@@ -260,6 +260,39 @@ sample_struct_list_all <- list(
   "rt_2_x_rt_2_fixed" = sample_struct_rt_2_x_rt_2_fixed
 )
 
+young_multiplier <- 21/9
+sample_struct_young_rt_2 <- add_sample_struct_FixedCatches(sample_struct,
+                                                      rt_mortality_om = 0.1*young_multiplier,
+                                                      rt_mortality_em = 0.1*young_multiplier)
+sample_struct_young_all_yrs <- add_sample_struct_FixedCatches(sample_struct,
+                                                           rt_mortality_om = 0.1*young_multiplier,
+                                                           rt_mortality_em = 0.1*young_multiplier,
+                                                           rt_year_em = seq(from = 2018, to = 2047, by = 1))
+old_multiplier <- 21/17.25
+sample_struct_old_rt_2 <- add_sample_struct_FixedCatches(sample_struct,
+                                                      rt_mortality_om = 0.1*old_multiplier,
+                                                      rt_mortality_em = 0.1*old_multiplier)
+sample_struct_old_all_yrs <- add_sample_struct_FixedCatches(sample_struct,
+                                                         rt_mortality_om = 0.1*old_multiplier,
+                                                         rt_mortality_em = 0.1*old_multiplier,
+                                                         rt_year_em = seq(from = 2018, to = 2047, by = 1))
+mid_multiplier <- 21/16.75
+sample_struct_mid_rt_2 <- add_sample_struct_FixedCatches(sample_struct,
+                                                      rt_mortality_om = 0.1*mid_multiplier,
+                                                      rt_mortality_em = 0.1*mid_multiplier)
+sample_struct_mid_all_yrs <- add_sample_struct_FixedCatches(sample_struct,
+                                                         rt_mortality_om = 0.1*mid_multiplier,
+                                                         rt_mortality_em = 0.1*mid_multiplier,
+                                                         rt_year_em = seq(from = 2018, to = 2047, by = 1))
+flat_multiplier <- 21/21
+sample_struct_flat_rt_2 <- add_sample_struct_FixedCatches(sample_struct,
+                                                      rt_mortality_om = 0.1*flat_multiplier,
+                                                      rt_mortality_em = 0.1*flat_multiplier)
+sample_struct_flat_all_yrs <- add_sample_struct_FixedCatches(sample_struct,
+                                                          rt_mortality_om = 0.1*flat_multiplier,
+                                                          rt_mortality_em = 0.1*flat_multiplier,
+                                                          rt_year_em = seq(from = 2018, to = 2047, by = 1))
+
 ##### Scenario Selection #####
 # global settings for all SSMSE runs
 base_params <- list(
@@ -295,7 +328,7 @@ rt_2_x_rt_2_fixed <- modifyList(base_params, list(scen_name_vec = "rt_2_x_rt_2_f
 
 # Selectivity
 
-scenario_factorial <- function(model_names = c("flat", "young"), type_name = NULL, type_struct = NULL) {
+scenario_factorial <- function(model_names = c("flat", "young"), type_name = NULL, type_struct = NULL, varied_mortality = FALSE) {
   
   # create a grid of all model combos
   grid <- expand.grid(OM = model_names, EM = model_names, stringsAsFactors = FALSE)
@@ -311,7 +344,12 @@ scenario_factorial <- function(model_names = c("flat", "young"), type_name = NUL
       type_struct <- paste0("sample_struct_", scen_name)
       struct_obj <- get(type_struct)
     } else {
-      struct_obj <- type_struct
+      if(varied_mortality == TRUE){
+        type_struct <- paste0("sample_struct_", combo$OM, type_name)
+        struct_obj <- get(type_struct)
+      } else {
+        struct_obj <- type_struct
+      }
     }
     
     # add new adjustments to SSMSE_run list and OM/EM locations
@@ -330,6 +368,8 @@ type_name = "_all_yrs"
 type_struct = sample_struct_rt_2_x_all_yrs
 all_yrs_scenarios <- scenario_factorial(model_names = model_names, type_name = type_name, type_struct = sample_struct_rt_2_x_all_yrs)    
 rt_2_scenarios <- scenario_factorial(model_names = model_names, type_name = "_rt_2", type_struct = sample_struct_rt_2_x_rt_2)    
+all_yrs_scenarios_varied <- scenario_factorial(model_names = model_names, type_name = type_name, varied_mortality = TRUE)    
+rt_2_scenarios_varied <- scenario_factorial(model_names = model_names, type_name = "_rt_2", varied_mortality = TRUE)   
 
 # Random OM 
 
@@ -344,21 +384,23 @@ create_RandomFixedCatch <- function (my_niter,
   FixedCatch <- FixedCatch %>% filter(FltSvy == rt_fleet)
   RandomFixedCatch <- list()
   rt_year_om = sample(1:length(FixedCatch[, 1]), length(FixedCatch[, 1])) # random years
-  for (i in 1:my_niter) {
-    this_iter_rt <- rt_year_om[1:n_rt_years]
-    rt_year_om <- rt_year_om[-c(1:n_rt_years)]
-    
-    if(length(rt_year_om) < n_rt_years ){
-      rt_year_om <- c(rt_year_om, sample(c(1:length(FixedCatch[,1]))[which(!is.element(1:length(FixedCatch[,1]),rt_year_om))], length(c(1:length(FixedCatch[,1]))[which(!is.element(1:length(FixedCatch[,1]),rt_year_om))])))
+  if (my_niter >= my_niter*projyrs){
+    for (i in 1:my_niter) {
+      this_iter_rt <- rt_year_om[1:n_rt_years]
+      rt_year_om <- rt_year_om[-c(1:n_rt_years)]
+      
+      if(length(rt_year_om) < n_rt_years ){
+        rt_year_om <- c(rt_year_om, sample(c(1:length(FixedCatch[,1]))[which(!is.element(1:length(FixedCatch[,1]),rt_year_om))], length(c(1:length(FixedCatch[,1]))[which(!is.element(1:length(FixedCatch[,1]),rt_year_om))])))
+      }
+      
+      RandomFixedCatch[[i]] <- FixedCatch
+      
+      rt_mortality_om = runif(n_rt_years, min_mortality, max_mortality) # random mortality
+      rt_mortality_om = rt_mortality_om * (mean_mortality / mean(rt_mortality_om)) # rescale to the mean
+      
+      RandomFixedCatch[[i]][this_iter_rt, "Catch"] <- rt_mortality_om
     }
-
-    RandomFixedCatch[[i]] <- FixedCatch
-    
-    rt_mortality_om = runif(n_rt_years, min_mortality, max_mortality) # random mortality
-    rt_mortality_om = rt_mortality_om * (mean_mortality / mean(rt_mortality_om)) # rescale to the mean
-    
-    RandomFixedCatch[[i]][this_iter_rt, "Catch"] <- rt_mortality_om
-  }
+  } else { print("There are not enough iterations or years for this method")  }
   return(RandomFixedCatch)
 }
 
@@ -383,16 +425,42 @@ extras$RandomFixedCatch <- create_RandomFixedCatch(
 # start by making a perfect copy
 
 extras$RandomFixedCatchEM <- extras$RandomFixedCatch
-
-for(i in 1:my_niter){
-  names(extras$RandomFixedCatchEM[[i]])[5] <- "catch_se"
-  rt_catch_se <- rep(0.01, length=nrow(extras$RandomFixedCatchEM[[i]]))
-  extras$RandomFixedCatchEM[[i]]$catch_se <- rt_catch_se
-  extras$RandomFixedCatchEM[[i]]$fixed <- rep(0, length=nrow(extras$RandomFixedCatchEM[[i]])) # a new column that indicates if the EM's catch is estimated or not.  
+if (my_niter >= my_niter * projyrs) {
+  for (i in 1:my_niter) {
+    names(extras$RandomFixedCatchEM[[i]])[5] <- "catch_se"
+    rt_catch_se <- rep(0.01, length = nrow(extras$RandomFixedCatchEM[[i]]))
+    extras$RandomFixedCatchEM[[i]]$catch_se <- rt_catch_se
+    extras$RandomFixedCatchEM[[i]]$fixed <- rep(0, length = nrow(extras$RandomFixedCatchEM[[i]])) # a new column that indicates if the EM's catch is estimated or not.
+  }
+} else {
+  print("There are not enough iterations or years for this method")
 }
 
-random_2_x_random_2 <- modifyList(base_params, list(scen_name_vec = "random_2_x_random_2", sample_struct_list = list("random_2_x_random_2" = sample_struct_rt_2_x_rt_2), extras = list(extras)))
-random_2_x_all_years <- modifyList(base_params, list(scen_name_vec = "random_2_x_all_years", sample_struct_list = list("random_2_x_all_years" = sample_struct_rt_2_x_all_yrs), extras = list(extras[-2])))
+random_10_x_random_10 <- modifyList(base_params, list(scen_name_vec = "random_10_x_random_10", sample_struct_list = list("random_10_x_random_10" = sample_struct_rt_2_x_rt_2), extras = list(extras)))
+random_10_x_all_years <- modifyList(base_params, list(scen_name_vec = "random_10_x_all_years", sample_struct_list = list("random_10_x_all_years" = sample_struct_rt_2_x_all_yrs), extras = list(extras[-2])))
+
+extras_fixed <- extras
+if (my_niter >= my_niter * projyrs) {
+  for (i in 1:my_niter) {
+    extras_fixed$RandomFixedCatchEM[[i]]$fixed <- rep(1, length = nrow(extras_fixed$RandomFixedCatchEM[[i]])) # a new column that indicates if the EM's catch is estimated or not.
+  }
+} else {
+  print("There are not enough iterations or years for this method")
+}
+random_10_x_fixed <- modifyList(base_params, list(scen_name_vec = "random_10_x_fixed", sample_struct_list = list("random_10_x_fixed" = sample_struct_rt_2_x_rt_2_fixed), extras = list(extras_fixed)))
+
+
+extras_fixed_with_se <- extras_fixed
+if (my_niter >= my_niter * projyrs) {
+  for (i in 1:my_niter) {
+    rt_catch_se <- rep(0.5, length = nrow(extras_fixed_with_se$RandomFixedCatchEM[[i]]))
+    extras_fixed_with_se$RandomFixedCatchEM[[i]]$catch_se <- rt_catch_se
+  }
+} else {
+  print("There are not enough iterations or years for this method")
+}
+
+random_10_x_fixed_with_se <- modifyList(base_params, list(scen_name_vec = "random_10_x_fixed_with_se", sample_struct_list = list("random_10_x_fixed_with_se" = sample_struct_rt_2_x_rt_2_fixed), extras = list(extras_fixed_with_se)))
 
 # Future Idea: then maybe have some wrong years
 
@@ -413,7 +481,7 @@ random_2_x_all_years <- modifyList(base_params, list(scen_name_vec = "random_2_x
 
 # selectivity
 # all_scenarios <- c(
-#   rt_2_scenarios, 
+#   rt_2_scenarios,
 #   list(rt_2_x_rt_2)
 # )
 
@@ -423,10 +491,21 @@ random_2_x_all_years <- modifyList(base_params, list(scen_name_vec = "random_2_x
 # )
 
 # 4 core, all_years, fixed
-all_scenarios <- list(
-  random_2_x_random_2,
-  random_2_x_all_years
+# all_scenarios <- list(
+#   random_2_x_random_2,
+#   random_2_x_all_years
+# )
+
+# selectivity varied mortality
+all_scenarios <- c(
+  rt_2_scenarios_varied,
+  list(rt_2_x_rt_2)
 )
+
+# all_scenarios <- c(
+#   all_yrs_scenarios_varied, 
+#   list(rt_2_x_all_yrs)
+# )
 
 ##### RUN SSMSE #####
 
