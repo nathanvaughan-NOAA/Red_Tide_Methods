@@ -17,7 +17,7 @@ packageVersion("ss3sim")
 packageVersion("SSMSE")
 
 # Create a folder for the output in the working directory.
-results_name <- "selectivity_rt_2_varied"
+results_name <- "selectivity_random_10_extra"
 run_SSMSE_dir <- file.path("./runs_output")
 run_res_path <- file.path(run_SSMSE_dir, paste0("results_", results_name))
 if (!dir.exists(run_res_path)) {
@@ -29,7 +29,7 @@ model_SSMSE_dir <- file.path("base_models")
 default <- file.path(model_SSMSE_dir, "default_sigmaR")
 
 # number of simulation years
-projyrs <- 30
+projyrs <- 100
 my_niter <- 100
 
 # to get the names of parameter values
@@ -328,7 +328,7 @@ rt_2_x_rt_2_fixed <- modifyList(base_params, list(scen_name_vec = "rt_2_x_rt_2_f
 
 # Selectivity
 
-scenario_factorial <- function(model_names = c("flat", "young"), type_name = NULL, type_struct = NULL, varied_mortality = FALSE) {
+scenario_factorial <- function(model_names = c("flat", "young"), type_name = NULL, type_struct = NULL, varied_mortality = FALSE, base_extras = NULL) {
   
   # create a grid of all model combos
   grid <- expand.grid(OM = model_names, EM = model_names, stringsAsFactors = FALSE)
@@ -352,13 +352,38 @@ scenario_factorial <- function(model_names = c("flat", "young"), type_name = NUL
       }
     }
     
-    # add new adjustments to SSMSE_run list and OM/EM locations
-    modifyList(base_params, list(
-      scen_name_vec = scen_name,
-      sample_struct_list = setNames(list(struct_obj), scen_name),
-      OM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, combo$OM)),
-      EM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, combo$EM))
-    ))
+    if(!is.null(base_extras)){
+      multiplier_name <- paste0(combo$OM, "_multiplier")
+      # Use a local copy to modify
+      new_extras <- base_extras
+      
+      # Ensure my_niter exists or use seq_along
+      for(iters in seq_along(new_extras$RandomFixedCatch)){ 
+        multiplier_val <- get(multiplier_name)
+        
+        # Perform the multiplication and assign it back to the local object
+        new_extras$RandomFixedCatch[[iters]]$Catch <- 
+          base_extras$RandomFixedCatch[[iters]]$Catch * multiplier_val
+      }
+      print(new_extras$RandomFixedCatch[[1]]$Catch[[1]])
+      
+      # Return the modified list so it ends up in the 'scenarios' output
+      return(modifyList(base_params, list(
+        scen_name_vec = scen_name,
+        sample_struct_list = setNames(list(struct_obj), scen_name),
+        OM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, combo$OM)),
+        EM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, combo$EM)), 
+        extra = list(new_extras)
+      )))
+    } else {
+      # add new adjustments to SSMSE_run list and OM/EM locations
+      modifyList(base_params, list(
+        scen_name_vec = scen_name,
+        sample_struct_list = setNames(list(struct_obj), scen_name),
+        OM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, combo$OM)),
+        EM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, combo$EM))
+      ))
+    }
   }
   )
 }
@@ -384,7 +409,7 @@ create_RandomFixedCatch <- function (my_niter,
   FixedCatch <- FixedCatch %>% filter(FltSvy == rt_fleet)
   RandomFixedCatch <- list()
   rt_year_om = sample(1:length(FixedCatch[, 1]), length(FixedCatch[, 1])) # random years
-  if (my_niter >= my_niter*projyrs){
+  if (projyrs <= n_rt_years*my_niter){
     for (i in 1:my_niter) {
       this_iter_rt <- rt_year_om[1:n_rt_years]
       rt_year_om <- rt_year_om[-c(1:n_rt_years)]
@@ -415,7 +440,7 @@ extras$RandomFixedCatch <- create_RandomFixedCatch(
   my_niter = my_niter,
   FixedCatch = sample_struct_fc$FixedCatch,
   rt_fleet = 5,
-  n_rt_years = 10,
+  n_rt_years = 34,
   min_mortality = 0.05,
   max_mortality = 0.25,
   mean_mortality = 0.1
@@ -425,7 +450,7 @@ extras$RandomFixedCatch <- create_RandomFixedCatch(
 # start by making a perfect copy
 
 extras$RandomFixedCatchEM <- extras$RandomFixedCatch
-if (my_niter >= my_niter * projyrs) {
+if (projyrs <= my_niter){
   for (i in 1:my_niter) {
     names(extras$RandomFixedCatchEM[[i]])[5] <- "catch_se"
     rt_catch_se <- rep(0.01, length = nrow(extras$RandomFixedCatchEM[[i]]))
@@ -464,6 +489,30 @@ random_10_x_fixed_with_se <- modifyList(base_params, list(scen_name_vec = "rando
 
 # Future Idea: then maybe have some wrong years
 
+# Random Selectivity
+
+extras_base <- list()
+extras_base$RandomFixedCatch <- create_RandomFixedCatch(
+  my_niter = my_niter,
+  FixedCatch = sample_struct_fc$FixedCatch,
+  rt_fleet = 5,
+  n_rt_years = 34,
+  min_mortality = 0.05,
+  max_mortality = 0.25,
+  mean_mortality = 0.1
+)
+
+extras_base$RandomFixedCatchEM <- extras_base$RandomFixedCatch
+
+  for (i in 1:my_niter) {
+    names(extras_base$RandomFixedCatchEM[[i]])[5] <- "catch_se"
+    rt_catch_se <- rep(0.01, length = nrow(extras_base$RandomFixedCatchEM[[i]]))
+    extras_base$RandomFixedCatchEM[[i]]$catch_se <- rt_catch_se
+    extras_base$RandomFixedCatchEM[[i]]$fixed <- rep(0, length = nrow(extras_base$RandomFixedCatchEM[[i]])) # a new column that indicates if the EM's catch is estimated or not.
+  }
+
+all_yrs_scenarios_extra <- scenario_factorial(model_names = model_names, type_name = type_name, varied_mortality = TRUE, base_extras = extras_base[-2])    
+rt_2_scenarios_extra <- scenario_factorial(model_names = model_names, type_name = "_rt_2", varied_mortality = TRUE, base_extras = extras_base) 
 
 # put the scenarios you want to run into a list
 
@@ -497,15 +546,25 @@ random_10_x_fixed_with_se <- modifyList(base_params, list(scen_name_vec = "rando
 # )
 
 # selectivity varied mortality
-all_scenarios <- c(
-  rt_2_scenarios_varied,
-  list(rt_2_x_rt_2)
-)
+# all_scenarios <- c(
+#   rt_2_scenarios_varied,
+#   list(rt_2_x_rt_2)
+# )
 
 # all_scenarios <- c(
 #   all_yrs_scenarios_varied, 
 #   list(rt_2_x_all_yrs)
 # )
+
+# selectivity varied mortality
+all_scenarios <- c(
+  rt_2_scenarios_extra
+)
+
+# all_scenarios <- c(
+#   all_yrs_scenarios_varied
+# )
+
 
 ##### RUN SSMSE #####
 
