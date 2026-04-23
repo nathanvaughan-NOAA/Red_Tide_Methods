@@ -7,9 +7,9 @@
 # replace "nmfs-opensci" with your bucket name
 # The `$HOME` symbol is a shortcut for your home directory, so this will
 # create the folder at /home/your_username/my_gcs_bucket.
-BUCKET_NAME="mollystevens-gcwpilot"
+BUCKET_NAME="ecsai-red-tide-simulation-project"
 MOUNT_POINT="$HOME/Red_Tide_Methods/bucket"
-FOLDER_NAME="ssmse/results_100_segmented"
+FOLDER_NAME="2026_04_22_selectivity_random_10_extra/"
 
 # --- Authentication ---
 # This command authenticates your user account with Google Cloud.
