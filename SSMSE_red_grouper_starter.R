@@ -23,6 +23,7 @@ run_res_path <- file.path(run_SSMSE_dir, paste0("results_", results_name))
 if (!dir.exists(run_res_path)) {
   dir.create(run_res_path, recursive = TRUE)
 }
+#bucket_path <- normalizePath(paste0("bucket/results_", results_name)) # NULL
 
 # OM locations
 model_SSMSE_dir <- file.path("base_models")
@@ -307,7 +308,8 @@ base_params <- list(
   seed            = 12345,
   # Normalize these once here
   OM_in_dir_vec   = normalizePath(default),
-  EM_in_dir_vec   = normalizePath(default)
+  EM_in_dir_vec   = normalizePath(default)#,
+  #cloud_bucket = bucket_path
 )
 
 # use modifyList() to adjust the run_SSMSE parameters
