@@ -406,12 +406,14 @@ create_RandomFixedCatch <- function (my_niter,
                                      n_rt_years,
                                      min_mortality,
                                      max_mortality,
-                                     mean_mortality)
+                                     mean_mortality, 
+                                     set_seed = NULL)
 {
+  set.seed(set_seed)
   FixedCatch <- FixedCatch %>% filter(FltSvy == rt_fleet)
   RandomFixedCatch <- list()
   rt_year_om = sample(1:length(FixedCatch[, 1]), length(FixedCatch[, 1])) # random years
-  if (projyrs <= n_rt_years*my_niter){
+#  if (projyrs <= n_rt_years*my_niter){
     for (i in 1:my_niter) {
       this_iter_rt <- rt_year_om[1:n_rt_years]
       rt_year_om <- rt_year_om[-c(1:n_rt_years)]
@@ -427,7 +429,7 @@ create_RandomFixedCatch <- function (my_niter,
       
       RandomFixedCatch[[i]][this_iter_rt, "Catch"] <- rt_mortality_om
     }
-  } else { print("There are not enough iterations or years for this method")  }
+#  } else { print("There are not enough iterations or years for this method")  }
   return(RandomFixedCatch)
 }
 
@@ -445,7 +447,8 @@ extras$RandomFixedCatch <- create_RandomFixedCatch(
   n_rt_years = 34,
   min_mortality = 0.05,
   max_mortality = 0.25,
-  mean_mortality = 0.1
+  mean_mortality = 0.1, 
+  set_seed = 12345
 )
 
 # use RandomFixedCatch to fill in the numbers for RandomFixedCatchEM
@@ -501,7 +504,8 @@ extras_base$RandomFixedCatch <- create_RandomFixedCatch(
   n_rt_years = 34,
   min_mortality = 0.05,
   max_mortality = 0.25,
-  mean_mortality = 0.1
+  mean_mortality = 0.1, 
+  set_seed = 12345
 )
 
 extras_base$RandomFixedCatchEM <- extras_base$RandomFixedCatch
@@ -562,6 +566,11 @@ rt_2_scenarios_extra <- scenario_factorial(model_names = model_names, type_name 
 all_scenarios <- c(
   rt_2_scenarios_extra
 )
+all_scenarios <- all_scenarios[1:4]
+#all_scenarios <- all_scenarios[5:8]
+#all_scenarios <- all_scenarios[9:12]
+#all_scenarios <- all_scenarios[13:16]
+
 
 # all_scenarios <- c(
 #   all_yrs_scenarios_varied
