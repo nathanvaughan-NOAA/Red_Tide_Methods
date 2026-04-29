@@ -26,18 +26,50 @@ run_SSMSE_dir <- file.path("runs_output")
 OM_name <- "default_sigmaR"
 
 #the model_run you want to use, typically the final model_run
-end_yr <- 2047
-niter <- 10
+end_yr <- 2116
+niter <- 100
 
 #name of the results files
-results_name <- "_random_10_years_old"
+results_name <- "_selectivity_random_34_extra"
 
 #create a list of scenarios for plot generation, usually the default order is fine.  
 #scen_list <- unique(summary$ts$scenario)
 #hard coded in a specific order.  
 scen_list <- c(
-  "random_2_x_random_2",
-  "random_2_x_all_years"
+  # "rt_2_x_rt_2", 
+  # "flat_x_flat_rt_2",
+  # "young_x_young_rt_2",
+  # "old_x_old_rt_2",
+  # "mid_x_mid_rt_2",
+  # "flat_x_young_rt_2",
+  # "flat_x_old_rt_2",
+  # "flat_x_mid_rt_2",
+  # "young_x_flat_rt_2",
+  # "young_x_old_rt_2",
+  # "young_x_mid_rt_2",
+  # "old_x_flat_rt_2",
+  # "old_x_young_rt_2",
+  # "old_x_mid_rt_2",
+  # "mid_x_flat_rt_2",
+  # "mid_x_young_rt_2",
+  # "mid_x_old_rt_2"#,
+  # "rt_2_x_all_yrs",
+  "flat_x_flat_all_yrs",
+  "young_x_young_all_yrs",
+  "old_x_old_all_yrs",
+  "mid_x_mid_all_yrs",
+  "flat_x_young_all_yrs",
+  "flat_x_old_all_yrs",
+  "flat_x_mid_all_yrs",
+  "young_x_flat_all_yrs",
+  "young_x_old_all_yrs",
+  "young_x_mid_all_yrs",
+  "old_x_flat_all_yrs",
+  "old_x_young_all_yrs",
+  "old_x_mid_all_yrs",
+  "mid_x_flat_all_yrs",
+  "mid_x_young_all_yrs",
+  "mid_x_old_all_yrs"
 )
 
 #pull the summary and dat files, the dat file isn't actually that important.  
@@ -694,7 +726,7 @@ This was filtered to just the final run.
 
 My new method for plotting EM:OM involves creating separate OM and EM data frames, joining them by year, scenario, and iteration, then dividing the EM value/ OM value for every variable. That way when plotted it is truly the EM for each model run, year and iteration divided by the OM from the same year and iteration but one model run. If the om and em value are zero I changed the ratio to 1 because that means that the EM = OM.
 
-```{r}
+```{#cancelr}
 
 ratio_df <- left_join(EM_runs, OM_runs,
                       by = c("year", "scenario", "iteration"),
@@ -716,7 +748,7 @@ ratio_df <- left_join(EM_runs, OM_runs,
 
 ```
 
-```{r}
+```{#cancelr}
 
 plot_f_ts <- function(scen) {
   
@@ -799,7 +831,7 @@ f_ts_plots <- map(scen_list, plot_f_ts)
 ```
 
 ::: panel-tabset
-```{r, results='asis'}
+```{#cancelr, results='asis'}
 
 # Loop through the list and print each figure
 for (q in 1:length(f_ts_plots)) {
@@ -822,7 +854,7 @@ Figure 10. Each fleet's fishing mortality ratio (EM:OM) over time by scenario. T
 
 A zoomed in look at just F_5 from the previous plots.
 
-```{r}
+```{#cancelr}
 
 plot_f_ts <- function(scen) {
   
@@ -898,7 +930,7 @@ f_ts_plots <- map(scen_list, plot_f_ts)
 ```
 
 ::: panel-tabset
-```{r, results='asis'}
+```{#cancelr, results='asis'}
 
 # Loop through the list and print each figure
 for (q in 1:length(f_ts_plots)) {
@@ -919,7 +951,7 @@ Figure 11. Red tide mortality ratio (EM:OM) over time by scenario. The line indi
 
 ## F.Value from dqs
 
-```{r}
+```{#cancelr}
 
 #set up the OM and EM dataframes, join them, and calculate the EM:OM ratio for each available value
 
@@ -947,7 +979,7 @@ ratio_df_dq <- left_join(EM_runs_dq, OM_runs_dq,
 
 ```
 
-```{r}
+```{#cancelr}
 
 
 plot_f_ts <- function(scen) {
@@ -1016,7 +1048,7 @@ f_ts_plots <- map(scen_list, plot_f_ts)
 ```
 
 ::: panel-tabset
-```{r, results='asis'}
+```{#cancelr, results='asis'}
 
 # Loop through the list and print each figure
 for (q in 1:length(f_ts_plots)) {
@@ -1035,7 +1067,7 @@ for (q in 1:length(f_ts_plots)) {
 
 ## Biomass
 
-```{r}
+```{#cancelr}
 
 plot_biomass_ts <- function(scen) {
   
@@ -1111,7 +1143,7 @@ biomass_ts_plots <- map(scen_list, plot_biomass_ts)
 ```
 
 ::: panel-tabset
-```{r, results='asis'}
+```{#cancelr, results='asis'}
 
 # Loop through the list and print each figure
 for (q in 1:length(biomass_ts_plots)) {
@@ -1132,7 +1164,7 @@ Figure 12. Biomass ratio (EM:OM) over time by scenario. The line indicates the m
 
 ## Recruitment
 
-```{r, warning=FALSE}
+```{#cancelr, warning=FALSE}
   
   fleet_ratios <- ratio_df %>%
     filter(
@@ -1200,7 +1232,7 @@ Figure 13. Recruitment ratio (EM:OM) over time by scenario. The line indicates t
 
 ## SSB
 
-```{r, warning=FALSE}
+```{#cancelr, warning=FALSE}
   
   fleet_ratios <- ratio_df %>%
     filter(
@@ -1271,7 +1303,7 @@ Plotting the same ratios as above but by the "time from the terminal year" inste
 
 ## Fishing Mortality
 
-```{r}
+```{#cancelr}
 
 plot_f_ts <- function(scen) {
   
@@ -1347,7 +1379,7 @@ f_ts_plots <- map(scen_list, plot_f_ts)
 ```
 
 ::: panel-tabset
-```{r, results='asis'}
+```{#cancelr, results='asis'}
 
 # Loop through the list and print each figure
 for (q in 1:length(f_ts_plots)) {
@@ -1370,7 +1402,7 @@ Figure 15. Each fleet's fishing mortality ratio (EM:OM) over the years from term
 
 A zoomed in look at just F_5 from the previous plots.
 
-```{r}
+```{#cancelr}
 
 plot_f_ts <- function(scen) {
   
@@ -1447,7 +1479,7 @@ f_ts_plots <- map(scen_list, plot_f_ts)
 ```
 
 ::: panel-tabset
-```{r, results='asis'}
+```{#cancelr, results='asis'}
 
 # Loop through the list and print each figure
 for (q in 1:length(f_ts_plots)) {
@@ -1468,7 +1500,7 @@ Figure 16. Red tide mortality ratio (EM:OM) over the years from terminal year by
 
 ## Biomass
 
-```{r}
+```{#cancelr}
 
 plot_biomass_ts <- function(scen) {
   
@@ -1545,7 +1577,7 @@ biomass_ts_plots <- map(scen_list, plot_biomass_ts)
 ```
 
 ::: panel-tabset
-```{r, results='asis'}
+```{#cancelr, results='asis'}
 
 # Loop through the list and print each figure
 for (q in 1:length(biomass_ts_plots)) {
@@ -1566,7 +1598,7 @@ Figure 17. Biomass ratio (EM:OM) over the years from terminal year by scenario. 
 
 ## Recruitment
 
-```{r, warning=FALSE}
+```{#cancelr, warning=FALSE}
 
   fleet_ratios <- ratio_df %>%
     filter(
@@ -1634,7 +1666,7 @@ Figure 18. Recruitment ratio (EM:OM) over time by scenario. The line indicates t
 
 ## SSB
 
-```{r, warning=FALSE}
+```{#cancelr, warning=FALSE}
   
   fleet_ratios <- ratio_df %>%
     filter(
@@ -1704,7 +1736,7 @@ Figure 19. SSB ratio (EM:OM) over the years from the terminal year by scenario. 
 
 ## Line Plots
 
-```{r}
+```{#cancelr}
 
 # identify the last year sampled by SSMSE
 max_sample_year <- suppressWarnings(  #suppress warning because max removes NAs
@@ -1779,7 +1811,7 @@ all_term_plots<- map(scen_list, scen_ts_plots)
 ```
 
 ::: panel-tabset
-```{r, results='asis', warning = FALSE}
+```{#cancelr, results='asis', warning = FALSE}
 
 # Loop through the list and print each figure
 for (q in 1:length(all_term_plots)) {
@@ -1800,7 +1832,7 @@ Figure 20. Term plots are meant to be a "short term" (2000-2030) and "long term"
 
 ## Point Plots
 
-```{r}
+```{#cancelr}
 
 # identify the last year sampled by SSMSE
 max_sample_year <- suppressWarnings(  #suppress warning because max removes NAs
@@ -1877,7 +1909,7 @@ all_term_plots<- map(scen_list, scen_ts_plots)
 ```
 
 ::: panel-tabset
-```{r, results='asis', warning = FALSE}
+```{#cancelr, results='asis', warning = FALSE}
 
 # Loop through the list and print each figure
 for (q in 1:length(all_term_plots)) {
@@ -2228,7 +2260,7 @@ RE = (E - T) / T
 
 If the RE is NA (T = 0), the RE = 0. This introduces issues in the \_all year scenarios where many of the T values are zero and the E \> 0.
 
-```{r}
+```{#cancelr}
 
 ratio_df_re <- left_join(EM_runs, OM_runs,
                       by = c("year", "scenario", "iteration"),
@@ -2261,7 +2293,7 @@ EM_means <- ratio_df_re %>%
 ::: panel-tabset
 ### Recruitment
 
-```{r}
+```{#cancelr}
 recruit <- EM_means %>% ggplot(aes(Recruit_0_re, scenario)) +
   geom_boxplot() +
   geom_vline(xintercept = 0)+
@@ -2272,7 +2304,7 @@ recruit
 
 ### SpawnBio
 
-```{r}
+```{#cancelr}
 spawn <- EM_means %>% 
   ggplot(aes(SpawnBio_re, scenario)) +
   geom_boxplot() +
@@ -2284,7 +2316,7 @@ spawn
 
 ### Com F
 
-```{r}
+```{#cancelr}
 
 f_com<-EM_means %>% 
   mutate(f_com_re = F_1_re+F_2_re) %>%
@@ -2298,7 +2330,7 @@ f_com
 
 ### Rec F
 
-```{r}
+```{#cancelr}
 f_rec <- EM_means %>% 
   ggplot(aes(F_4_re, scenario)) +
   geom_boxplot() +
@@ -2314,7 +2346,7 @@ Cannot be produced because there are zeros in the OM and EM.
 
 ### Com Catch
 
-```{r}
+```{#cancelr}
 com_c <- EM_means %>% 
   mutate(re_com = retainB_1_re+retainB_2_re) %>%
   ggplot(aes(re_com, scenario)) +
@@ -2327,7 +2359,7 @@ com_c
 
 ### Rec Catch
 
-```{r}
+```{#cancelr}
 
 rec_c <- EM_means %>% 
   ggplot(aes(retainB_4_re, scenario)) +
@@ -2348,7 +2380,7 @@ Cannot be calculated because of zeros in the EM and OM.
 
 Figure 21. Relative error plots for each variable of interest zoomed in.
 
-```{r, warning = FALSE}
+```{#cancelr, warning = FALSE}
 recruit <- recruit +
   theme(axis.text.y = element_blank()) 
 f_rec <- f_rec +
@@ -2367,7 +2399,7 @@ com_c <- com_c  + ggtitle("Com catch")
 
 Figure 22. Relative error plots of each variable of interest on the same patchwork.
 
-```{r, warning = FALSE, message =FALSE}
+```{#cancelr, warning = FALSE, message =FALSE}
 recruit <- recruit +
   theme(axis.text.y = element_blank()) + xlim(-1,1)
 f_rec <- f_rec +
@@ -3098,7 +3130,7 @@ summary$scalar %>%
 
 ```
 
-```{r}
+```{#cancelr}
 
 ratio_R0 <- summary$scalar %>%
   select(iteration, scenario, model_run, SR_LN_R0) %>%
@@ -3124,7 +3156,7 @@ ratio_R0 %>%
 
 EM:OM ratios in the new format for variables that don't have zeros.
 
-```{r}
+```{#cancelr}
 
 ratio_df %>%
   filter(str_detect(model_run, paste0("_OM|_EM_", end_yr))) %>%
@@ -3218,7 +3250,7 @@ summary$ts %>%
 
 ### Table of Mean F_5 by red tide year and scenario
 
-```{r}
+```{#cancelr}
 summary$ts %>%
   filter(str_detect(model_run, paste0("_OM|_EM_", end_yr)), year %in% c(2005, 2014, 2018, 2021)) %>%
   group_by(year, model_run, scenario) %>%
