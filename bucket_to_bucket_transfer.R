@@ -1,8 +1,8 @@
 # --- CONFIGURATION ---
-source_bucket <- "gs://bucket_name/folder_name"
-dest_bucket   <- "gs://bucket_name/folder_name"
+source_bucket <- "gs://mollystevens-gcwpilot/ssmse/redo_selectivity_100/results_selectivity_100_redo"
+dest_bucket   <- "gs://ecsai-red-tide-simulation-project/2026_04_13_selectivity_100_redo/results_selectivity_100_redo"
 
-# 1. Get the list of the 32 top-level folders
+# 1. Get the list of the top-level folders
 # We use 'system' to get the folder names directly from GCS
 folders <- system(paste("gcloud storage ls", source_bucket), intern = TRUE)
 
