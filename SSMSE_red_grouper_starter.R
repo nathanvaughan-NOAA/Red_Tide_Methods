@@ -244,9 +244,9 @@ sample_struct$MeanSize_at_Age_obs
 sample_struct_no_rt_x_rt_2 <- add_sample_struct_FixedCatches(sample_struct, om_on = FALSE)
 sample_struct_rt_2_x_no_rt <- add_sample_struct_FixedCatches(sample_struct, em_on = FALSE)
 sample_struct_rt_2_x_rt_2 <- add_sample_struct_FixedCatches(sample_struct)
-sample_struct_no_rt_x_all_yrs <- add_sample_struct_FixedCatches(sample_struct, om_on = FALSE, rt_year_em = seq(from = 2018, to = 2047, by = 1))
-sample_struct_rt_2_x_all_yrs <- add_sample_struct_FixedCatches(sample_struct, rt_year_em = seq(from = 2018, to = 2047, by = 1))
-sample_struct_rep_3_x_all_yrs <- add_sample_struct_FixedCatches(sample_struct, rt_year_om = seq(from = 2018, to = 2047, by = 3), rt_year_em = seq(from = 2018, to = 2047, by = 1))
+sample_struct_no_rt_x_all_yrs <- add_sample_struct_FixedCatches(sample_struct, om_on = FALSE, rt_year_em = seq(from = 2018, to = 2116, by = 1))
+sample_struct_rt_2_x_all_yrs <- add_sample_struct_FixedCatches(sample_struct, rt_year_em = seq(from = 2018, to = 2116, by = 1))
+sample_struct_rep_3_x_all_yrs <- add_sample_struct_FixedCatches(sample_struct, rt_year_om = seq(from = 2018, to = 2116, by = 3), rt_year_em = seq(from = 2018, to = 2116, by = 1))
 sample_struct_rt_2_x_rt_2_fixed <- add_sample_struct_FixedCatches(sample_struct, em_fixed = 1)
 
 # create a list of sample structures for each OM/MP run. 
@@ -268,7 +268,7 @@ sample_struct_young_rt_2 <- add_sample_struct_FixedCatches(sample_struct,
 sample_struct_young_all_yrs <- add_sample_struct_FixedCatches(sample_struct,
                                                            rt_mortality_om = 0.1*young_multiplier,
                                                            rt_mortality_em = 0.1*young_multiplier,
-                                                           rt_year_em = seq(from = 2018, to = 2047, by = 1))
+                                                           rt_year_em = seq(from = 2018, to = 2116, by = 1))
 old_multiplier <- 21/17.25
 sample_struct_old_rt_2 <- add_sample_struct_FixedCatches(sample_struct,
                                                       rt_mortality_om = 0.1*old_multiplier,
@@ -276,7 +276,7 @@ sample_struct_old_rt_2 <- add_sample_struct_FixedCatches(sample_struct,
 sample_struct_old_all_yrs <- add_sample_struct_FixedCatches(sample_struct,
                                                          rt_mortality_om = 0.1*old_multiplier,
                                                          rt_mortality_em = 0.1*old_multiplier,
-                                                         rt_year_em = seq(from = 2018, to = 2047, by = 1))
+                                                         rt_year_em = seq(from = 2018, to = 2116, by = 1))
 mid_multiplier <- 21/16.75
 sample_struct_mid_rt_2 <- add_sample_struct_FixedCatches(sample_struct,
                                                       rt_mortality_om = 0.1*mid_multiplier,
@@ -284,7 +284,7 @@ sample_struct_mid_rt_2 <- add_sample_struct_FixedCatches(sample_struct,
 sample_struct_mid_all_yrs <- add_sample_struct_FixedCatches(sample_struct,
                                                          rt_mortality_om = 0.1*mid_multiplier,
                                                          rt_mortality_em = 0.1*mid_multiplier,
-                                                         rt_year_em = seq(from = 2018, to = 2047, by = 1))
+                                                         rt_year_em = seq(from = 2018, to = 2116, by = 1))
 flat_multiplier <- 21/21
 sample_struct_flat_rt_2 <- add_sample_struct_FixedCatches(sample_struct,
                                                       rt_mortality_om = 0.1*flat_multiplier,
@@ -292,7 +292,7 @@ sample_struct_flat_rt_2 <- add_sample_struct_FixedCatches(sample_struct,
 sample_struct_flat_all_yrs <- add_sample_struct_FixedCatches(sample_struct,
                                                           rt_mortality_om = 0.1*flat_multiplier,
                                                           rt_mortality_em = 0.1*flat_multiplier,
-                                                          rt_year_em = seq(from = 2018, to = 2047, by = 1))
+                                                          rt_year_em = seq(from = 2018, to = 2116, by = 1))
 
 ##### Scenario Selection #####
 # global settings for all SSMSE runs
