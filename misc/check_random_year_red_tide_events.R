@@ -2,7 +2,6 @@
 # table that compares the red tide years between the OM and EM
 # plots of 10 of the iterations OM and EM over time
 
-
 # Set-up ------------------------------------------------------------------
 
 library(tidyverse)
@@ -21,7 +20,7 @@ run_SSMSE_dir <- file.path("runs_output")
 OM_name <- "default_sigmaR"
 
 #the model_run you want to use, typically the final model_run
-end_yr <- 2047
+end_yr <- 2216
 niter <- 10
 
 #name of the results files
@@ -80,6 +79,7 @@ EM_runs_dq <- summary$dq %>%
 
 
 # F_5 Time Series by iteration --------------------------------------------
+max_sample_year = 2116
 
 key_models <- unique(summary$ts$model_run)
 key_models <- key_models[grepl("OM", key_models) | grepl(as.character(max_sample_year), key_models)]
@@ -92,8 +92,25 @@ plot_data <- summary$ts %>%
   )) %>%
   mutate(model_group = factor(model_group, levels = c("OM", "EM")))
 
+scen_in_order <- c(
+    "flat_x_flat_rt_2",
+    "flat_x_flat_all_yrs",
+    "young_x_young_rt_2",
+    "young_x_young_all_yrs",
+    "old_x_old_rt_2",
+    "old_x_old_all_yrs",
+    "mid_x_mid_rt_2",
+    "mid_x_mid_all_yrs"
+  )
+
+scen_in_order_flat <- c(
+  "flat_x_flat_rt_2",
+  "flat_x_flat_all_yrs"
+)
+
+
 plot_data %>% 
-  filter(model_run %in% key_models) %>% #filters to just OM and max year runs
+  filter(model_run %in% key_models, iteration %in% 1:10, scenario %in% scen_in_order, year %in% 2000:2047) %>% #filters to just OM and max year runs
   ggplot(aes(x = year, y = F_5)) +
   geom_vline(xintercept = dat$endyr, color = "gray") +
   geom_vline(xintercept = 2005, color = "gray", linetype = "dashed") +
@@ -110,6 +127,23 @@ plot_data %>%
   facet_grid(iteration~scenario) +
   theme_bw()
 
+plot_data %>% 
+  filter(model_run %in% key_models, iteration %in% 1:5, scenario %in% scen_in_order_flat, year %in% 2000:2117) %>% #filters to just OM and max year runs
+  ggplot(aes(x = year, y = F_5)) +
+  geom_vline(xintercept = dat$endyr, color = "gray") +
+  geom_vline(xintercept = 2005, color = "gray", linetype = "dashed") +
+  geom_vline(xintercept = 2014, color = "gray", linetype = "dashed") +
+  geom_line( aes(linetype = model_group, color = model_group))+
+  scale_color_manual(values = c(
+    "OM" = "darkorange", 
+    "EM" = "black"
+  )) +
+  scale_linetype_manual(values = c(
+    "OM" = "solid", 
+    "EM" = "dashed"
+  )) +
+  facet_grid(iteration~scenario) +
+  theme_bw()
 
 # Check matching years OM/EM ----------------------------------------------
 
@@ -124,7 +158,7 @@ years_list <- summary$ts %>%
   )
 
 summary$ts %>%
-  filter(model_run %in% key_models, year > 2017, F_5 > 0) %>% # just EM and OM, simulation years, and have red tide mortality
+  filter(model_run %in% key_models, year > 2017, F_5 > 0, scenario %in% scen_in_order_flat) %>% # just EM and OM, simulation years, and have red tide mortality
   group_by(scenario, model_run, iteration) %>%
   reframe(
     years_list = paste(sort(unique(year)), collapse = ",") # unique years with commas
@@ -133,7 +167,7 @@ summary$ts %>%
     names_from = model_run, 
     values_from = years_list) %>% 
   mutate( # check if EM and OM year lists match up
-    is_equal = `default_sigmaR_EM_2047` == `default_sigmaR_OM` 
+    is_equal = `flat_EM_2116` == `flat_OM` 
   )%>%
   kable(
     # Rename columns directly within kable
