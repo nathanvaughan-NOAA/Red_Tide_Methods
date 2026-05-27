@@ -1,0 +1,16 @@
+# Workstation to bucket
+# Transfer data from workstation to bucket
+
+# 1. Log into gcloud
+gcloud auth login --no-launch-browser
+
+# 2. Define your paths
+# Use absolute paths starting from /home/user/
+LOCAL_DIR="/home/user/Red_Tide_Methods/runs_output"
+BUCKET_DESTINATION="gs://bucket_name/folder_name"
+
+# 3. Run the transfer
+# 'cp -r' copies recursively (folders and subfolders)
+gcloud storage cp -r "$LOCAL_DIR"/* "$BUCKET_DESTINATION"
+
+# NOTE: this will overwrite files if you are not putting them in a new location.  

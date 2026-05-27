@@ -1,0 +1,406 @@
+---
+format:
+  html:
+    toc: true
+    toc_location: right
+    embed-resources: true
+editor: source
+execute:
+  echo: false
+---
+
+# Data Processing
+
+I take the output .rda from SSMSE_summary_all() which contains the timeseries (ts), derived quantity (dq), and scalar outputs, I remove the Base runs because we only need the OM and EM runs.  
+
+```{r, include = FALSE}
+
+library(tidyverse)
+library(patchwork)
+library(knitr)
+library(kableExtra)
+# OM locations
+
+#name of the first OM
+OM_name <- "default_sigmaR"
+model_SSMSE_dir <- file.path("base_models")
+default <- file.path(model_SSMSE_dir, OM_name)
+run_SSMSE_dir <- file.path("runs_output")
+
+#name of the results files
+results_name <- "_merged"
+n_iterations <- 100
+min_year <- 2018
+max_year <- 2047
+max_year_short_term <- min_year+4
+#middle time period to avoid edge effects
+#5 years to match the previous 2018-2022
+middle_min_year <- min_year+20
+middle_max_year <- min_year+24
+  
+#do you want to save the plots
+save <- TRUE
+
+#create a list of scenarios for plot generation, usually the default order is fine.  
+#scen_list <- unique(summary$ts$scenario)
+#hard coded in a specific order.  
+scen_list <- c(
+  "no_rt",
+  "no_rt_x_rt_2",
+  "rt_2_x_no_rt",
+  "rt_2_x_rt_2", 
+  "no_rt_x_all_yrs",
+  "rep_3_x_all_yrs",
+  "rt_2_x_all_yrs",
+  "flat_x_flat_rt_2",
+  "young_x_young_rt_2",
+  "old_x_old_rt_2",
+  "mid_x_mid_rt_2",
+  "flat_x_young_rt_2",
+  "flat_x_old_rt_2",
+  "flat_x_mid_rt_2",
+  "young_x_flat_rt_2",
+  "young_x_old_rt_2",
+  "young_x_mid_rt_2",
+  "old_x_flat_rt_2",
+  "old_x_young_rt_2",
+  "old_x_mid_rt_2",
+  "mid_x_flat_rt_2",
+  "mid_x_young_rt_2",
+  "mid_x_old_rt_2",
+  "flat_x_flat_all_yrs",
+  "young_x_young_all_yrs",
+  "old_x_old_all_yrs",
+  "mid_x_mid_all_yrs",
+  "flat_x_young_all_yrs",
+  "flat_x_old_all_yrs",
+  "flat_x_mid_all_yrs",
+  "young_x_flat_all_yrs",
+  "young_x_old_all_yrs",
+  "young_x_mid_all_yrs",
+  "old_x_flat_all_yrs",
+  "old_x_young_all_yrs",
+  "old_x_mid_all_yrs",
+  "mid_x_flat_all_yrs",
+  "mid_x_young_all_yrs",
+  "mid_x_old_all_yrs"
+)
+
+#pull the summary and dat files, the dat file isn't actually that important.  
+summary <- readRDS(file = file.path(run_SSMSE_dir, paste0("results_summary", results_name, ".rda")))
+dat <- r4ss::SS_readdat(file.path(default, "red_grouper_1986_2017_RedTideFleet.dat"))
+
+summary$ts <- summary$ts %>%
+  filter(model_run != "", !str_detect(model_run, "Base")) %>% #remove "Base" model 
+  mutate(end_year = as.numeric(str_extract(model_run, "\\d{4}$")) + 3, 
+         years_until_terminal = end_year - year) %>%
+  filter(case_when(
+    str_detect(model_run, "_EM") ~ years_until_terminal > 2,
+    TRUE ~ TRUE # Keep all other rows if no _EM
+  )) %>%
+  mutate(
+    scenario = factor(scenario, scen_list)
+  )
+
+summary$dq <- summary$dq %>%
+  filter(model_run != "", !str_detect(model_run, "Base")) %>%
+  mutate(end_year = as.numeric(str_extract(model_run, "\\d{4}$")) + 3,
+         years_until_terminal = end_year - year) %>%
+  filter(case_when(
+    str_detect(model_run, "_EM") ~ years_until_terminal > 2,
+    TRUE ~ TRUE # Keep all other rows if no _EM
+  )) %>%
+  mutate(
+    scenario = factor(scenario, scen_list)
+  )
+summary$scalar <- summary$scalar %>%
+  filter(model_run != "", !str_detect(model_run, "Base")) 
+
+
+
+#rename the OM if it's different from default
+OM_name <- "default_sigmaR"
+
+core_4 <- c(  "no_rt",
+              "no_rt_x_rt_2",
+              "rt_2_x_no_rt",
+              "rt_2_x_rt_2")
+all_years <- c("no_rt_x_all_yrs",
+               "rep_3_x_all_yrs",
+               "rt_2_x_all_yrs")
+selectivity_rt_2 <- c("flat_x_flat_rt_2",
+                      "young_x_young_rt_2",
+                      "old_x_old_rt_2",
+                      "mid_x_mid_rt_2",
+                      "flat_x_young_rt_2",
+                      "flat_x_old_rt_2",
+                      "flat_x_mid_rt_2",
+                      "young_x_flat_rt_2",
+                      "young_x_old_rt_2",
+                      "young_x_mid_rt_2",
+                      "old_x_flat_rt_2",
+                      "old_x_young_rt_2",
+                      "old_x_mid_rt_2",
+                      "mid_x_flat_rt_2",
+                      "mid_x_young_rt_2",
+                      "mid_x_old_rt_2")
+selectivity_all_yrs <-c("flat_x_flat_all_yrs",
+                        "young_x_young_all_yrs",
+                        "old_x_old_all_yrs",
+                        "mid_x_mid_all_yrs",
+                        "flat_x_young_all_yrs",
+                        "flat_x_old_all_yrs",
+                        "flat_x_mid_all_yrs",
+                        "young_x_flat_all_yrs",
+                        "young_x_old_all_yrs",
+                        "young_x_mid_all_yrs",
+                        "old_x_flat_all_yrs",
+                        "old_x_young_all_yrs",
+                        "old_x_mid_all_yrs",
+                        "mid_x_flat_all_yrs",
+                        "mid_x_young_all_yrs",
+                        "mid_x_old_all_yrs")
+
+OM_runs <- summary$ts %>%
+  filter(str_detect(model_run, "OM"))
+
+EM_runs <- summary$ts %>%
+  filter(str_detect(model_run, "EM"))
+
+OM_runs_dq <- summary$dq %>%
+  filter(str_detect(model_run, "OM"))
+
+EM_runs_dq <- summary$dq %>%
+  filter(str_detect(model_run, "EM"))
+
+```
+
+
+# Data Prep for extra
+
+```{r}
+summary_extra <- readRDS(file = file.path(run_SSMSE_dir, paste0("results_summary", extra_selectivity_results_name, ".rda")))
+
+summary_extra$ts <- summary_extra$ts %>%
+  filter(model_run != "", !str_detect(model_run, "Base")) %>% #remove "Base" model 
+  mutate(end_year = as.numeric(str_extract(model_run, "\\d{4}$")) + 3, 
+         years_until_terminal = end_year - year) %>%
+  filter(case_when(
+    str_detect(model_run, "_EM") ~ years_until_terminal > 2,
+    TRUE ~ TRUE # Keep all other rows if no _EM
+  )) %>%
+  mutate(
+    scenario = factor(scenario, scen_list)
+  )
+
+summary_extra$dq <- summary_extra$dq %>%
+  filter(model_run != "", !str_detect(model_run, "Base")) %>%
+  mutate(end_year = as.numeric(str_extract(model_run, "\\d{4}$")) + 3,
+         years_until_terminal = end_year - year) %>%
+  filter(case_when(
+    str_detect(model_run, "_EM") ~ years_until_terminal > 2,
+    TRUE ~ TRUE # Keep all other rows if no _EM
+  )) %>%
+  mutate(
+    scenario = factor(scenario, scen_list)
+  )
+summary_extra$scalar <- summary_extra$scalar %>%
+  filter(model_run != "", !str_detect(model_run, "Base")) 
+```
+
+
+```{r}
+
+create_recruitment_bias_plot <- function (min_year, max_year, scenario_list, scenario_name, model_run_type = "2116") {
+  
+  # create the reference point from the "best" case scenario
+  median_rt_2 <- EM_runs %>%
+    filter(
+      scenario == "rt_2_x_rt_2",
+      str_detect(model_run, model_run_type),
+      year >= min_year,
+      year <= max_year
+    ) %>%
+    rowwise()%>%
+    mutate(commercial = sum(deadB_1, deadB_2), recreational = deadB_4) %>%
+    left_join(OM_runs, by = c("year", "scenario", "iteration"), suffix = c("_em", "_om")) %>%
+    group_by(scenario, iteration, year) %>%
+    mutate(
+      res_Recruit_0 = (Recruit_0_em-Recruit_0_om)/Recruit_0_om*100,
+      res_SpawnBio = (SpawnBio_em -SpawnBio_om)/SpawnBio_om*100,
+      com_om = sum(deadB_1_om, deadB_2_om),
+      res_com = (commercial-com_om)/com_om*100,
+      res_rec = (recreational-deadB_4_om)/deadB_4_om*100,
+      res_dead_5 = (deadB_5_em-deadB_5_om)/deadB_5_om*100,
+      res_abundance = (Bio_smry_em-Bio_smry_om)/Bio_smry_om*100
+    ) %>%
+    pivot_longer(
+      cols = starts_with("res_"),
+      names_to = "type",
+      names_pattern = "res_(.*)",
+      values_to = "om_em"
+    ) %>%
+    filter(type %in% c("Recruit_0")) %>%
+    group_by(iteration) %>%
+    reframe(mean_om_em = mean(om_em)) %>%
+    group_by() %>%
+    reframe(median_om_em = median(mean_om_em))
+  title <- paste0("recruitment_", min_year, "_", max_year, "_", scenario_name, "_", model_run_type, "_Bias")
+  EM_runs %>%
+    filter(scenario %in% c(scenario_list, "rt_2_x_rt_2", "rt_2_x_no_rt")) %>%
+    filter(
+      str_detect(model_run, model_run_type),
+      year >= min_year,
+      year <= max_year
+    ) %>%
+    rowwise()%>%
+    mutate(commercial = sum(deadB_1, deadB_2), recreational = deadB_4) %>%
+    left_join(OM_runs, by = c("year", "scenario", "iteration"), suffix = c("_em", "_om")) %>%
+    group_by(scenario, iteration, year) %>%
+    mutate(
+      res_Recruit_0 = (Recruit_0_em-Recruit_0_om)/Recruit_0_om*100,
+      res_SpawnBio = (SpawnBio_em -SpawnBio_om)/SpawnBio_om*100,
+      com_om = sum(deadB_1_om, deadB_2_om),
+      res_com = (commercial-com_om)/com_om*100,
+      res_rec = (recreational-deadB_4_om)/deadB_4_om*100,
+      res_dead_5 = (deadB_5_em-deadB_5_om)/deadB_5_om*100,
+      res_abundance = (Bio_smry_em-Bio_smry_om)/Bio_smry_om*100
+    ) %>%
+    pivot_longer(
+      cols = starts_with("res_"),
+      names_to = "type",
+      names_pattern = "res_(.*)",
+      values_to = "om_em"
+    ) %>%
+    filter(type %in% c("Recruit_0")) %>%
+    group_by(scenario, iteration) %>%
+    reframe(mean_om_em = mean(om_em)) %>%
+    mutate(om_name = if_else(scenario == "no_rt", "no_rt", if_else(str_extract(scenario, "\\w+(?=_x_)") %in% c("rt_2", "no_rt", "rep_3"), scenario, str_extract(scenario, "\\w+(?=_x_)"))), 
+           om_name = fct_relevel(om_name, "reference", "young", "mid", "old", "flat"),
+           em_name = str_extract(scenario, "(?<=_x_).*?(?=_all_yrs|_rt_2)"),
+           em_name = if_else(scenario %in% all_years, "all years", replace_na(em_name, "reference")), 
+           em_name = fct_relevel(em_name, "reference", "all years"),
+           em_name = fct_relevel(em_name, "reference", "young", "mid", "old", "flat")) %>% 
+    ggplot(aes(om_name, mean_om_em)) + 
+    geom_boxplot()+
+    facet_grid(~em_name, scales = "free")+
+    theme_bw() +
+    theme(
+      axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)
+    ) + 
+    ggtitle(paste0("Recruitment from ", min_year, "-", max_year, " - ", scenario_name)) + xlab("Scenario") + ylab("% Bias") +
+    geom_hline(yintercept = 1, linetype = "dashed") # switch if you want the median line of the rt_2_x_rt_2
+  #geom_hline(data = median_rt_2, aes(yintercept = median_om_em), linetype = "dashed")
+  if(save == TRUE){
+    ggsave(file.path(run_SSMSE_dir, "plots_all", paste0(title, ".png")),
+           width = 4, height = 3, units = "in", device = "png")
+  }
+}
+# 
+# Core 4
+# 
+ create_recruitment_bias_plot(min_year, max_year_short_term, core_4, "Core", "2047")
+# 
+# All Years
+# 
+ create_recruitment_bias_plot(min_year, max_year_short_term, all_years, "All years", "2047")
+```
+
+
+```{r}
+create_ssb_bias_plot <- function (min_year, max_year, scenario_list, scenario_name, model_run_type = "2116") {
+  
+  # create the reference point from the "best" case scenario
+  median_rt_2 <- EM_runs %>%
+    filter(
+      scenario == "rt_2_x_rt_2",
+      str_detect(model_run, model_run_type),
+      year >= min_year,
+      year <= max_year
+    ) %>%
+    rowwise()%>%
+    mutate(commercial = sum(deadB_1, deadB_2), recreational = deadB_4) %>%
+    left_join(OM_runs, by = c("year", "scenario", "iteration"), suffix = c("_em", "_om")) %>%
+    group_by(scenario, iteration, year) %>%
+    mutate(
+      res_Recruit_0 = (Recruit_0_em-Recruit_0_om)/Recruit_0_om*100,
+      res_SpawnBio = (SpawnBio_em -SpawnBio_om)/SpawnBio_om*100,
+      com_om = sum(deadB_1_om, deadB_2_om),
+      res_com = (commercial-com_om)/com_om*100,
+      res_rec = (recreational-deadB_4_om)/deadB_4_om*100,
+      res_dead_5 = (deadB_5_em-deadB_5_om)/deadB_5_om*100,
+      res_abundance = (Bio_smry_em-Bio_smry_om)/Bio_smry_om*100
+    ) %>%
+    pivot_longer(
+      cols = starts_with("res_"),
+      names_to = "type",
+      names_pattern = "res_(.*)",
+      values_to = "om_em"
+    ) %>%
+    filter(type %in% c("SpawnBio")) %>%
+    group_by(iteration) %>%
+    reframe(mean_om_em = mean(om_em)) %>%
+    group_by() %>%
+    reframe(median_om_em = median(mean_om_em))
+  title <- paste0("SSB_", min_year, "_", max_year, "_", scenario_name, "_", model_run_type, "_Bias")
+  EM_runs %>%
+    filter(scenario %in% c(scenario_list, "rt_2_x_rt_2", "rt_2_x_no_rt")) %>%
+    filter(
+      str_detect(model_run, model_run_type),
+      year >= min_year,
+      year <= max_year
+    ) %>%
+    rowwise()%>%
+    mutate(commercial = sum(deadB_1, deadB_2), recreational = deadB_4) %>%
+    left_join(OM_runs, by = c("year", "scenario", "iteration"), suffix = c("_em", "_om")) %>%
+    group_by(scenario, iteration, year) %>%
+    mutate(
+      res_Recruit_0 = (Recruit_0_em-Recruit_0_om)/Recruit_0_om*100,
+      res_SpawnBio = (SpawnBio_em -SpawnBio_om)/SpawnBio_om*100,
+      com_om = sum(deadB_1_om, deadB_2_om),
+      res_com = (commercial-com_om)/com_om*100,
+      res_rec = (recreational-deadB_4_om)/deadB_4_om*100,
+      res_dead_5 = (deadB_5_em-deadB_5_om)/deadB_5_om*100,
+      res_abundance = (Bio_smry_em-Bio_smry_om)/Bio_smry_om*100
+    ) %>%
+    pivot_longer(
+      cols = starts_with("res_"),
+      names_to = "type",
+      names_pattern = "res_(.*)",
+      values_to = "om_em"
+    ) %>%
+    filter(type %in% c("SpawnBio")) %>%
+    group_by(scenario, iteration) %>%
+    reframe(mean_om_em = mean(om_em)) %>%
+    mutate(om_name = if_else(scenario == "no_rt", "no_rt", if_else(str_extract(scenario, "\\w+(?=_x_)") %in% c("rt_2", "no_rt", "rep_3"), scenario, str_extract(scenario, "\\w+(?=_x_)"))), 
+           om_name = fct_relevel(om_name, "reference", "young", "mid", "old", "flat"),
+           em_name = str_extract(scenario, "(?<=_x_).*?(?=_all_yrs|_rt_2)"),
+           em_name = if_else(scenario %in% all_years, "all years", replace_na(em_name, "reference")), 
+           em_name = fct_relevel(em_name, "reference", "all years"),
+           em_name = fct_relevel(em_name, "reference", "young", "mid", "old", "flat")) %>% 
+    ggplot(aes(om_name, mean_om_em)) + 
+    geom_boxplot()+
+    facet_grid(~em_name, scales = "free")+
+    theme_bw() +
+    theme(
+      axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)
+    ) + 
+    ggtitle(paste0("SSB from ", min_year, "-", max_year, " - ", scenario_name)) + xlab("Scenario") + ylab("% Bias") +
+    geom_hline(yintercept = 0, linetype = "dashed") # switch if you want the median line of the rt_2_x_rt_2
+  #geom_hline(data = median_rt_2, aes(yintercept = median_om_em), linetype = "dashed")
+  if(save == TRUE){
+    ggsave(file.path(run_SSMSE_dir, "plots_all", paste0(title, ".png")),
+           width = 4, height = 3, units = "in", device = "png")
+  }
+}
+
+# Core 4
+# 
+create_ssb_bias_plot(min_year, max_year_short_term, core_4, "Core", "2047")
+# 
+# All Years
+# 
+create_ssb_bias_plot(min_year, max_year_short_term, all_years, "All years", "2047")
+
+
+```
