@@ -526,7 +526,7 @@ make_no_rt_all_yrs_model <- function(EM_name = "flat", EM_type = "all_yrs"){
   no_rt_all_yrs_model <- modifyList(
     base_params,
     list(
-      scen_name_vec = paste0("no_rt_x_", EM_name, EM_type),
+      scen_name_vec = paste0("no_rt_x_", EM_name,"_", EM_type),
       sample_struct_list = setNames(list(sample_struct_no_rt_x_all_yrs), paste0("no_rt_x_", EM_name,"_", EM_type)),
       OM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, "flat")),
       EM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, EM_name))))
@@ -538,6 +538,11 @@ no_rt_x_young_all_yrs <- make_no_rt_all_yrs_model("young")
 no_rt_x_mid_all_yrs <- make_no_rt_all_yrs_model("mid")
 no_rt_x_old_all_yrs <- make_no_rt_all_yrs_model("old")
 
+#these are failing, fix tomorrow morning with a clear head:  
+# look at how no_rt_x_rt_2 sample_struct is formatted
+# see if something is wrong with how extra is implemented.  
+# compare the sample_struct to other alternating sample structs.  
+# I think extra might require FixedCatch to exist?  
 
 sample_struct_no_rt_x_rt_34 <- add_sample_struct_FixedCatches(sample_struct, om_on = FALSE)
 
@@ -545,11 +550,11 @@ make_no_rt_34_model <- function(EM_name = "flat", EM_type = "rt_34"){
   no_rt_all_yrs_model <- modifyList(
     base_params,
     list(
-      scen_name_vec = paste0("no_rt_x_", EM_name, EM_type),
+      scen_name_vec = paste0("no_rt_x_", EM_name,"_", EM_type),
       sample_struct_list = setNames(list(sample_struct_no_rt_x_rt_34), paste0("no_rt_x_", EM_name,"_", EM_type)),
       OM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, "flat")),
       EM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, EM_name)), 
-      extra = list(extras_base[-2])
+      extra = list(extras_base[-1])
     ))
 }
 
@@ -559,6 +564,7 @@ no_rt_x_mid_rt_34 <- make_no_rt_34_model("mid")
 no_rt_x_old_rt_34 <- make_no_rt_34_model("old")
 
 no_rt_x_no_rt <- no_rt
+no_rt_x_no_rt$scen_name_vec = "no_rt_x_no_rt"
 
 # no_rt runs with varying all years selectivities.  
 
@@ -573,7 +579,7 @@ all_scenarios <- list(
   no_rt_x_mid_rt_34,
   no_rt_x_old_rt_34
 )
-all_scenarios <- all_scenarios[1:4]
+#all_scenarios <- all_scenarios[1:4]
 #all_scenarios <- all_scenarios[5:9]
 
 
