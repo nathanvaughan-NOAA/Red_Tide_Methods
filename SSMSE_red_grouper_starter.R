@@ -17,7 +17,7 @@ packageVersion("ss3sim")
 packageVersion("SSMSE")
 
 # Create a folder for the output in the working directory.
-results_name <- "selectivity_random_34_extra"
+results_name <- "no_rt_additions"
 run_SSMSE_dir <- file.path("./runs_output")
 run_res_path <- file.path(run_SSMSE_dir, paste0("results_", results_name))
 if (!dir.exists(run_res_path)) {
@@ -30,7 +30,7 @@ model_SSMSE_dir <- file.path("base_models")
 default <- file.path(model_SSMSE_dir, "default_sigmaR")
 
 # number of simulation years
-projyrs <- 100
+projyrs <- 51
 my_niter <- 100
 
 # to get the names of parameter values
@@ -244,9 +244,9 @@ sample_struct$MeanSize_at_Age_obs
 sample_struct_no_rt_x_rt_2 <- add_sample_struct_FixedCatches(sample_struct, om_on = FALSE)
 sample_struct_rt_2_x_no_rt <- add_sample_struct_FixedCatches(sample_struct, em_on = FALSE)
 sample_struct_rt_2_x_rt_2 <- add_sample_struct_FixedCatches(sample_struct)
-sample_struct_no_rt_x_all_yrs <- add_sample_struct_FixedCatches(sample_struct, om_on = FALSE, rt_year_em = seq(from = 2018, to = 2116, by = 1))
-sample_struct_rt_2_x_all_yrs <- add_sample_struct_FixedCatches(sample_struct, rt_year_em = seq(from = 2018, to = 2116, by = 1))
-sample_struct_rep_3_x_all_yrs <- add_sample_struct_FixedCatches(sample_struct, rt_year_om = seq(from = 2018, to = 2116, by = 3), rt_year_em = seq(from = 2018, to = 2116, by = 1))
+sample_struct_no_rt_x_all_yrs <- add_sample_struct_FixedCatches(sample_struct, om_on = FALSE, rt_year_em = seq(from = 2018, to = 2017+projyrs, by = 1))
+sample_struct_rt_2_x_all_yrs <- add_sample_struct_FixedCatches(sample_struct, rt_year_em = seq(from = 2018, to = 2017+projyrs, by = 1))
+sample_struct_rep_3_x_all_yrs <- add_sample_struct_FixedCatches(sample_struct, rt_year_om = seq(from = 2018, to = 2017+projyrs, by = 3), rt_year_em = seq(from = 2018, to = 2017+projyrs, by = 1))
 sample_struct_rt_2_x_rt_2_fixed <- add_sample_struct_FixedCatches(sample_struct, em_fixed = 1)
 
 # create a list of sample structures for each OM/MP run. 
@@ -268,7 +268,7 @@ sample_struct_young_rt_2 <- add_sample_struct_FixedCatches(sample_struct,
 sample_struct_young_all_yrs <- add_sample_struct_FixedCatches(sample_struct,
                                                            rt_mortality_om = 0.1*young_multiplier,
                                                            rt_mortality_em = 0.1*young_multiplier,
-                                                           rt_year_em = seq(from = 2018, to = 2116, by = 1))
+                                                           rt_year_em = seq(from = 2018, to = 2017+projyrs, by = 1))
 old_multiplier <- 21/17.25
 sample_struct_old_rt_2 <- add_sample_struct_FixedCatches(sample_struct,
                                                       rt_mortality_om = 0.1*old_multiplier,
@@ -276,7 +276,7 @@ sample_struct_old_rt_2 <- add_sample_struct_FixedCatches(sample_struct,
 sample_struct_old_all_yrs <- add_sample_struct_FixedCatches(sample_struct,
                                                          rt_mortality_om = 0.1*old_multiplier,
                                                          rt_mortality_em = 0.1*old_multiplier,
-                                                         rt_year_em = seq(from = 2018, to = 2116, by = 1))
+                                                         rt_year_em = seq(from = 2018, to = 2017+projyrs, by = 1))
 mid_multiplier <- 21/16.75
 sample_struct_mid_rt_2 <- add_sample_struct_FixedCatches(sample_struct,
                                                       rt_mortality_om = 0.1*mid_multiplier,
@@ -284,7 +284,7 @@ sample_struct_mid_rt_2 <- add_sample_struct_FixedCatches(sample_struct,
 sample_struct_mid_all_yrs <- add_sample_struct_FixedCatches(sample_struct,
                                                          rt_mortality_om = 0.1*mid_multiplier,
                                                          rt_mortality_em = 0.1*mid_multiplier,
-                                                         rt_year_em = seq(from = 2018, to = 2116, by = 1))
+                                                         rt_year_em = seq(from = 2018, to = 2017+projyrs, by = 1))
 flat_multiplier <- 21/21
 sample_struct_flat_rt_2 <- add_sample_struct_FixedCatches(sample_struct,
                                                       rt_mortality_om = 0.1*flat_multiplier,
@@ -292,7 +292,7 @@ sample_struct_flat_rt_2 <- add_sample_struct_FixedCatches(sample_struct,
 sample_struct_flat_all_yrs <- add_sample_struct_FixedCatches(sample_struct,
                                                           rt_mortality_om = 0.1*flat_multiplier,
                                                           rt_mortality_em = 0.1*flat_multiplier,
-                                                          rt_year_em = seq(from = 2018, to = 2116, by = 1))
+                                                          rt_year_em = seq(from = 2018, to = 2017+projyrs, by = 1))
 
 ##### Scenario Selection #####
 # global settings for all SSMSE runs
@@ -520,6 +520,63 @@ extras_base$RandomFixedCatchEM <- extras_base$RandomFixedCatch
 all_yrs_scenarios_extra <- scenario_factorial(model_names = model_names, type_name = type_name, varied_mortality = TRUE, base_extras = extras_base[-2])    
 rt_2_scenarios_extra <- scenario_factorial(model_names = model_names, type_name = "_rt_2", varied_mortality = TRUE, base_extras = extras_base) 
 
+# add no_rt to the 34 random models
+
+make_no_rt_all_yrs_model <- function(EM_name = "flat", EM_type = "all_yrs"){
+  no_rt_all_yrs_model <- modifyList(
+    base_params,
+    list(
+      scen_name_vec = paste0("no_rt_x_", EM_name, EM_type),
+      sample_struct_list = setNames(list(sample_struct_no_rt_x_all_yrs), paste0("no_rt_x_", EM_name,"_", EM_type)),
+      OM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, "flat")),
+      EM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, EM_name))))
+}
+
+
+no_rt_x_flat_all_yrs <- make_no_rt_all_yrs_model("flat")
+no_rt_x_young_all_yrs <- make_no_rt_all_yrs_model("young")
+no_rt_x_mid_all_yrs <- make_no_rt_all_yrs_model("mid")
+no_rt_x_old_all_yrs <- make_no_rt_all_yrs_model("old")
+
+
+sample_struct_no_rt_x_rt_34 <- add_sample_struct_FixedCatches(sample_struct, om_on = FALSE)
+
+make_no_rt_34_model <- function(EM_name = "flat", EM_type = "rt_34"){
+  no_rt_all_yrs_model <- modifyList(
+    base_params,
+    list(
+      scen_name_vec = paste0("no_rt_x_", EM_name, EM_type),
+      sample_struct_list = setNames(list(sample_struct_no_rt_x_rt_34), paste0("no_rt_x_", EM_name,"_", EM_type)),
+      OM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, "flat")),
+      EM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, EM_name)), 
+      extra = list(extras_base[-2])
+    ))
+}
+
+no_rt_x_flat_rt_34 <- make_no_rt_34_model("flat")
+no_rt_x_young_rt_34 <- make_no_rt_34_model("young")
+no_rt_x_mid_rt_34 <- make_no_rt_34_model("mid")
+no_rt_x_old_rt_34 <- make_no_rt_34_model("old")
+
+no_rt_x_no_rt <- no_rt
+
+# no_rt runs with varying all years selectivities.  
+
+all_scenarios <- list(
+  no_rt_x_no_rt,
+  no_rt_x_flat_all_yrs,
+  no_rt_x_young_all_yrs,
+  no_rt_x_mid_all_yrs,
+  no_rt_x_old_all_yrs,
+  no_rt_x_flat_rt_34,
+  no_rt_x_young_rt_34,
+  no_rt_x_mid_rt_34,
+  no_rt_x_old_rt_34
+)
+all_scenarios <- all_scenarios[1:4]
+#all_scenarios <- all_scenarios[5:9]
+
+
 # put the scenarios you want to run into a list
 
 # 4 core, all_years, fixed
@@ -563,10 +620,10 @@ rt_2_scenarios_extra <- scenario_factorial(model_names = model_names, type_name 
 # )
 
 # selectivity varied mortality
-all_scenarios <- c(
-  rt_2_scenarios_extra
-)
-all_scenarios <- all_scenarios[1:4]
+# all_scenarios <- c(
+#   rt_2_scenarios_extra
+# )
+#all_scenarios <- all_scenarios[1:4]
 #all_scenarios <- all_scenarios[5:8]
 #all_scenarios <- all_scenarios[9:12]
 #all_scenarios <- all_scenarios[13:16]
