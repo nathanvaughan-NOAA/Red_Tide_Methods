@@ -31,6 +31,7 @@ default <- file.path(model_SSMSE_dir, "default_sigmaR")
 
 # number of simulation years
 projyrs <- 51
+rt_yrs <- 17
 my_niter <- 100
 
 # to get the names of parameter values
@@ -444,7 +445,7 @@ extras$RandomFixedCatch <- create_RandomFixedCatch(
   my_niter = my_niter,
   FixedCatch = sample_struct_fc$FixedCatch,
   rt_fleet = 5,
-  n_rt_years = 34,
+  n_rt_years = rt_yrs,
   min_mortality = 0.05,
   max_mortality = 0.25,
   mean_mortality = 0.1, 
@@ -501,7 +502,7 @@ extras_base$RandomFixedCatch <- create_RandomFixedCatch(
   my_niter = my_niter,
   FixedCatch = sample_struct_fc$FixedCatch,
   rt_fleet = 5,
-  n_rt_years = 34,
+  n_rt_years = rt_yrs,
   min_mortality = 0.05,
   max_mortality = 0.25,
   mean_mortality = 0.1, 
@@ -538,33 +539,62 @@ no_rt_x_young_all_yrs <- make_no_rt_all_yrs_model("young")
 no_rt_x_mid_all_yrs <- make_no_rt_all_yrs_model("mid")
 no_rt_x_old_all_yrs <- make_no_rt_all_yrs_model("old")
 
-#these are failing, fix tomorrow morning with a clear head:  
-# look at how no_rt_x_rt_2 sample_struct is formatted
-# see if something is wrong with how extra is implemented.  
-# compare the sample_struct to other alternating sample structs.  
-# I think extra might require FixedCatch to exist?  
+sample_struct_no_rt_x_rt_17 <- add_sample_struct_FixedCatches(sample_struct, om_on = FALSE)
 
-sample_struct_no_rt_x_rt_34 <- add_sample_struct_FixedCatches(sample_struct, om_on = FALSE)
-
-make_no_rt_34_model <- function(EM_name = "flat", EM_type = "rt_34"){
+make_no_rt_17_model <- function(EM_name = "flat", EM_type = "rt_17"){
   no_rt_all_yrs_model <- modifyList(
     base_params,
     list(
       scen_name_vec = paste0("no_rt_x_", EM_name,"_", EM_type),
-      sample_struct_list = setNames(list(sample_struct_no_rt_x_rt_34), paste0("no_rt_x_", EM_name,"_", EM_type)),
+      sample_struct_list = setNames(list(sample_struct_no_rt_x_rt_17), paste0("no_rt_x_", EM_name,"_", EM_type)),
       OM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, "flat")),
       EM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, EM_name)), 
       extra = list(extras_base[-1])
     ))
 }
 
-no_rt_x_flat_rt_34 <- make_no_rt_34_model("flat")
-no_rt_x_young_rt_34 <- make_no_rt_34_model("young")
-no_rt_x_mid_rt_34 <- make_no_rt_34_model("mid")
-no_rt_x_old_rt_34 <- make_no_rt_34_model("old")
+no_rt_x_flat_rt_17 <- make_no_rt_17_model("flat")
+no_rt_x_young_rt_17 <- make_no_rt_17_model("young")
+no_rt_x_mid_rt_17 <- make_no_rt_17_model("mid")
+no_rt_x_old_rt_17 <- make_no_rt_17_model("old")
 
 no_rt_x_no_rt <- no_rt
 no_rt_x_no_rt$scen_name_vec = "no_rt_x_no_rt"
+
+sample_struct_rt_17_x_no_rt <- add_sample_struct_FixedCatches(sample_struct, om_on = TRUE, em_on = FALSE)
+
+make_rt_17_no_model <- function(OM_name = "flat") {
+  
+  scen_name <- paste0(OM_name,"_x_no_rt")
+
+    multiplier_name <- paste0(OM_name, "_multiplier")
+    # Use a local copy to modify
+    new_extras <- extras_base
+    
+    # Ensure my_niter exists or use seq_along
+    for(iters in seq_along(new_extras$RandomFixedCatch)){ 
+      multiplier_val <- get(multiplier_name)
+      
+      # Perform the multiplication and assign it back to the local object
+      new_extras$RandomFixedCatch[[iters]]$Catch <- 
+        extras_base$RandomFixedCatch[[iters]]$Catch * multiplier_val
+    }
+  
+  no_rt_all_yrs_model <- modifyList(
+    base_params,
+    list(
+      scen_name_vec = scen_name,
+      sample_struct_list = setNames(list(sample_struct_rt_17_x_no_rt), scen_name),
+      OM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, OM_name)),
+      EM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, "flat")), 
+      extra = list(new_extras[-2])
+    ))
+}
+
+flat_x_no_rt <- make_rt_17_no_model("flat")
+young_x_no_rt <- make_rt_17_no_model("young")
+mid_x_no_rt <- make_rt_17_no_model("mid")
+old_x_no_rt <- make_rt_17_no_model("old")
 
 # no_rt runs with varying all years selectivities.  
 
@@ -574,13 +604,19 @@ all_scenarios <- list(
   no_rt_x_young_all_yrs,
   no_rt_x_mid_all_yrs,
   no_rt_x_old_all_yrs,
-  no_rt_x_flat_rt_34,
-  no_rt_x_young_rt_34,
-  no_rt_x_mid_rt_34,
-  no_rt_x_old_rt_34
+  no_rt_x_flat_rt_17,
+  no_rt_x_young_rt_17,
+  no_rt_x_mid_rt_17,
+  no_rt_x_old_rt_17,
+  flat_x_no_rt,
+  young_x_no_rt,
+  mid_x_no_rt,
+  old_x_no_rt
 )
 #all_scenarios <- all_scenarios[1:4]
 #all_scenarios <- all_scenarios[5:9]
+#all_scenarios <- all_scenarios[6:9]
+#all_scenarios <- all_scenarios[10:13]
 
 
 # put the scenarios you want to run into a list
