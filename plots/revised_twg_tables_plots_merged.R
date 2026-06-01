@@ -1975,7 +1975,7 @@ create_bratio_plot <- function (min_year, max_year, scenario_list, scenario_name
   
   title <- paste0("BRatio_", min_year, "_", max_year, "_", scenario_name, "_", model_run_type, "_Bias")
   
-  EM_runs_dq %>%
+  b_ratio_plot <- EM_runs_dq %>%
     filter(scenario %in% c(scenario_list, "rt_2_x_rt_2", "rt_2_x_no_rt")) %>%
     filter(
       str_detect(model_run, model_run_type),
@@ -2011,6 +2011,7 @@ create_bratio_plot <- function (min_year, max_year, scenario_list, scenario_name
     ) + 
     ggtitle(paste0("BRatio from ", min_year, "-", max_year, " - ", scenario_name)) + xlab("OM name") + ylab("% Bias") +
     geom_hline(yintercept = 0, linetype = "dashed") 
+  return(b_ratio_plot)
   
     if(save == TRUE){
     ggsave(file.path(run_SSMSE_dir, "plots_all", paste0(title, ".png")),
@@ -2020,7 +2021,7 @@ create_bratio_plot <- function (min_year, max_year, scenario_list, scenario_name
 
 # #### Core 4
 # 
-# create_ssb_bias_plot(min_year, max_year_short_term, core_4, "Core 4")
+create_bratio_plot(min_year, max_year_short_term, core_4, "Core 4", "2047")
 # 
 # #### All Years
 # 
@@ -2472,4 +2473,224 @@ ggplot(plot_data, aes(x = year, y = med_val)) +
   geom_ribbon(aes(ymin = low, ymax = high, fill = em_name), alpha = 0.2) +
   geom_line(aes(color = em_name)) + 
   ggtitle("BRatio over time in the OM") + ylab("B Ratio")
+
+
+# Testing as a group -------------------------------------------------------
+
+plot_data <- summary$dq %>%
+  filter(
+    scenario %in% c(core_4),
+    str_detect(model_run, "OM"),
+    year >= 2017,
+    year <= 2047
+  ) %>%
+  mutate(
+    om_name = if_else(scenario == "no_rt", "no_rt", 
+                      if_else(str_extract(scenario, "\\w+(?=_x_)") %in% c("rt_2", "no_rt", "rep_3"), 
+                              scenario, str_extract(scenario, "\\w+(?=_x_)"))),
+    em_name = str_extract(scenario, "(?<=_x_).*?(?=_all_yrs|_rt_2)"),
+    em_name = if_else(scenario %in% all_years, "all years", replace_na(em_name, "reference"))
+  ) %>%
+  group_by(scenario, year) %>%
+  summarise(
+    med_val = median(Value.Bratio),
+    # Using Hmisc's logic for a 95% CI of the median
+    low = Hmisc::smedian.hilow(Value.Bratio, conf.int = 0.95)[2],
+    high = Hmisc::smedian.hilow(Value.Bratio, conf.int = 0.95)[3]
+  )
+
+# Plotting
+ggplot(plot_data, aes(x = year, y = med_val)) +
+  geom_ribbon(aes(ymin = low, ymax = high, fill = scenario), alpha = 0.2) +
+  geom_line(aes(color = scenario)) + 
+  ggtitle("B.Ratio over time of OM data by EM") + xlab("B.Ratio (MT)") +
+  geom_vline(xintercept = c(2018, 2021), linetype = "dashed")
+
+#### selectivity 
+plot_data <- summary$dq %>%
+  filter(
+    scenario %in% c(selectivity_rt_34),
+    str_detect(model_run, "OM"),
+    year >= 2017,
+    year <= 2047
+  ) %>%
+  mutate(om_name = if_else(scenario == "no_rt", "no_rt", if_else(str_extract(scenario, "\\w+(?=_x_)") %in% c("rt_2", "no_rt", "rep_3"), scenario, str_extract(scenario, "\\w+(?=_x_)"))), 
+         om_name = fct_relevel(om_name, "reference", "young", "mid", "old", "flat"),
+         em_name = str_extract(scenario, "(?<=_x_).*?(?=_all_yrs|_rt_2|_rt_34)"),
+         em_name = if_else(scenario %in% all_years, "all years", replace_na(em_name, "reference")), 
+         em_name = fct_relevel(em_name, "reference", "all years"),
+         em_name = fct_relevel(em_name, "reference", "young", "mid", "old", "flat")) %>% 
+  group_by(om_name, em_name, year) %>%
+  summarise(
+    med_val = median(Value.Bratio),
+    # Using Hmisc's logic for a 95% CI of the median
+    low = Hmisc::smedian.hilow(Value.Bratio, conf.int = 0.95)[2],
+    high = Hmisc::smedian.hilow(Value.Bratio, conf.int = 0.95)[3]
+  )
+
+new_labels <- c("young" = "True Young Selectivity", 
+               "mid" = "True Middle Selectivity",
+               "old" = "True Old Selectivity", 
+               "flat" = "True Flat Selectivity")
+
+# Plotting
+ggplot(plot_data, aes(x = year, y = med_val)) +
+  geom_ribbon(aes(ymin = low, ymax = high, fill = em_name), alpha = 0.2) +
+  geom_line(aes(color = em_name)) + 
+  ggtitle("Achieved B.Ratio over time - 34 Years") + ylab("B.Ratio (MT)") + 
+  facet_wrap(~om_name, labeller = labeller(om_name = new_labels))+ 
+  labs(color = "Assumed Selectivity", fill = "Assumed Selectivity") +
+  ylim(c(0, .7)) + xlab("Year")
+
+plot_data <- summary$dq %>%
+  filter(
+    scenario %in% c(selectivity_34_all_yrs),
+    str_detect(model_run, "OM"),
+    year >= 2017,
+    year <= 2116
+  ) %>%
+  mutate(om_name = if_else(scenario == "no_rt", "no_rt", if_else(str_extract(scenario, "\\w+(?=_x_)") %in% c("rt_2", "no_rt", "rep_3"), scenario, str_extract(scenario, "\\w+(?=_x_)"))), 
+         om_name = fct_relevel(om_name, "reference", "young", "mid", "old", "flat"),
+         em_name = str_extract(scenario, "(?<=_x_).*?(?=_all_yrs|_rt_2|_rt_34)"),
+         em_name = if_else(scenario %in% all_years, "all years", replace_na(em_name, "reference")), 
+         em_name = fct_relevel(em_name, "reference", "all years"),
+         em_name = fct_relevel(em_name, "reference", "young", "mid", "old", "flat")) %>% 
+  group_by(om_name, em_name, year) %>%
+  summarise(
+    med_val = median(Value.Bratio),
+    # Using Hmisc's logic for a 95% CI of the median
+    low = Hmisc::smedian.hilow(Value.Bratio, conf.int = 0.95)[2],
+    high = Hmisc::smedian.hilow(Value.Bratio, conf.int = 0.95)[3]
+  )
+
+new_labels <- c("young" = "True Young Selectivity", 
+                "mid" = "True Middle Selectivity",
+                "old" = "True Old Selectivity", 
+                "flat" = "True Flat Selectivity")
+
+# Plotting
+ggplot(plot_data, aes(x = year, y = med_val)) +
+  geom_ribbon(aes(ymin = low, ymax = high, fill = em_name), alpha = 0.2) +
+  geom_line(aes(color = em_name)) + 
+  ggtitle("Achieved B.Ratio over time - All Years") + ylab("B.Ratio (MT)") +
+  facet_wrap(~om_name, labeller = labeller(om_name = new_labels))+ 
+  labs(color = "Assumed Selectivity", fill = "Assumed Selectivity")+
+  ylim(c(0, .7)) + xlab("Year") 
+
+
+##### Notes ####
+
+# remove the _34 from the selectivity names.  
+# average of the equilibrium period: 2040-2100
+# cut at 2060 <- multiple of 3 - 2065? 
+# 1.1 * max for the ylim.  
+
+# scenario name -> om_name (no_rt, flat, young, old, mid), em_name (no_rt, flat, young, old, mid), exp_type (all_yrs, rt_34, no_rt)
+
+
+#### Recreational 
+plot_data <- summary$ts %>%
+  filter(
+    scenario %in% c(selectivity_rt_34),
+    str_detect(model_run, "OM"),
+    year >= 2017,
+    year <= 2047
+  ) %>%
+  mutate(om_name = if_else(scenario == "no_rt", "no_rt", if_else(str_extract(scenario, "\\w+(?=_x_)") %in% c("rt_2", "no_rt", "rep_3"), scenario, str_extract(scenario, "\\w+(?=_x_)"))), 
+         om_name = fct_relevel(om_name, "reference", "young", "mid", "old", "flat"),
+         em_name = str_extract(scenario, "(?<=_x_).*?(?=_all_yrs|_rt_2|_rt_34)"),
+         em_name = if_else(scenario %in% all_years, "all years", replace_na(em_name, "reference")), 
+         em_name = fct_relevel(em_name, "reference", "all years"),
+         em_name = fct_relevel(em_name, "reference", "young", "mid", "old", "flat")) %>% 
+  group_by(om_name, em_name, year) %>%
+  summarise(
+    med_val = median(deadB_4),
+    # Using Hmisc's logic for a 95% CI of the median
+    low = Hmisc::smedian.hilow(deadB_4, conf.int = 0.95)[2],
+    high = Hmisc::smedian.hilow(deadB_4, conf.int = 0.95)[3]
+  )
+
+new_labels <- c("young" = "True Young Selectivity", 
+                "mid" = "True Middle Selectivity",
+                "old" = "True Old Selectivity", 
+                "flat" = "True Flat Selectivity")
+
+# Plotting
+ggplot(plot_data, aes(x = year, y = med_val)) +
+  geom_ribbon(aes(ymin = low, ymax = high, fill = em_name), alpha = 0.2) +
+  geom_line(aes(color = em_name)) + 
+  ggtitle("Achieved Recreational Catch over time - Correct Years") + ylab("Recreational Catch (MT)") + 
+  facet_wrap(~om_name, labeller = labeller(om_name = new_labels))+ 
+  labs(color = "Assumed Selectivity", fill = "Assumed Selectivity") + xlab("Year")
+
+#### Recreational 
+plot_data <- summary$ts %>%
+  filter(
+    scenario %in% c(selectivity_34_all_yrs, selectivity_rt_34),
+    str_detect(model_run, "OM"),
+    year >= 2017,
+    year <= 2060
+  ) %>%
+  mutate(om_name = if_else(scenario == "no_rt", "no_rt", if_else(str_extract(scenario, "\\w+(?=_x_)") %in% c("rt_2", "no_rt", "rep_3"), scenario, str_extract(scenario, "\\w+(?=_x_)"))), 
+         om_name = fct_relevel(om_name, "reference", "young", "mid", "old", "flat"),
+         em_name = str_extract(scenario, "(?<=_x_).*?(?=_all_yrs|_rt_2|_rt_34)"),
+         em_name = if_else(scenario %in% all_years, "all years", replace_na(em_name, "reference")), 
+         em_name = fct_relevel(em_name, "reference", "all years"),
+         em_name = fct_relevel(em_name, "reference", "young", "mid", "old", "flat")) %>% 
+  group_by(om_name, em_name, year) %>%
+  summarise(
+    med_val = median(deadB_4),
+    # Using Hmisc's logic for a 95% CI of the median
+    low = Hmisc::smedian.hilow(deadB_4, conf.int = 0.95)[2],
+    high = Hmisc::smedian.hilow(deadB_4, conf.int = 0.95)[3]
+  )
+
+new_labels <- c("young" = "True Young Selectivity", 
+                "mid" = "True Middle Selectivity",
+                "old" = "True Old Selectivity", 
+                "flat" = "True Flat Selectivity")
+
+# Plotting
+ggplot(plot_data, aes(x = year, y = med_val)) +
+  geom_ribbon(aes(ymin = low, ymax = high, fill = em_name), alpha = 0.2) +
+  geom_line(aes(color = em_name)) + 
+  ggtitle("Achieved Recreational Catch over time - All Years") + ylab("Recreational Catch (MT)") + 
+  facet_wrap(~om_name, labeller = labeller(om_name = new_labels))+ 
+  labs(color = "Assumed Selectivity", fill = "Assumed Selectivity") + xlab("Year")
+
+plot_data <- summary$ts %>%
+  filter(
+    scenario %in% c(selectivity_rt_34),
+    str_detect(model_run, "EM_2065"),
+    year >= 2017,
+    year <= 2060
+  ) %>%
+  mutate(om_name = if_else(scenario == "no_rt", "no_rt", if_else(str_extract(scenario, "\\w+(?=_x_)") %in% c("rt_2", "no_rt", "rep_3"), scenario, str_extract(scenario, "\\w+(?=_x_)"))), 
+         om_name = fct_relevel(om_name, "reference", "young", "mid", "old", "flat"),
+         em_name = str_extract(scenario, "(?<=_x_).*?(?=_all_yrs|_rt_2|_rt_34)"),
+         em_name = if_else(scenario %in% all_years, "all years", replace_na(em_name, "reference")), 
+         em_name = fct_relevel(em_name, "reference", "all years"),
+         em_name = fct_relevel(em_name, "reference", "young", "mid", "old", "flat")) %>% 
+  group_by(om_name, em_name, year) %>%
+  summarise(
+    med_val = median(deadB_4),
+    # Using Hmisc's logic for a 95% CI of the median
+    low = Hmisc::smedian.hilow(deadB_4, conf.int = 0.95)[2],
+    high = Hmisc::smedian.hilow(deadB_4, conf.int = 0.95)[3]
+  )
+
+new_labels <- c("young" = "True Young Selectivity", 
+                "mid" = "True Middle Selectivity",
+                "old" = "True Old Selectivity", 
+                "flat" = "True Flat Selectivity")
+
+# Plotting
+ggplot(plot_data, aes(x = year, y = med_val)) +
+  geom_ribbon(aes(ymin = low, ymax = high, fill = em_name), alpha = 0.2) +
+  geom_line(aes(color = em_name)) + 
+  ggtitle("Estimated Recreational Catch over time - Correct Years") + ylab("Recreational Catch (MT)") + 
+  facet_wrap(~om_name, labeller = labeller(om_name = new_labels))+ 
+  labs(color = "Assumed Selectivity", fill = "Assumed Selectivity") + xlab("Year")
+
+
 
