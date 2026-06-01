@@ -20,19 +20,31 @@ run_SSMSE_dir <- file.path("runs_output")
 OM_name <- "default_sigmaR"
 
 #the model_run you want to use, typically the final model_run
-end_yr <- 2216
-niter <- 10
+end_yr <- 2068
+niter <- 100
 
 #name of the results files
-results_name <- "_random_10_years_old"
+results_name <- "_no_rt_additions"
 
 #create a list of scenarios for plot generation, usually the default order is fine.  
 #scen_list <- unique(summary$ts$scenario)
 #hard coded in a specific order.  
 scen_list <- c(
-  "random_2_x_random_2",
-  "random_2_x_all_years"
+  "no_rt_x_no_rt",
+  "no_rt_x_flat_all_yrs",
+  "no_rt_x_young_all_yrs",
+  "no_rt_x_mid_all_yrs",
+  "no_rt_x_old_all_yrs",
+  "no_rt_x_flat_rt_17",
+  "no_rt_x_young_rt_17",
+  "no_rt_x_mid_rt_17",
+  "no_rt_x_old_rt_17",
+  "flat_x_no_rt",
+  "young_x_no_rt",
+  "mid_x_no_rt",
+  "old_x_no_rt"
 )
+
 
 #pull the summary and dat files, the dat file isn't actually that important.  
 summary <- readRDS(file = file.path(run_SSMSE_dir, paste0("results_summary", results_name, ".rda")))
@@ -79,7 +91,7 @@ EM_runs_dq <- summary$dq %>%
 
 
 # F_5 Time Series by iteration --------------------------------------------
-max_sample_year = 2116
+max_sample_year = 2068
 
 key_models <- unique(summary$ts$model_run)
 key_models <- key_models[grepl("OM", key_models) | grepl(as.character(max_sample_year), key_models)]
@@ -92,25 +104,66 @@ plot_data <- summary$ts %>%
   )) %>%
   mutate(model_group = factor(model_group, levels = c("OM", "EM")))
 
-scen_in_order <- c(
-    "flat_x_flat_rt_2",
-    "flat_x_flat_all_yrs",
-    "young_x_young_rt_2",
-    "young_x_young_all_yrs",
-    "old_x_old_rt_2",
-    "old_x_old_all_yrs",
-    "mid_x_mid_rt_2",
-    "mid_x_mid_all_yrs"
+scen_in_order_oms <- c(
+  "flat_x_no_rt",
+  "young_x_no_rt",
+  "mid_x_no_rt",
+  "old_x_no_rt"
   )
-
-scen_in_order_flat <- c(
-  "flat_x_flat_rt_2",
-  "flat_x_flat_all_yrs"
+scen_in_order_all_yrs<- c(
+  "no_rt_x_no_rt",
+  "no_rt_x_flat_all_yrs",
+  "no_rt_x_young_all_yrs",
+  "no_rt_x_mid_all_yrs",
+  "no_rt_x_old_all_yrs"
 )
 
+scen_in_order_rt_17<- c(
+  "no_rt_x_no_rt",
+  "no_rt_x_flat_rt_17",
+  "no_rt_x_young_rt_17",
+  "no_rt_x_mid_rt_17",
+  "no_rt_x_old_rt_17"
+)
 
 plot_data %>% 
-  filter(model_run %in% key_models, iteration %in% 1:10, scenario %in% scen_in_order, year %in% 2000:2047) %>% #filters to just OM and max year runs
+  filter(model_run %in% key_models, iteration %in% 1:10, scenario %in% scen_in_order_oms, year %in% 2000:2047) %>% #filters to just OM and max year runs
+  ggplot(aes(x = year, y = F_5)) +
+  geom_vline(xintercept = dat$endyr, color = "gray") +
+  geom_vline(xintercept = 2005, color = "gray", linetype = "dashed") +
+  geom_vline(xintercept = 2014, color = "gray", linetype = "dashed") +
+  geom_line( aes(linetype = model_group, color = model_group))+
+  scale_color_manual(values = c(
+    "OM" = "darkorange", 
+    "EM" = "black"
+  )) +
+  scale_linetype_manual(values = c(
+    "OM" = "solid", 
+    "EM" = "dashed"
+  )) +
+  facet_grid(iteration~scenario) +
+  theme_bw()
+
+plot_data %>% 
+  filter(model_run %in% key_models, iteration %in% 1:10, scenario %in% scen_in_order_all_yrs, year %in% 2000:2047) %>% #filters to just OM and max year runs
+  ggplot(aes(x = year, y = F_5)) +
+  geom_vline(xintercept = dat$endyr, color = "gray") +
+  geom_vline(xintercept = 2005, color = "gray", linetype = "dashed") +
+  geom_vline(xintercept = 2014, color = "gray", linetype = "dashed") +
+  geom_line( aes(linetype = model_group, color = model_group))+
+  scale_color_manual(values = c(
+    "OM" = "darkorange", 
+    "EM" = "black"
+  )) +
+  scale_linetype_manual(values = c(
+    "OM" = "solid", 
+    "EM" = "dashed"
+  )) +
+  facet_grid(iteration~scenario) +
+  theme_bw()
+
+plot_data %>% 
+  filter(model_run %in% key_models, iteration %in% 1:10, scenario %in% scen_in_order_rt_17, year %in% 2000:2047) %>% #filters to just OM and max year runs
   ggplot(aes(x = year, y = F_5)) +
   geom_vline(xintercept = dat$endyr, color = "gray") +
   geom_vline(xintercept = 2005, color = "gray", linetype = "dashed") +
@@ -158,16 +211,16 @@ years_list <- summary$ts %>%
   )
 
 summary$ts %>%
-  filter(model_run %in% key_models, year > 2017, F_5 > 0, scenario %in% scen_in_order_flat) %>% # just EM and OM, simulation years, and have red tide mortality
+  filter(model_run %in% key_models, year > 2017, F_5 > 0, scenario %in% scen_in_order_rt_17) %>% # just EM and OM, simulation years, and have red tide mortality
   group_by(scenario, model_run, iteration) %>%
   reframe(
     years_list = paste(sort(unique(year)), collapse = ",") # unique years with commas
   ) %>%
   pivot_wider( # make table with scenarios, models, and listed years
     names_from = model_run, 
-    values_from = years_list) %>% 
+    values_from = years_list)
   mutate( # check if EM and OM year lists match up
-    is_equal = `flat_EM_2116` == `flat_OM` 
+    is_equal = `flat_EM_2068` == `flat_OM` 
   )%>%
   kable(
     # Rename columns directly within kable
@@ -186,17 +239,17 @@ summary$ts %>%
 # median/mean F_5 for each combo
 summary$ts %>%
   filter(model_run %in% key_models, year > 2017, F_5 > 0) %>% # just EM and OM, simulation years, and have red tide mortality
-  group_by(scenario, model_run, iteration) %>%
+  group_by(scenario, model_run) %>%
   reframe(
     mean_F_5 = mean(F_5),
     sd_F_5 = sd(F_5),
     median_F_5 = median(F_5)
   ) %>%
-  arrange(scenario, iteration) %>%
+  arrange(scenario) %>%
   kable(
     # Rename columns directly within kable
-    col.names = c("Scenario", "Model Run", "Iteration", "Mean", "Standard Dev", "Median"),
-    align = c("l","l", "c", "c", "c", "c") # Align columns (left, center, center, center)
+    col.names = c("Scenario", "Model Run",  "Mean", "Standard Dev", "Median"),
+    align = c("l","l", "c", "c", "c") # Align columns (left, center, center, center)
   ) %>%
   kable_styling(
     bootstrap_options = c("striped", "hover", "condensed"),
