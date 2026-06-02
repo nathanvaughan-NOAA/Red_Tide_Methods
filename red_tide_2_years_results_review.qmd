@@ -26,51 +26,66 @@ run_SSMSE_dir <- file.path("runs_output")
 OM_name <- "default_sigmaR"
 
 #the model_run you want to use, typically the final model_run
-end_yr <- 2116
+end_yr <- 2068
 niter <- 100
 
 #name of the results files
-results_name <- "_selectivity_random_34_extra"
+results_name <- "_no_rt_additions"
 
 #create a list of scenarios for plot generation, usually the default order is fine.  
 #scen_list <- unique(summary$ts$scenario)
 #hard coded in a specific order.  
 scen_list <- c(
-  # "rt_2_x_rt_2", 
-  # "flat_x_flat_rt_2",
-  # "young_x_young_rt_2",
-  # "old_x_old_rt_2",
-  # "mid_x_mid_rt_2",
-  # "flat_x_young_rt_2",
-  # "flat_x_old_rt_2",
-  # "flat_x_mid_rt_2",
-  # "young_x_flat_rt_2",
-  # "young_x_old_rt_2",
-  # "young_x_mid_rt_2",
-  # "old_x_flat_rt_2",
-  # "old_x_young_rt_2",
-  # "old_x_mid_rt_2",
-  # "mid_x_flat_rt_2",
-  # "mid_x_young_rt_2",
-  # "mid_x_old_rt_2"#,
-  # "rt_2_x_all_yrs",
-  "flat_x_flat_all_yrs",
-  "young_x_young_all_yrs",
-  "old_x_old_all_yrs",
-  "mid_x_mid_all_yrs",
-  "flat_x_young_all_yrs",
-  "flat_x_old_all_yrs",
-  "flat_x_mid_all_yrs",
-  "young_x_flat_all_yrs",
-  "young_x_old_all_yrs",
-  "young_x_mid_all_yrs",
-  "old_x_flat_all_yrs",
-  "old_x_young_all_yrs",
-  "old_x_mid_all_yrs",
-  "mid_x_flat_all_yrs",
-  "mid_x_young_all_yrs",
-  "mid_x_old_all_yrs"
+  "no_rt_x_no_rt",
+  "no_rt_x_flat_all_yrs",
+  "no_rt_x_young_all_yrs",
+  "no_rt_x_mid_all_yrs",
+  "no_rt_x_old_all_yrs",
+  "no_rt_x_flat_rt_17",
+  "no_rt_x_young_rt_17",
+  "no_rt_x_mid_rt_17",
+  "no_rt_x_old_rt_17",
+  "flat_x_no_rt",
+  "young_x_no_rt",
+  "mid_x_no_rt",
+  "old_x_no_rt"
 )
+# scen_list <- c(
+#   # "rt_2_x_rt_2", 
+#   # "flat_x_flat_rt_2",
+#   # "young_x_young_rt_2",
+#   # "old_x_old_rt_2",
+#   # "mid_x_mid_rt_2",
+#   # "flat_x_young_rt_2",
+#   # "flat_x_old_rt_2",
+#   # "flat_x_mid_rt_2",
+#   # "young_x_flat_rt_2",
+#   # "young_x_old_rt_2",
+#   # "young_x_mid_rt_2",
+#   # "old_x_flat_rt_2",
+#   # "old_x_young_rt_2",
+#   # "old_x_mid_rt_2",
+#   # "mid_x_flat_rt_2",
+#   # "mid_x_young_rt_2",
+#   # "mid_x_old_rt_2"#,
+#   # "rt_2_x_all_yrs",
+#   "flat_x_flat_all_yrs",
+#   "young_x_young_all_yrs",
+#   "old_x_old_all_yrs",
+#   "mid_x_mid_all_yrs",
+#   "flat_x_young_all_yrs",
+#   "flat_x_old_all_yrs",
+#   "flat_x_mid_all_yrs",
+#   "young_x_flat_all_yrs",
+#   "young_x_old_all_yrs",
+#   "young_x_mid_all_yrs",
+#   "old_x_flat_all_yrs",
+#   "old_x_young_all_yrs",
+#   "old_x_mid_all_yrs",
+#   "mid_x_flat_all_yrs",
+#   "mid_x_young_all_yrs",
+#   "mid_x_old_all_yrs"
+# )
 
 #pull the summary and dat files, the dat file isn't actually that important.  
 summary <- readRDS(file = file.path(run_SSMSE_dir, paste0("results_summary", results_name, ".rda")))
