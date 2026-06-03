@@ -19,6 +19,13 @@ summary <- readRDS(file = file.path(run_SSMSE_dir, paste0("results_summary", res
 results_name_orig <- "_no_rt_additions"
 summary_2 <- readRDS(file = file.path(run_SSMSE_dir, paste0("results_summary", results_name_orig, ".rda")))
 
+summary_2_filtered <- map(summary_2, function(df) {
+  if ("scenario" %in% names(df)) {
+    df <- df %>% filter(!grepl("rt_34$", scenario))
+  }
+  return(df)
+})
+
 # Update the scenarios
 updated_list <- lapply(summary, function(sub_list) {
   if ("scenario" %in% names(sub_list)) {
@@ -29,7 +36,7 @@ updated_list <- lapply(summary, function(sub_list) {
 })
 
 # This pairs them up by their element names and binds the rows
-merged_summary <- map2(summary_2, updated_list[names(summary_2)], bind_rows)
+merged_summary <- map2(summary_2_filtered, updated_list[names(summary_2_filtered)], bind_rows)
 
-saveRDS(merged_summary, file = file.path(run_SSMSE_dir, paste0("results_summary_merged.rda")))
+saveRDS(merged_summary, file = file.path(run_SSMSE_dir, paste0("results_summary_merged_no_rt.rda")))
 
