@@ -101,7 +101,8 @@ summary$ts <- summary$ts %>%
   )) %>%
   mutate(
     scenario = factor(scenario, scen_list)
-  )
+  ) %>%
+  filter(!is.na(scenario))
 
 summary$dq <- summary$dq %>%
   filter(model_run != "", !str_detect(model_run, "Base")) %>%
@@ -113,9 +114,12 @@ summary$dq <- summary$dq %>%
   )) %>%
   mutate(
     scenario = factor(scenario, scen_list)
-  )
+  ) %>%
+  filter(!is.na(scenario))
+
 summary$scalar <- summary$scalar %>%
-  filter(model_run != "", !str_detect(model_run, "Base")) 
+  filter(model_run != "", !str_detect(model_run, "Base")) %>%
+  filter(!is.na(scenario)) 
 
 
 
@@ -197,6 +201,7 @@ colnames(summary$ts)
 Here are the time series plots:
 
 ::: panel-tabset
+
 ### Red tide mortality
 
 ```{r, echo = FALSE, warning = FALSE}
@@ -317,9 +322,11 @@ ssb_ts_plot
 ```
 
 Figure 4. The total retained biomass of the fishery over time. This is the sum of all columns starting with "RetainB" so it does not include discards or red tide mortality. This plot demonstrates how impactful high mortality events can reduce catch.
+
 :::
 
 ::: panel-tabset
+
 ### F_1
 
 ```{r, echo = FALSE, warning = FALSE}
@@ -337,6 +344,7 @@ ts_plot_variable(summary, F_2, run_res_path, save = TRUE)
 ```{r, echo = FALSE, warning = FALSE}
 ts_plot_variable(summary, F_4, run_res_path, save = TRUE)
 ```
+
 :::
 
 ## Reviewing derived quantities
@@ -402,6 +410,7 @@ colnames(summary$dq)
 ```
 
 ::: panel-tabset
+
 ### Recruitment
 
 ```{r, echo = FALSE, warning = FALSE}
@@ -441,6 +450,7 @@ dq_plot_variable(summary, variable = Value.F, run_res_path = run_res_path)
 ```
 
 Figure 9. The total fishing mortality over time by scenario. The default scenario indicates that fishing over time has low variability. When Red tide events are introduced, the variability increases drastically as F includes red tide mortality. Since red tide is a by-catch fleet, it is included in this value.
+
 :::
 
 ## Reviewing scalar quantities
@@ -614,6 +624,7 @@ plot_variable_ts(variable = "F_5", stat_type = "mean")
 ```
 
 ::: panel-tabset
+
 ```{r, results='asis'}
 
 # Loop through the list and print each table
@@ -629,6 +640,7 @@ for (q in 1:length(plot_list)) {
 }
 
 ```
+
 :::
 
 ### dq of variables over time plots
@@ -714,6 +726,7 @@ plot_variable_dq(variable = "Value.Bratio", stat_type = "median")
 ```
 
 ::: panel-tabset
+
 ```{r, results='asis'}
 
 # Loop through the list and print each table
@@ -729,19 +742,20 @@ for (q in 1:length(plot_list)) {
 }
 
 ```
+
 :::
 
 # Ratio Time Series
 
 WARNING: EM:OM ratios do not work will with zeros in some fishing mortalities. If the EM and OM are both zero, the ratio is forced to 1. However, when the OM or EM is zero the result is either zero or na which has resulted in misleading F_5 plots. I changed the OM value to 0.001 to eliminate the Inf but it results in large ratios that expand the y-axis scale.We recommend the F.Value from dq plots to discuss overall changes in F across all fleets.
 
-## Fishing mortalities
+### Fishing mortalities
 
 This was filtered to just the final run.  
 
 My new method for plotting EM:OM involves creating separate OM and EM data frames, joining them by year, scenario, and iteration, then dividing the EM value/ OM value for every variable. That way when plotted it is truly the EM for each model run, year and iteration divided by the OM from the same year and iteration but one model run. If the om and em value are zero I changed the ratio to 1 because that means that the EM = OM.
 
-```{#cancelr}
+```{r}
 
 ratio_df <- left_join(EM_runs, OM_runs,
                       by = c("year", "scenario", "iteration"),
@@ -763,7 +777,33 @@ ratio_df <- left_join(EM_runs, OM_runs,
 
 ```
 
-```{#cancelr}
+
+```{r}
+
+ratio_df_2 <- left_join(EM_runs, OM_runs,
+                      by = c("year", "scenario", "iteration"),
+                      suffix = c("_em", "_om")) %>%
+  # EXCLUDE model_run_em from the pivoting process
+  pivot_longer(
+    cols = (contains("_em") | contains("_om")) & !contains("model_run"),
+    names_to = c("metric", ".value"),
+    names_pattern = "(.*)_(em|om)"
+  ) %>%
+  mutate(
+    ratio = case_when(
+      em == 0 & om == 0 ~ 1,
+      om == 0           ~ em / 0.001,
+      TRUE              ~ em / om
+    )
+  ) %>%
+  select(year, scenario, iteration, model_run = model_run_em, metric, ratio) %>%
+  mutate(metric = paste0(metric, "_ratio")) %>%
+  pivot_wider(names_from = metric, values_from = ratio)
+
+```
+
+
+```{r}
 
 plot_f_ts <- function(scen) {
   
@@ -845,8 +885,8 @@ f_ts_plots <- map(scen_list, plot_f_ts)
 
 ```
 
-::: panel-tabset
-```{#cancelr, results='asis'}
+
+```{r, results='asis'}
 
 # Loop through the list and print each figure
 for (q in 1:length(f_ts_plots)) {
@@ -861,15 +901,15 @@ for (q in 1:length(f_ts_plots)) {
 }
 
 ```
-:::
+
 
 Figure 10. Each fleet's fishing mortality ratio (EM:OM) over time by scenario. The line indicates the median and the ribbon is the 25-75% quartiles. F_5 is consistently underestimated, it is more underestimated in future years where there is less data.
 
-## F_5
+### F_5
 
 A zoomed in look at just F_5 from the previous plots.
 
-```{#cancelr}
+```{r}
 
 plot_f_ts <- function(scen) {
   
@@ -945,7 +985,8 @@ f_ts_plots <- map(scen_list, plot_f_ts)
 ```
 
 ::: panel-tabset
-```{#cancelr, results='asis'}
+
+```{r, results='asis'}
 
 # Loop through the list and print each figure
 for (q in 1:length(f_ts_plots)) {
@@ -960,13 +1001,14 @@ for (q in 1:length(f_ts_plots)) {
 }
 
 ```
+
 :::
 
 Figure 11. Red tide mortality ratio (EM:OM) over time by scenario. The line indicates the median and the ribbon is the 25-75% quartiles. Red tide mortality is consistently underestimated, it is more underestimated in future years where there is less data.
 
-## F.Value from dqs
+### F.Value from dqs
 
-```{#cancelr}
+```{r}
 
 #set up the OM and EM dataframes, join them, and calculate the EM:OM ratio for each available value
 
@@ -994,7 +1036,7 @@ ratio_df_dq <- left_join(EM_runs_dq, OM_runs_dq,
 
 ```
 
-```{#cancelr}
+```{r}
 
 
 plot_f_ts <- function(scen) {
@@ -1063,7 +1105,8 @@ f_ts_plots <- map(scen_list, plot_f_ts)
 ```
 
 ::: panel-tabset
-```{#cancelr, results='asis'}
+
+```{r, results='asis'}
 
 # Loop through the list and print each figure
 for (q in 1:length(f_ts_plots)) {
@@ -1078,11 +1121,12 @@ for (q in 1:length(f_ts_plots)) {
 }
 
 ```
+
 :::
 
-## Biomass
+### Biomass
 
-```{#cancelr}
+```{r}
 
 plot_biomass_ts <- function(scen) {
   
@@ -1158,7 +1202,8 @@ biomass_ts_plots <- map(scen_list, plot_biomass_ts)
 ```
 
 ::: panel-tabset
-```{#cancelr, results='asis'}
+
+```{r, results='asis'}
 
 # Loop through the list and print each figure
 for (q in 1:length(biomass_ts_plots)) {
@@ -1173,13 +1218,14 @@ for (q in 1:length(biomass_ts_plots)) {
 }
 
 ```
+
 :::
 
 Figure 12. Biomass ratio (EM:OM) over time by scenario. The line indicates the median and the ribbon is the 25-75% quartiles. Red tide mortality is consistently underestimated, it is more underestimated in future years where there is less data.
 
-## Recruitment
+### Recruitment
 
-```{#cancelr, warning=FALSE}
+```{r, warning=FALSE}
   
   fleet_ratios <- ratio_df %>%
     filter(
@@ -1245,9 +1291,9 @@ Figure 12. Biomass ratio (EM:OM) over time by scenario. The line indicates the m
 
 Figure 13. Recruitment ratio (EM:OM) over time by scenario. The line indicates the median and the ribbon is the 25-75% quartiles. Recruitment is not over or underestimated, but there are a few outliers where the EM overestimated by 10x.
 
-## SSB
+### SSB
 
-```{#cancelr, warning=FALSE}
+```{r, warning=FALSE}
   
   fleet_ratios <- ratio_df %>%
     filter(
@@ -1316,9 +1362,9 @@ Figure 14. SSB ratio (EM:OM) over time by scenario. The line indicates the media
 
 Plotting the same ratios as above but by the "time from the terminal year" instead of year. These plots use mean instead of median because there were too many "years until terminal" with no red tide which skewed to 1 and resulted in straight lines. F_5 in all of these plots was a straight line when median was used.
 
-## Fishing Mortality
+### Fishing Mortality
 
-```{#cancelr}
+```{r}
 
 plot_f_ts <- function(scen) {
   
@@ -1394,7 +1440,8 @@ f_ts_plots <- map(scen_list, plot_f_ts)
 ```
 
 ::: panel-tabset
-```{#cancelr, results='asis'}
+
+```{r, results='asis'}
 
 # Loop through the list and print each figure
 for (q in 1:length(f_ts_plots)) {
@@ -1409,15 +1456,16 @@ for (q in 1:length(f_ts_plots)) {
 }
 
 ```
+
 :::
 
 Figure 15. Each fleet's fishing mortality ratio (EM:OM) over the years from terminal year by scenario. The line indicates the mean and the ribbon is the 25-75% quartiles. F_5 is consistently underestimated, there is higher variation where there is less data.
 
-## F_5
+### F_5
 
 A zoomed in look at just F_5 from the previous plots.
 
-```{#cancelr}
+```{r}
 
 plot_f_ts <- function(scen) {
   
@@ -1494,7 +1542,8 @@ f_ts_plots <- map(scen_list, plot_f_ts)
 ```
 
 ::: panel-tabset
-```{#cancelr, results='asis'}
+
+```{r, results='asis'}
 
 # Loop through the list and print each figure
 for (q in 1:length(f_ts_plots)) {
@@ -1509,13 +1558,14 @@ for (q in 1:length(f_ts_plots)) {
 }
 
 ```
+
 :::
 
 Figure 16. Red tide mortality ratio (EM:OM) over the years from terminal year by scenario. The line indicates the mean and the ribbon is the 25-75% quartiles. F_5 is consistently underestimated, there is higher variation where there is less data.
 
-## Biomass
+### Biomass
 
-```{#cancelr}
+```{r}
 
 plot_biomass_ts <- function(scen) {
   
@@ -1592,7 +1642,8 @@ biomass_ts_plots <- map(scen_list, plot_biomass_ts)
 ```
 
 ::: panel-tabset
-```{#cancelr, results='asis'}
+
+```{r, results='asis'}
 
 # Loop through the list and print each figure
 for (q in 1:length(biomass_ts_plots)) {
@@ -1607,13 +1658,14 @@ for (q in 1:length(biomass_ts_plots)) {
 }
 
 ```
+
 :::
 
 Figure 17. Biomass ratio (EM:OM) over the years from terminal year by scenario. The line indicates the mean and the ribbon is the 25-75% quartiles. Red tide mortality is consistently underestimated, it is more underestimated in years where there is less data.
 
-## Recruitment
+### Recruitment
 
-```{#cancelr, warning=FALSE}
+```{r, warning=FALSE}
 
   fleet_ratios <- ratio_df %>%
     filter(
@@ -1679,9 +1731,9 @@ Figure 17. Biomass ratio (EM:OM) over the years from terminal year by scenario. 
 
 Figure 18. Recruitment ratio (EM:OM) over time by scenario. The line indicates the mean and the ribbon is the 25-75% quartiles. Recruitment is overestimated in the terminal year of the model run.
 
-## SSB
+### SSB
 
-```{#cancelr, warning=FALSE}
+```{r, warning=FALSE}
   
   fleet_ratios <- ratio_df %>%
     filter(
@@ -1747,202 +1799,6 @@ Figure 18. Recruitment ratio (EM:OM) over time by scenario. The line indicates t
 
 Figure 19. SSB ratio (EM:OM) over the years from the terminal year by scenario. The line indicates the mean and the ribbon is the 25-75% quartiles. SSB is underestimated when red tide is introduced, with higher variability in the terminal year of the default model.
 
-# Management Terms
-
-## Line Plots
-
-```{#cancelr}
-
-# identify the last year sampled by SSMSE
-max_sample_year <- suppressWarnings(  #suppress warning because max removes NAs
-  summary$ts$model_run %>%
-    unique() %>% # get the list of unique model runs
-    str_sub(-4) %>% # select last 4 characters of EM names
-    {
-      ifelse(grepl("^\\d{4}$", .), as.numeric(.), NA)
-    } %>% # check the last 4 characters are numbers or make NA
-    max(na.rm = TRUE) # find the max EM year
-)
-  
-# make a list that includes the OM and all max_sample_year EMs
-key_models <- unique(summary$ts$model_run)
-
-color_values <- setNames(ifelse(grepl("OM", key_models), "#D65F00", "black"), key_models)
-
-scen_ts_plots <- function(scen = "default"){
-
-  scen_ts <- summary$ts %>%
-    filter(scenario == scen) %>%
-    mutate(retainB_all = select(., starts_with("retainB")) %>% rowSums()) %>%
-    pivot_longer(cols = c("SpawnBio", "F_5", "retainB_all"),
-                 names_to = "variables") %>%
-    select(year, value, variables, iteration, model_run)
-  
-  scen_dq <- summary$dq %>%
-    filter(scenario == scen) %>%
-    pivot_longer("Value.SPRratio", names_to = "variables") %>%
-    select(year, value, variables, iteration, model_run)
-
-  scen_merge <- rbind(scen_ts,scen_dq)
-    
-t_plot <- scen_merge %>%
-  ggplot(aes(x = year, y = value)) +
-  geom_line( aes(linetype = as.character(iteration), color = model_run))+
-  geom_vline(xintercept = dat$endyr, color = "gray") +
-  geom_vline(xintercept = 2005, color = "gray", linetype = "dashed") +
-  geom_vline(xintercept = 2014, color = "gray", linetype = "dashed") +
-  facet_wrap(~variables, ncol = 1, scales = "free") +
-  scale_color_manual(values = color_values) +
-  scale_linetype_manual(values = rep("solid", 100)) +
-  guides(linetype = FALSE, color = FALSE) +
-  labs(color = "Model Runs") +
-  ggtitle("", subtitle = "Long-term")+
-  theme_bw()
-
-scen_years = c(2020,2023,2026, "OM")
-
-t_plot_short <- scen_merge %>%
-  filter(str_detect(model_run, str_c(scen_years, collapse = "|"))) %>%
-  ggplot(aes(x = year, y = value)) +
-  geom_line( aes(linetype = as.character(iteration), color = model_run))+
-  geom_vline(xintercept = dat$endyr, color = "gray") +
-  geom_vline(xintercept = 2005, color = "gray", linetype = "dashed") +
-  geom_vline(xintercept = 2014, color = "gray", linetype = "dashed") +
-  facet_wrap(~variables, ncol = 1, scales = "free") +
-  scale_color_manual(values = color_values) +
-  scale_linetype_manual(values = rep("solid", 100)) +
-  guides(linetype = FALSE, color=FALSE) +
-  labs(color = "Model Runs") +
-  coord_cartesian(xlim = c(2000, 2030))+
-  ggtitle(scen, subtitle = "Short-term")+
-  theme_bw()
-
-t_plot_short + t_plot
-  
-}
-
-all_term_plots<- map(scen_list, scen_ts_plots)
-
-```
-
-::: panel-tabset
-```{#cancelr, results='asis', warning = FALSE}
-
-# Loop through the list and print each figure
-for (q in 1:length(all_term_plots)) {
-  # 1. Print the tab name (required for this method)
-  cat('###', scen_list[q], '\n\n') 
-  
-  # 2. Print the table content using kable
-  print(all_term_plots[[q]])
-  
-  # Add a separator to ensure Quarto recognizes distinct outputs
-  cat('\n\n') 
-}
-
-```
-:::
-
-Figure 20. Term plots are meant to be a "short term" (2000-2030) and "long term" (1989-2067) look at a few key parameters from the time series dataset. These plots demonstrate that red tide events correspond with SPR Ratio spikes, and can slowly decrease retained biomass or spawning biomass in the short term. In the long term, there are no trends.
-
-## Point Plots
-
-```{#cancelr}
-
-# identify the last year sampled by SSMSE
-max_sample_year <- suppressWarnings(  #suppress warning because max removes NAs
-  summary$ts$model_run %>%
-    unique() %>% # get the list of unique model runs
-    str_sub(-4) %>% # select last 4 characters of EM names
-    {
-      ifelse(grepl("^\\d{4}$", .), as.numeric(.), NA)
-    } %>% # check the last 4 characters are numbers or make NA
-    max(na.rm = TRUE) # find the max EM year
-)
-  
-# make a list that includes the OM and all max_sample_year EMs
-key_models <- unique(summary$ts$model_run)
-
-color_values <- setNames(ifelse(grepl("OM", key_models), "#D65F00", "grey"), key_models)
-
-scen_ts_plots <- function(scen = "default"){
-
-  scen_ts <- summary$ts %>%
-    filter(scenario == scen) %>%
-    mutate(retainB_all = select(., starts_with("retainB")) %>% rowSums()) %>%
-    pivot_longer(cols = c("SpawnBio", "F_5", "retainB_all"),
-                 names_to = "variables") %>%
-    select(year, value, variables, iteration, model_run)
-  
-  scen_dq <- summary$dq %>%
-    filter(scenario == scen) %>%
-    pivot_longer("Value.SPRratio", names_to = "variables") %>%
-    select(year, value, variables, iteration, model_run)
-
-  scen_merge <- rbind(scen_ts,scen_dq)
-    
-t_plot <- scen_merge %>%
-  ggplot(aes(x = year, y = value)) +
-  geom_point( aes(color = model_run), alpha = 0.2)+
-  stat_summary(fun = median, geom = "line",  aes(color = model_run),  linewidth = 1.2) +
-  geom_vline(xintercept = dat$endyr, color = "gray") +
-  geom_vline(xintercept = 2005, color = "gray", linetype = "dashed") +
-  geom_vline(xintercept = 2014, color = "gray", linetype = "dashed") +
-  facet_wrap(~variables, ncol = 1, scales = "free") +
-  scale_color_manual(values = color_values) +
-  scale_linetype_manual(values = rep("solid", 100)) +
-  guides(linetype = FALSE, color = FALSE) +
-  labs(color = "Model Runs") +
-  ggtitle("", subtitle = "Long-term")+
-  theme_bw()
-
-scen_years = c(2020,2023,2026, "OM")
-
-t_plot_short <- scen_merge %>%
-  filter(str_detect(model_run, str_c(scen_years, collapse = "|"))) %>%
-  ggplot(aes(x = year, y = value)) +
-  geom_point(aes(color = model_run))+
-  stat_summary(fun = median, geom = "line",  aes(color = model_run),  linewidth = 1.2) +
-  geom_vline(xintercept = dat$endyr, color = "gray") +
-  geom_vline(xintercept = 2005, color = "gray", linetype = "dashed") +
-  geom_vline(xintercept = 2014, color = "gray", linetype = "dashed") +
-  facet_wrap(~variables, ncol = 1, scales = "free") +
-  scale_color_manual(values = color_values) +
-  scale_linetype_manual(values = rep("solid", 100)) +
-  guides(linetype = FALSE, color=FALSE) +
-  labs(color = "Model Runs") +
-  coord_cartesian(xlim=c(2017, 2027))+
-  ggtitle(scen, subtitle = "Management Term")+
-  theme_bw()
-
-t_plot_short + t_plot
-  
-}
-
-all_term_plots<- map(scen_list, scen_ts_plots)
-
-```
-
-::: panel-tabset
-```{#cancelr, results='asis', warning = FALSE}
-
-# Loop through the list and print each figure
-for (q in 1:length(all_term_plots)) {
-  # 1. Print the tab name (required for this method)
-  cat('###', scen_list[q], '\n\n') 
-  
-  # 2. Print the table content using kable
-  print(all_term_plots[[q]])
-  
-  # Add a separator to ensure Quarto recognizes distinct outputs
-  cat('\n\n') 
-}
-
-```
-:::
-
-Figure 21. Management Term plots are meant to be a "short term" (2000-2027) and "long term" (1989-2067) look at a few key parameters from the time series dataset. These plots demonstrate that red tide events correspond with SPR Ratio spikes, and can slowly decrease retained biomass or spawning biomass in the short term. In the long term, there are no trends. I tried to add median trend lines for the OM and EM but they aren't very clear because of how the lines are colored.
-
 # Residual Error Plots
 
 Residuals = EM - OM
@@ -1950,9 +1806,11 @@ Residuals = EM - OM
 This calculation does not have issues with zeros and estimates the error introduced to each variable by the different scenarios.
 
 :::: panel-tabset
+
 ### end_yr DeadB
 
 ::: panel-tabset
+
 #### All
 
 ```{r}
@@ -2064,6 +1922,7 @@ residual_runs %>%
 
 
 ```
+
 :::
 
 #### Long Term Residual Sums (2017-2050)
@@ -2275,7 +2134,7 @@ RE = (E - T) / T
 
 If the RE is NA (T = 0), the RE = 0. This introduces issues in the \_all year scenarios where many of the T values are zero and the E \> 0.
 
-```{#cancelr}
+```{r}
 
 ratio_df_re <- left_join(EM_runs, OM_runs,
                       by = c("year", "scenario", "iteration"),
@@ -2306,9 +2165,10 @@ EM_means <- ratio_df_re %>%
 ```
 
 ::: panel-tabset
+
 ### Recruitment
 
-```{#cancelr}
+```{r}
 recruit <- EM_means %>% ggplot(aes(Recruit_0_re, scenario)) +
   geom_boxplot() +
   geom_vline(xintercept = 0)+
@@ -2319,7 +2179,7 @@ recruit
 
 ### SpawnBio
 
-```{#cancelr}
+```{r}
 spawn <- EM_means %>% 
   ggplot(aes(SpawnBio_re, scenario)) +
   geom_boxplot() +
@@ -2331,7 +2191,7 @@ spawn
 
 ### Com F
 
-```{#cancelr}
+```{r}
 
 f_com<-EM_means %>% 
   mutate(f_com_re = F_1_re+F_2_re) %>%
@@ -2345,7 +2205,7 @@ f_com
 
 ### Rec F
 
-```{#cancelr}
+```{r}
 f_rec <- EM_means %>% 
   ggplot(aes(F_4_re, scenario)) +
   geom_boxplot() +
@@ -2361,7 +2221,7 @@ Cannot be produced because there are zeros in the OM and EM.
 
 ### Com Catch
 
-```{#cancelr}
+```{r}
 com_c <- EM_means %>% 
   mutate(re_com = retainB_1_re+retainB_2_re) %>%
   ggplot(aes(re_com, scenario)) +
@@ -2374,7 +2234,7 @@ com_c
 
 ### Rec Catch
 
-```{#cancelr}
+```{r}
 
 rec_c <- EM_means %>% 
   ggplot(aes(retainB_4_re, scenario)) +
@@ -2388,14 +2248,16 @@ rec_c
 ### Red Tide Discards
 
 Cannot be calculated because of zeros in the EM and OM.
+
 :::
 
 ::: panel-tabset
+
 ### All relative errors
 
 Figure 21. Relative error plots for each variable of interest zoomed in.
 
-```{#cancelr, warning = FALSE}
+```{r, warning = FALSE}
 recruit <- recruit +
   theme(axis.text.y = element_blank()) 
 f_rec <- f_rec +
@@ -2414,7 +2276,7 @@ com_c <- com_c  + ggtitle("Com catch")
 
 Figure 22. Relative error plots of each variable of interest on the same patchwork.
 
-```{#cancelr, warning = FALSE, message =FALSE}
+```{r, warning = FALSE, message =FALSE}
 recruit <- recruit +
   theme(axis.text.y = element_blank()) + xlim(-1,1)
 f_rec <- f_rec +
@@ -2430,6 +2292,7 @@ com_c <- com_c + xlim(-1,1) + ggtitle("Com catch")
 ```
 
 Figure 23. Relative error plots of each variable of interest with fixed x-limits between -1 and 1.
+
 :::
 
 ## MAPE
@@ -2557,6 +2420,7 @@ EM_means <- summary$ts %>%
 ```
 
 ::: panel-tabset
+
 ### SSB and Catch, all years
 
 ```{r, warning = FALSE, message =FALSE}
@@ -2854,6 +2718,7 @@ mutate(
   labs(color = "EM", fill = "EM", x = "Year", y = "Estimation Error (MAPE)")
 
 ```
+
 :::
 
 ## Relative Error
@@ -2861,6 +2726,7 @@ mutate(
 WARNING: The equation for RE = (EM-OM)/OM so this can result in NA or Inf when the OM or EM is 0. This results in incorrect numbers for red tide mortality especially in the all_years treatments.
 
 ::: panel-tabset
+
 ### SSB and Catch, all years
 
 ```{r}
@@ -3086,6 +2952,7 @@ mutate(
   labs(color = "EM", fill = "EM", x = "Year", y = "Estimation Error (MAPE)")+
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
+
 :::
 
 # Other Explorations
@@ -3093,6 +2960,7 @@ mutate(
 ## Exploring Recruitment
 
 ::: panel-tabset
+
 ### Recruitment DQ
 
 ```{r, echo = FALSE, warning = FALSE}
@@ -3118,6 +2986,7 @@ ts_plot_variable(summary, rec_dev, run_res_path, save = TRUE)
 ```{r, echo = FALSE, warning = FALSE}
 ts_plot_variable(summary, raw_rec_dev, run_res_path, save = TRUE)
 ```
+
 :::
 
 ## Ro Exploration
@@ -3145,25 +3014,25 @@ summary$scalar %>%
 
 ```
 
-```{#cancelr}
+```{r}
 
-ratio_R0 <- summary$scalar %>%
-  select(iteration, scenario, model_run, SR_LN_R0) %>%
-  mutate(r0 = exp(SR_LN_R0)) %>%
-  select(!SR_LN_R0) %>%
-  filter(str_detect(model_run, paste0("_OM|_EM_", end_yr))) %>%
-  pivot_wider(
-      names_from = model_run,  # this will create "OM" and "EM" columns
-      values_from = r0
-  ) %>%
-  rename_with(~ "OM", .cols = contains("_OM")) %>%
-  rename_with(~ "EM", .cols = contains(paste0("_EM_", end_yr))) %>%
-  group_by(scenario, iteration) %>%
-  mutate(ratio_R0 = EM/OM)
-  
-ratio_R0 %>%
-  ggplot(aes(scenario, ratio_R0)) +
-  geom_boxplot()
+# ratio_R0 <- summary$scalar %>%
+#   select(iteration, scenario, model_run, SR_LN_R0) %>%
+#   mutate(r0 = exp(SR_LN_R0)) %>%
+#   select(!SR_LN_R0) %>%
+#   filter(str_detect(model_run, paste0("_OM|_EM_", end_yr))) %>%
+#   pivot_wider(
+#       names_from = model_run,  # this will create "OM" and "EM" columns
+#       values_from = r0
+#   ) %>%
+#   rename_with(~ "OM", .cols = contains("_OM")) %>%
+#   rename_with(~ "EM", .cols = contains(paste0("_EM_", end_yr))) %>%
+#   group_by(scenario, iteration) %>%
+#   mutate(ratio_R0 = EM/OM)
+#   
+# ratio_R0 %>%
+#   ggplot(aes(scenario, ratio_R0)) +
+#   geom_boxplot()
 
 ```
 
@@ -3171,7 +3040,7 @@ ratio_R0 %>%
 
 EM:OM ratios in the new format for variables that don't have zeros.
 
-```{#cancelr}
+```{r}
 
 ratio_df %>%
   filter(str_detect(model_run, paste0("_OM|_EM_", end_yr))) %>%
@@ -3230,6 +3099,7 @@ ratio_df %>%
 ## Red Tide Year Comparisons
 
 ::: panel-tabset
+
 ### end_yr Boxplot of F_5
 
 ```{r}
@@ -3265,28 +3135,28 @@ summary$ts %>%
 
 ### Table of Mean F_5 by red tide year and scenario
 
-```{#cancelr}
-summary$ts %>%
-  filter(str_detect(model_run, paste0("_OM|_EM_", end_yr)), year %in% c(2005, 2014, 2018, 2021)) %>%
-  group_by(year, model_run, scenario) %>%
-  reframe(F_5_mean = mean(F_5), F_5_median = median(F_5), F_5_sd = sd(F_5)) %>%
-  select(model_run, year, scenario, F_5_mean) %>%
-  pivot_wider(
-    names_from = model_run,  
-    values_from = F_5_mean         # Optional: Adds a prefix to the new column names
-  ) %>%
-  rename_with(~ "OM", .cols = contains("_OM")) %>%
-  rename_with(~ "EM", .cols = contains(paste0("_EM_", end_yr))) %>%
-  mutate(Residual = EM - OM) %>%
-  kable(
-    # Rename columns directly within kable
-    align = c("l", "c", "c", "c", "c"), # Align columns (left, center, center, center)
-    digits = 3
-  ) %>%
-  kable_styling(
-    bootstrap_options = c("striped", "hover", "condensed"), # Add bootstrap styling
-    full_width = FALSE # Don't stretch table to full page width
-  )
+```{r}
+# summary$ts %>%
+#   filter(str_detect(model_run, paste0("_OM|_EM_", end_yr)), year %in% c(2005, 2014, 2018, 2021)) %>%
+#   group_by(year, model_run, scenario) %>%
+#   reframe(F_5_mean = mean(F_5), F_5_median = median(F_5), F_5_sd = sd(F_5)) %>%
+#   select(model_run, year, scenario, F_5_mean) %>%
+#   pivot_wider(
+#     names_from = model_run,  
+#     values_from = F_5_mean         # Optional: Adds a prefix to the new column names
+#   ) %>%
+#   rename_with(~ "OM", .cols = contains("_OM")) %>%
+#   rename_with(~ "EM", .cols = contains(paste0("_EM_", end_yr))) %>%
+#   mutate(Residual = EM - OM) %>%
+#   kable(
+#     # Rename columns directly within kable
+#     align = c("l", "c", "c", "c", "c"), # Align columns (left, center, center, center)
+#     digits = 3
+#   ) %>%
+#   kable_styling(
+#     bootstrap_options = c("striped", "hover", "condensed"), # Add bootstrap styling
+#     full_width = FALSE # Don't stretch table to full page width
+#   )
   
 ```
 
@@ -3312,6 +3182,7 @@ EM_runs %>%
   facet_grid(scenario~year) + ggtitle("Histograms of F_5 from EM")
 
 ```
+
 :::
 
 ## Absolute Error Plots
@@ -3419,4 +3290,5 @@ abs_error %>%
   labs(color = "EM", fill = "EM", x = "Year", y = "Absolute Error")
 
 ```
+
 :::
