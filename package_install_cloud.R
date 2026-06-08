@@ -15,6 +15,10 @@ remotes::install_github("r4ss/r4ss@v1.49.3", force = TRUE)
 run_SSMSE_dir <- file.path("runs_output")
 dir.create(run_SSMSE_dir)
 
+# Create a folder for mounting the bucket in the working directory.
+bucket_dir <- file.path("bucket")
+dir.create(bucket_dir)
+
 # Base OM folder
 # this is where you will upload the stock assessment you are working with
 model_SSMSE_dir <- file.path("base_models")
