@@ -17,7 +17,7 @@ packageVersion("ss3sim")
 packageVersion("SSMSE")
 
 # Create a folder for the output in the working directory.
-results_name <- "no_rt_additions"
+results_name <- "fix_rec_devs"
 run_SSMSE_dir <- file.path("./runs_output")
 run_res_path <- file.path(run_SSMSE_dir, paste0("results_", results_name))
 if (!dir.exists(run_res_path)) {
@@ -613,8 +613,8 @@ all_scenarios <- list(
   mid_x_no_rt,
   old_x_no_rt
 )
-#all_scenarios <- all_scenarios[1:4]
-#all_scenarios <- all_scenarios[5:9]
+all_scenarios <- all_scenarios[1]
+#all_scenarios <- all_scenarios[2:5]
 #all_scenarios <- all_scenarios[6:9]
 #all_scenarios <- all_scenarios[10:13]
 
@@ -661,20 +661,23 @@ all_scenarios <- list(
 #   list(rt_2_x_all_yrs)
 # )
 
-# selectivity varied mortality
+# selectivity varied mortality in fixed years
 # all_scenarios <- c(
-#   rt_2_scenarios_extra
+#   rt_2_scenarios_extra,
+#   all_yrs_scenarios_extra
 # )
 #all_scenarios <- all_scenarios[1:4]
 #all_scenarios <- all_scenarios[5:8]
 #all_scenarios <- all_scenarios[9:12]
 #all_scenarios <- all_scenarios[13:16]
+#all_scenarios <- all_scenarios[17:20]
+#all_scenarios <- all_scenarios[21:24]
+#all_scenarios <- all_scenarios[25:28]
+#all_scenarios <- all_scenarios[29:32]
 
-
-# all_scenarios <- c(
-#   all_yrs_scenarios_varied
-# )
-
+scen_list_str <- all_scenarios %>%
+  map_chr(\(x) x$scen_name_vec) %>%
+  str_flatten(collapse = ", ", last = ", and ")
 
 ##### RUN SSMSE #####
 
@@ -689,7 +692,7 @@ walk(all_scenarios, ~exec(run_SSMSE, !!!.x))  # !!! makes the scenario list into
 
 # end timer
 end_time <- Sys.time()
-end_time - start_time
+time_dif <- end_time - start_time
 
 ##### Email when done #####
 
@@ -698,8 +701,8 @@ library(blastula)
 
 # Create the email
 email <- compose_email(
-  body = md("Your R job is **complete!**")
-)
+  body = md(glue::glue("Your R job is **complete!** It took {time_dif} to run. Scenarios processed: {scen_list_str}."))
+  )
 
 Sys.setenv(SMTP_PASSWORD = PASSWORD)
 
