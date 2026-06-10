@@ -8,8 +8,8 @@ library(tidyverse)
 library(SSMSE)
 
 #Google App Password for emailing
-PASSWORD <- ""
-email_address <- ""
+# PASSWORD <- ""
+# email_address <- ""
 
 # Check versions
 packageVersion("r4ss")
@@ -17,7 +17,7 @@ packageVersion("ss3sim")
 packageVersion("SSMSE")
 
 # Create a folder for the output in the working directory.
-results_name <- "fix_rec_devs"
+results_name <- "testing_workstations"
 run_SSMSE_dir <- file.path("./runs_output")
 run_res_path <- file.path(run_SSMSE_dir, paste0("results_", results_name))
 if (!dir.exists(run_res_path)) {
@@ -696,26 +696,26 @@ time_dif <- end_time - start_time
 
 ##### Email when done #####
 
-# send email to indicate the run is done
-library(blastula)
-
-# Create the email
-email <- compose_email(
-  body = md(glue::glue("Your R job is **complete!** It took {time_dif} to run. Scenarios processed: {scen_list_str}."))
-  )
-
-Sys.setenv(SMTP_PASSWORD = PASSWORD)
-
-# Send via SMTP (Gmail)
-smtp_send(
-  email,
-  from = email_address,
-  to = email_address,
-  subject = "R Script Complete",
-  credentials = creds_envvar(
-    user = email_address,
-    provider = "gmail",
-    pass_envvar = "SMTP_PASSWORD",
-    use_ssl = TRUE
-  )
-)
+# # send email to indicate the run is done
+# library(blastula)
+# 
+# # Create the email
+# email <- compose_email(
+#   body = md(glue::glue("Your R job is **complete!** It took {time_dif} to run. Scenarios processed: {scen_list_str}."))
+#   )
+# 
+# Sys.setenv(SMTP_PASSWORD = PASSWORD)
+# 
+# # Send via SMTP (Gmail)
+# smtp_send(
+#   email,
+#   from = email_address,
+#   to = email_address,
+#   subject = "R Script Complete",
+#   credentials = creds_envvar(
+#     user = email_address,
+#     provider = "gmail",
+#     pass_envvar = "SMTP_PASSWORD",
+#     use_ssl = TRUE
+#   )
+# )
