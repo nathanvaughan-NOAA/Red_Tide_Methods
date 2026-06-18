@@ -1,5 +1,8 @@
 # Using the cloud computing test as a template to explore a few different Red Tide Scenarios
 
+# start timer
+start_time <- Sys.time()
+
 # Load packages
 
 #devtools::load_all("/SSMSE")  # needs to be the cloned SSMSE repo
@@ -8,8 +11,8 @@ library(tidyverse)
 library(SSMSE)
 
 #Google App Password for emailing
-# PASSWORD <- ""
-# email_address <- ""
+PASSWORD <- ""
+email_address <- ""
 
 # Check versions
 packageVersion("r4ss")
@@ -17,7 +20,7 @@ packageVersion("ss3sim")
 packageVersion("SSMSE")
 
 # Create a folder for the output in the working directory.
-results_name <- "testing_workstations"
+results_name <- "adjusted_red_tide_em"
 run_SSMSE_dir <- file.path("./runs_output")
 run_res_path <- file.path(run_SSMSE_dir, paste0("results_", results_name))
 if (!dir.exists(run_res_path)) {
@@ -309,8 +312,7 @@ base_params <- list(
   seed            = 12345,
   # Normalize these once here
   OM_in_dir_vec   = normalizePath(default),
-  EM_in_dir_vec   = normalizePath(default),
-  cloud_bucket = bucket_path
+  EM_in_dir_vec   = normalizePath(default)
 )
 
 # use modifyList() to adjust the run_SSMSE parameters
@@ -375,7 +377,7 @@ scenario_factorial <- function(model_names = c("flat", "young"), type_name = NUL
         scen_name_vec = scen_name,
         sample_struct_list = setNames(list(struct_obj), scen_name),
         OM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, combo$OM)),
-        EM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, combo$EM)), 
+        EM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, paste0(combo$EM, "_adj"))), 
         extra = list(new_extras)
       )))
     } else {
@@ -384,7 +386,7 @@ scenario_factorial <- function(model_names = c("flat", "young"), type_name = NUL
         scen_name_vec = scen_name,
         sample_struct_list = setNames(list(struct_obj), scen_name),
         OM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, combo$OM)),
-        EM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, combo$EM))
+        EM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, paste0(combo$EM, "_adj")))
       ))
     }
   }
@@ -530,7 +532,7 @@ make_no_rt_all_yrs_model <- function(EM_name = "flat", EM_type = "all_yrs"){
       scen_name_vec = paste0("no_rt_x_", EM_name,"_", EM_type),
       sample_struct_list = setNames(list(sample_struct_no_rt_x_all_yrs), paste0("no_rt_x_", EM_name,"_", EM_type)),
       OM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, "flat")),
-      EM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, EM_name))))
+      EM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, paste0(combo$EM, "_adj")))))
 }
 
 
@@ -548,7 +550,7 @@ make_no_rt_17_model <- function(EM_name = "flat", EM_type = "rt_17"){
       scen_name_vec = paste0("no_rt_x_", EM_name,"_", EM_type),
       sample_struct_list = setNames(list(sample_struct_no_rt_x_rt_17), paste0("no_rt_x_", EM_name,"_", EM_type)),
       OM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, "flat")),
-      EM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, EM_name)), 
+      EM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, paste0(combo$EM, "_adj"))), 
       extra = list(extras_base[-1])
     ))
 }
@@ -596,28 +598,6 @@ young_x_no_rt <- make_rt_17_no_model("young")
 mid_x_no_rt <- make_rt_17_no_model("mid")
 old_x_no_rt <- make_rt_17_no_model("old")
 
-# no_rt runs with varying all years selectivities.  
-
-all_scenarios <- list(
-  no_rt_x_no_rt,
-  no_rt_x_flat_all_yrs,
-  no_rt_x_young_all_yrs,
-  no_rt_x_mid_all_yrs,
-  no_rt_x_old_all_yrs,
-  no_rt_x_flat_rt_17,
-  no_rt_x_young_rt_17,
-  no_rt_x_mid_rt_17,
-  no_rt_x_old_rt_17,
-  flat_x_no_rt,
-  young_x_no_rt,
-  mid_x_no_rt,
-  old_x_no_rt
-)
-all_scenarios <- all_scenarios[1]
-#all_scenarios <- all_scenarios[2:5]
-#all_scenarios <- all_scenarios[6:9]
-#all_scenarios <- all_scenarios[10:13]
-
 
 # put the scenarios you want to run into a list
 
@@ -661,19 +641,30 @@ all_scenarios <- all_scenarios[1]
 #   list(rt_2_x_all_yrs)
 # )
 
+# no_rt runs with varying all years selectivities.  
+
+all_scenarios <- list(
+  no_rt_x_no_rt,
+  no_rt_x_flat_all_yrs,
+  no_rt_x_young_all_yrs,
+  no_rt_x_mid_all_yrs,
+  no_rt_x_old_all_yrs,
+  no_rt_x_flat_rt_17,
+  no_rt_x_young_rt_17,
+  no_rt_x_mid_rt_17,
+  no_rt_x_old_rt_17,
+  flat_x_no_rt,
+  young_x_no_rt,
+  mid_x_no_rt,
+  old_x_no_rt
+)
+
 # selectivity varied mortality in fixed years
-# all_scenarios <- c(
-#   rt_2_scenarios_extra,
-#   all_yrs_scenarios_extra
-# )
-#all_scenarios <- all_scenarios[1:4]
-#all_scenarios <- all_scenarios[5:8]
-#all_scenarios <- all_scenarios[9:12]
-#all_scenarios <- all_scenarios[13:16]
-#all_scenarios <- all_scenarios[17:20]
-#all_scenarios <- all_scenarios[21:24]
-#all_scenarios <- all_scenarios[25:28]
-#all_scenarios <- all_scenarios[29:32]
+all_scenarios <- c(
+  all_scenarios,
+  rt_2_scenarios_extra,
+  all_yrs_scenarios_extra
+)
 
 scen_list_str <- all_scenarios %>%
   map_chr(\(x) x$scen_name_vec) %>%
@@ -681,14 +672,12 @@ scen_list_str <- all_scenarios %>%
 
 ##### RUN SSMSE #####
 
-# start timer
-start_time <- Sys.time()
 # walk through the scenario list and run_SSMSE
 walk(all_scenarios, ~exec(run_SSMSE, !!!.x))  # !!! makes the scenario list into arguements that can be used by a function
 
 # make a summary with all the outputs in the same folder
-#summary <- SSMSE::SSMSE_summary_all(run_res_path)
-#saveRDS(summary, file = file.path(run_SSMSE_dir, paste0("results_summary_", results_name, ".rda")))
+summary <- SSMSE::SSMSE_summary_all(run_res_path)
+saveRDS(summary, file = file.path(run_SSMSE_dir, paste0("results_summary_", results_name, ".rda")))
 
 # end timer
 end_time <- Sys.time()
@@ -696,26 +685,26 @@ time_dif <- end_time - start_time
 
 ##### Email when done #####
 
-# # send email to indicate the run is done
-# library(blastula)
-# 
-# # Create the email
-# email <- compose_email(
-#   body = md(glue::glue("Your R job is **complete!** It took {time_dif} to run. Scenarios processed: {scen_list_str}."))
-#   )
-# 
-# Sys.setenv(SMTP_PASSWORD = PASSWORD)
-# 
-# # Send via SMTP (Gmail)
-# smtp_send(
-#   email,
-#   from = email_address,
-#   to = email_address,
-#   subject = "R Script Complete",
-#   credentials = creds_envvar(
-#     user = email_address,
-#     provider = "gmail",
-#     pass_envvar = "SMTP_PASSWORD",
-#     use_ssl = TRUE
-#   )
-# )
+# send email to indicate the run is done
+library(blastula)
+
+# Create the email
+email <- compose_email(
+  body = md(glue::glue("Your R job is **complete!** It took {time_dif} to run. Scenarios processed: {scen_list_str}."))
+  )
+
+Sys.setenv(SMTP_PASSWORD = PASSWORD)
+
+# Send via SMTP (Gmail)
+smtp_send(
+  email,
+  from = email_address,
+  to = email_address,
+  subject = "R Script Complete",
+  credentials = creds_envvar(
+    user = email_address,
+    provider = "gmail",
+    pass_envvar = "SMTP_PASSWORD",
+    use_ssl = TRUE
+  )
+)

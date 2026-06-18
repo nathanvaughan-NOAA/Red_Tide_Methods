@@ -24,7 +24,7 @@ end_yr <- 2068
 niter <- 100
 
 #name of the results files
-results_name <- "_no_rt_additions"
+results_name <- "_new_rec_dev_fix_backup"
 
 #create a list of scenarios for plot generation, usually the default order is fine.  
 #scen_list <- unique(summary$ts$scenario)
@@ -44,7 +44,24 @@ scen_list <- c(
   "mid_x_no_rt",
   "old_x_no_rt"
 )
-
+scen_list <- c(
+  "flat_x_flat_rt_2",
+  "young_x_young_rt_2",
+  "old_x_old_rt_2",
+  "mid_x_mid_rt_2",
+  "flat_x_young_rt_2",
+  "flat_x_old_rt_2",
+  "flat_x_mid_rt_2",
+  "young_x_flat_rt_2",
+  "young_x_old_rt_2",
+  "young_x_mid_rt_2",
+  "old_x_flat_rt_2",
+  "old_x_young_rt_2",
+  "old_x_mid_rt_2",
+  "mid_x_flat_rt_2",
+  "mid_x_young_rt_2",
+  "mid_x_old_rt_2"
+)
 
 #pull the summary and dat files, the dat file isn't actually that important.  
 summary <- readRDS(file = file.path(run_SSMSE_dir, paste0("results_summary", results_name, ".rda")))
@@ -127,7 +144,7 @@ scen_in_order_rt_17<- c(
 )
 
 plot_data %>% 
-  filter(model_run %in% key_models, iteration %in% 1:10, scenario %in% scen_in_order_oms, year %in% 2000:2047) %>% #filters to just OM and max year runs
+  filter(model_run %in% key_models, iteration %in% 1:10, scenario %in% scen_list[1:5], year %in% 2000:2047) %>% #filters to just OM and max year runs
   ggplot(aes(x = year, y = F_5)) +
   geom_vline(xintercept = dat$endyr, color = "gray") +
   geom_vline(xintercept = 2005, color = "gray", linetype = "dashed") +
