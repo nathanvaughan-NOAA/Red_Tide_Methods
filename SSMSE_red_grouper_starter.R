@@ -532,7 +532,7 @@ make_no_rt_all_yrs_model <- function(EM_name = "flat", EM_type = "all_yrs"){
       scen_name_vec = paste0("no_rt_x_", EM_name,"_", EM_type),
       sample_struct_list = setNames(list(sample_struct_no_rt_x_all_yrs), paste0("no_rt_x_", EM_name,"_", EM_type)),
       OM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, "flat")),
-      EM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, paste0(combo$EM, "_adj")))))
+      EM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, paste0(EM_name, "_adj")))))
 }
 
 
@@ -550,7 +550,7 @@ make_no_rt_17_model <- function(EM_name = "flat", EM_type = "rt_17"){
       scen_name_vec = paste0("no_rt_x_", EM_name,"_", EM_type),
       sample_struct_list = setNames(list(sample_struct_no_rt_x_rt_17), paste0("no_rt_x_", EM_name,"_", EM_type)),
       OM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, "flat")),
-      EM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, paste0(combo$EM, "_adj"))), 
+      EM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, paste0(EM_name, "_adj"))), 
       extra = list(extras_base[-1])
     ))
 }
@@ -665,6 +665,8 @@ all_scenarios <- c(
   rt_2_scenarios_extra,
   all_yrs_scenarios_extra
 )
+
+all_scenarios <- all_scenarios[14]
 
 scen_list_str <- all_scenarios %>%
   map_chr(\(x) x$scen_name_vec) %>%
