@@ -9,10 +9,8 @@ start_time <- Sys.time()
 
 library(tidyverse)
 library(SSMSE)
-
-#Google App Password for emailing
-PASSWORD <- ""
-email_address <- ""
+library(future)
+library(purrr)
 
 # Check versions
 packageVersion("r4ss")
@@ -20,7 +18,7 @@ packageVersion("ss3sim")
 packageVersion("SSMSE")
 
 # Create a folder for the output in the working directory.
-results_name <- "adjusted_red_tide_em"
+results_name <- "parallel_test"
 run_SSMSE_dir <- file.path("./runs_output")
 run_res_path <- file.path(run_SSMSE_dir, paste0("results_", results_name))
 if (!dir.exists(run_res_path)) {
@@ -312,7 +310,8 @@ base_params <- list(
   seed            = 12345,
   # Normalize these once here
   OM_in_dir_vec   = normalizePath(default),
-  EM_in_dir_vec   = normalizePath(default)
+  EM_in_dir_vec   = normalizePath(default), 
+  cloud_bucket = bucket_path
 )
 
 # use modifyList() to adjust the run_SSMSE parameters
@@ -666,8 +665,6 @@ all_scenarios <- c(
   all_yrs_scenarios_extra
 )
 
-all_scenarios <- all_scenarios[14]
-
 scen_list_str <- all_scenarios %>%
   map_chr(\(x) x$scen_name_vec) %>%
   str_flatten(collapse = ", ", last = ", and ")
@@ -675,38 +672,38 @@ scen_list_str <- all_scenarios %>%
 ##### RUN SSMSE #####
 
 # walk through the scenario list and run_SSMSE
-walk(all_scenarios, ~exec(run_SSMSE, !!!.x))  # !!! makes the scenario list into arguements that can be used by a function
+# walk(all_scenarios, ~exec(run_SSMSE, !!!.x))  # !!! makes the scenario list into arguements that can be used by a function
+
+# 1. Define the nested parallel plan
+# Layer 1 (Outer): 45 workers for your scenarios
+# Layer 2 (Inner): 3 workers per scenario for your iterations
+plan(list(
+  tweak(multicore, workers = 45),
+  tweak(multicore, workers = 3)
+))
+
+# 2. Update your scenario arguments to turn internal parallelization BACK ON
+all_scenarios <- map(all_scenarios, function(scen_args) {
+  scen_args$run_parallel <- TRUE
+  # Optional: Tell SSMSE explicitly to use 'future' for its iterations 
+  # (though it usually defaults to this if run_parallel = TRUE)
+  scen_args$n_cores <- 3 
+  return(scen_args)
+})
+
+# 3. Fire off the nested parallel run using future_walk
+# This will launch all 45 scenarios simultaneously, and each will crunch 3 iterations at once!
+future_walk(all_scenarios, function(scen_args) {
+  exec(run_SSMSE, !!!scen_args)
+})
+
+# 4. Reset to normal when complete
+plan(sequential)
 
 # make a summary with all the outputs in the same folder
-summary <- SSMSE::SSMSE_summary_all(run_res_path)
-saveRDS(summary, file = file.path(run_SSMSE_dir, paste0("results_summary_", results_name, ".rda")))
+#summary <- SSMSE::SSMSE_summary_all(run_res_path)
+#saveRDS(summary, file = file.path(run_SSMSE_dir, paste0("results_summary_", results_name, ".rda")))
 
 # end timer
 end_time <- Sys.time()
 time_dif <- end_time - start_time
-
-##### Email when done #####
-
-# send email to indicate the run is done
-library(blastula)
-
-# Create the email
-email <- compose_email(
-  body = md(glue::glue("Your R job is **complete!** It took {time_dif} to run. Scenarios processed: {scen_list_str}."))
-  )
-
-Sys.setenv(SMTP_PASSWORD = PASSWORD)
-
-# Send via SMTP (Gmail)
-smtp_send(
-  email,
-  from = email_address,
-  to = email_address,
-  subject = "R Script Complete",
-  credentials = creds_envvar(
-    user = email_address,
-    provider = "gmail",
-    pass_envvar = "SMTP_PASSWORD",
-    use_ssl = TRUE
-  )
-)
