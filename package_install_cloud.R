@@ -3,6 +3,7 @@
 # Installing SSMSE and all dependencies
 # note: @ allows you to choose the branch of SSMSE you want to download
 remotes::install_github("nmfs-fish-tools/SSMSE@red_tide_em")
+install.packages("future.apply")
 
 # Create a folder for the output in the working directory.
 run_SSMSE_dir <- file.path("runs_output")

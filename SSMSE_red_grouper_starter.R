@@ -307,6 +307,7 @@ base_params <- list(
   nyrs_assess_vec = 3,
   future_om_list  = future_OM_list_recdevs,
   run_parallel    = TRUE,
+  n_cores         = 2,
   seed            = 12345,
   # Normalize these once here
   OM_in_dir_vec   = normalizePath(default),
@@ -674,36 +675,52 @@ scen_list_str <- all_scenarios %>%
 # walk through the scenario list and run_SSMSE
 # walk(all_scenarios, ~exec(run_SSMSE, !!!.x))  # !!! makes the scenario list into arguements that can be used by a function
 
-# 1. Define the nested parallel plan
-# Layer 1 (Outer): 45 workers for your scenarios
-# Layer 2 (Inner): 3 workers per scenario for your iterations
+# Testing parallel code and GitHub Notifications
+
+library(future)
+library(future.apply)
+library(SSMSE)
+
+# 1. Set up the nested parallel architecture (45 outer x 3 inner)
 plan(list(
-  tweak(multicore, workers = 45),
-  tweak(multicore, workers = 3)
+  tweak(multisession, workers = 45),
+  tweak(multisession, workers = 2)
 ))
 
-# 2. Update your scenario arguments to turn internal parallelization BACK ON
-all_scenarios <- map(all_scenarios, function(scen_args) {
-  scen_args$run_parallel <- TRUE
-  # Optional: Tell SSMSE explicitly to use 'future' for its iterations 
-  # (though it usually defaults to this if run_parallel = TRUE)
-  scen_args$n_cores <- 3 
-  return(scen_args)
+# 2. Iterate through the 45 scenarios simultaneously
+results <- future_lapply(all_scenarios, function(scenario) {
+  
+  # do.call passes the list elements as named arguments to run_SSMSE
+  do.call(run_SSMSE, scenario)
+  
 })
 
-# 3. Fire off the nested parallel run using future_walk
-# This will launch all 45 scenarios simultaneously, and each will crunch 3 iterations at once!
-future_walk(all_scenarios, function(scen_args) {
-  exec(run_SSMSE, !!!scen_args)
-})
-
-# 4. Reset to normal when complete
+# 3. Clean up the parallel workers
 plan(sequential)
 
 # make a summary with all the outputs in the same folder
-#summary <- SSMSE::SSMSE_summary_all(run_res_path)
-#saveRDS(summary, file = file.path(run_SSMSE_dir, paste0("results_summary_", results_name, ".rda")))
+summary <- SSMSE::SSMSE_summary_all(bucket_path)
+saveRDS(summary, file = file.path(bucket_path, paste0("results_summary_", results_name, ".rda")))
 
 # end timer
 end_time <- Sys.time()
 time_dif <- end_time - start_time
+
+
+# --- End of your heavy R data processing ---
+message("Job finished. Signaling GitHub via Tag...")
+
+# 1. Create a unique tag name using the current timestamp
+tag_name <- paste0("alert-", format(Sys.time(), "%Y%m%d-%H%M%S"), "time_dif = ", time_dif)
+
+# 2. Create the tag locally pointing to your current commit
+system(paste("git tag", tag_name))
+
+# 3. Push the tag to GitHub (this triggers the email)
+system(paste("git push origin", tag_name))
+
+# 4. Clean up the local tag so your workspace stays pristine
+system(paste("git tag -d", tag_name))
+
+message("Signal sent. Attempting shutdown...")
+system("sudo shutdown -h now")
