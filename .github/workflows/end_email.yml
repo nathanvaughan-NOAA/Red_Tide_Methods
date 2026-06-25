@@ -2,8 +2,8 @@ name: Workstation Alert
 
 on:
   push:
-    paths:
-      - 'end_email.txt' # Only runs when this specific file changes
+    tags:
+      - 'alert-*' # Triggers only when a tag starting with "alert-" is pushed
 
 jobs:
   fail_on_purpose:
@@ -11,5 +11,5 @@ jobs:
     steps:
       - name: Trigger Email Notification
         run: |
-          echo "R Script completed! Intentionally failing to trigger email notification."
+          echo "R Script completed!"
           exit 1
