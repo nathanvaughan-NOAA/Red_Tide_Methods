@@ -1,0 +1,15 @@
+name: Workstation Alert
+
+on:
+  push:
+    paths:
+      - 'end_email.txt' # Only runs when this specific file changes
+
+jobs:
+  fail_on_purpose:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Email Notification
+        run: |
+          echo "R Script completed! Intentionally failing to trigger email notification."
+          exit 1
