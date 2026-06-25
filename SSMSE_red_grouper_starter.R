@@ -18,7 +18,7 @@ packageVersion("ss3sim")
 packageVersion("SSMSE")
 
 # Create a folder for the output in the working directory.
-results_name <- "parallel_test"
+results_name <- "red_tide_em"
 run_SSMSE_dir <- file.path("./runs_output")
 run_res_path <- file.path(run_SSMSE_dir, paste0("results_", results_name))
 if (!dir.exists(run_res_path)) {
@@ -677,26 +677,30 @@ scen_list_str <- all_scenarios %>%
 
 # Testing parallel code and GitHub Notifications
 
-library(future)
-library(future.apply)
-library(SSMSE)
+library(foreach)
+library(doParallel)
 
-# 1. Set up the nested parallel architecture (45 outer x 3 inner)
-plan(list(
-  tweak(multisession, workers = 45),
-  tweak(multisession, workers = 2)
-))
+# 1. Set up a standard socket cluster with 45 workers
+# (Since SSMSE uses foreach internally, this cluster handles both layers)
+cl <- makeCluster(45)
+registerDoParallel(cl)
 
-# 2. Iterate through the 45 scenarios simultaneously
-results <- future_lapply(all_scenarios, function(scenario) {
+# 2. Run the 45 scenarios using %dopar%
+results <- foreach(
+  scenario = all_scenarios, 
+  .packages = c("SSMSE") # Ensures SSMSE is loaded on all 45 workers
+) %dopar% {
   
-  # do.call passes the list elements as named arguments to run_SSMSE
+  # Inside each worker, run the scenario.
+  # Note: If run_SSMSE has an 'ncores' or 'parallel' argument, 
+  # set it to 1 or FALSE here so the 45 workers don't try to split further.
   do.call(run_SSMSE, scenario)
   
-})
+}
 
-# 3. Clean up the parallel workers
-plan(sequential)
+# 3. Clean up the cluster when finished
+stopCluster(cl)
+registerDoSEQ()
 
 # make a summary with all the outputs in the same folder
 summary <- SSMSE::SSMSE_summary_all(bucket_path)
