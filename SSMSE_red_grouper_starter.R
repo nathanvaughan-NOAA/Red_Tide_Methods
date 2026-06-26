@@ -5,12 +5,10 @@ start_time <- Sys.time()
 
 # Load packages
 
-#devtools::load_all("/SSMSE")  # needs to be the cloned SSMSE repo
+#devtools::load_all("C:/Users/apn26/Documents/SSMSE")  # needs to be the cloned SSMSE repo
 
 library(tidyverse)
 library(SSMSE)
-library(future)
-library(purrr)
 
 # Check versions
 packageVersion("r4ss")
@@ -31,9 +29,9 @@ model_SSMSE_dir <- file.path("base_models")
 default <- file.path(model_SSMSE_dir, "default_sigmaR")
 
 # number of simulation years
-projyrs <- 51
-rt_yrs <- 17
-my_niter <- 100
+projyrs <- 6
+rt_yrs <- 2
+my_niter <- 2
 
 # to get the names of parameter values
 ctl <- r4ss::SS_readctl(file.path(default, "red_grouper_1986_2017_RedTideFleet.ctl"), 
@@ -306,7 +304,7 @@ base_params <- list(
   nyrs_vec        = projyrs,
   nyrs_assess_vec = 3,
   future_om_list  = future_OM_list_recdevs,
-  run_parallel    = TRUE,
+  run_parallel    = FALSE,
   n_cores         = 2,
   seed            = 12345,
   # Normalize these once here
@@ -673,7 +671,7 @@ scen_list_str <- all_scenarios %>%
 ##### RUN SSMSE #####
 
 # walk through the scenario list and run_SSMSE
-# walk(all_scenarios, ~exec(run_SSMSE, !!!.x))  # !!! makes the scenario list into arguements that can be used by a function
+#walk(all_scenarios, ~exec(run_SSMSE, !!!.x))  # !!! makes the scenario list into arguements that can be used by a function
 
 # Testing parallel code and GitHub Notifications
 
@@ -687,15 +685,15 @@ registerDoParallel(cl)
 
 # 2. Run the 45 scenarios using %dopar%
 results <- foreach(
-  scenario = all_scenarios, 
+  scenario = all_scenarios,
   .packages = c("SSMSE") # Ensures SSMSE is loaded on all 45 workers
 ) %dopar% {
-  
+
   # Inside each worker, run the scenario.
-  # Note: If run_SSMSE has an 'ncores' or 'parallel' argument, 
+  # Note: If run_SSMSE has an 'ncores' or 'parallel' argument,
   # set it to 1 or FALSE here so the 45 workers don't try to split further.
   do.call(run_SSMSE, scenario)
-  
+
 }
 
 # 3. Clean up the cluster when finished
@@ -710,21 +708,14 @@ saveRDS(summary, file = file.path(bucket_path, paste0("results_summary_", result
 end_time <- Sys.time()
 time_dif <- end_time - start_time
 
+##### END PROCESS #####
 
-# --- End of your heavy R data processing ---
-message("Job finished. Signaling GitHub via Tag...")
-
-# 1. Create a unique tag name using the current timestamp
+# create a unique tag name using the current timestamp
 tag_name <- paste0("alert-", format(Sys.time(), "%Y%m%d-%H%M%S"), "time_dif = ", time_dif)
 
-# 2. Create the tag locally pointing to your current commit
+# create and push the tag locally pointing to your current commit
 system(paste("git tag", tag_name))
+system(paste("git push origin", tag_name)) # this will send email
 
-# 3. Push the tag to GitHub (this triggers the email)
-system(paste("git push origin", tag_name))
-
-# 4. Clean up the local tag so your workspace stays pristine
+# remove the tag so it doesn't clutter the repo
 system(paste("git tag -d", tag_name))
-
-message("Signal sent. Attempting shutdown...")
-system("sudo shutdown -h now")

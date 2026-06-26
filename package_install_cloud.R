@@ -1,9 +1,14 @@
 # Install and load packages
+# If you are in the RStudio IDE run this code to make packages install faster:  
+repo_line <- 'options(repos = c(CRAN = "https://packagemanager.posit.co/cran/__linux__/jammy/latest"))'
+writeLines(repo_line, "~/.Rprofile")
+
+# Restart R session to lock in Rprofile changes
+# Session -> Restart R or Ctrl+Shift+F10
 
 # Installing SSMSE and all dependencies
 # note: @ allows you to choose the branch of SSMSE you want to download
-remotes::install_github("nmfs-fish-tools/SSMSE@red_tide_em")
-install.packages("future.apply")
+remotes::install_github("nmfs-fish-tools/SSMSE@SEFSC-dev")
 
 # Create a folder for the output in the working directory.
 run_SSMSE_dir <- file.path("runs_output")
