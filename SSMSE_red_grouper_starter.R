@@ -22,16 +22,16 @@ run_res_path <- file.path(run_SSMSE_dir, paste0("results_", results_name))
 if (!dir.exists(run_res_path)) {
   dir.create(run_res_path, recursive = TRUE)
 }
-bucket_path <- normalizePath(paste0("bucket/results_", results_name)) # NULL
+bucket_path <- normalizePath(paste0("gs://ecsai-red-tide-simulation-project/2026_06_24_red_tide_em/results_", results_name)) 
 
 # OM locations
 model_SSMSE_dir <- file.path("base_models")
 default <- file.path(model_SSMSE_dir, "default_sigmaR")
 
 # number of simulation years
-projyrs <- 6
-rt_yrs <- 2
-my_niter <- 2
+projyrs <- 51
+rt_yrs <- 17
+my_niter <- 100
 
 # to get the names of parameter values
 ctl <- r4ss::SS_readctl(file.path(default, "red_grouper_1986_2017_RedTideFleet.ctl"), 
@@ -304,8 +304,8 @@ base_params <- list(
   nyrs_vec        = projyrs,
   nyrs_assess_vec = 3,
   future_om_list  = future_OM_list_recdevs,
-  run_parallel    = FALSE,
-  n_cores         = 2,
+  run_parallel    = TRUE,
+  n_cores         = 4,
   seed            = 12345,
   # Normalize these once here
   OM_in_dir_vec   = normalizePath(default),
@@ -558,9 +558,6 @@ no_rt_x_young_rt_17 <- make_no_rt_17_model("young")
 no_rt_x_mid_rt_17 <- make_no_rt_17_model("mid")
 no_rt_x_old_rt_17 <- make_no_rt_17_model("old")
 
-no_rt_x_no_rt <- no_rt
-no_rt_x_no_rt$scen_name_vec = "no_rt_x_no_rt"
-
 sample_struct_rt_17_x_no_rt <- add_sample_struct_FixedCatches(sample_struct, om_on = TRUE, em_on = FALSE)
 
 make_rt_17_no_model <- function(OM_name = "flat") {
@@ -596,6 +593,12 @@ young_x_no_rt <- make_rt_17_no_model("young")
 mid_x_no_rt <- make_rt_17_no_model("mid")
 old_x_no_rt <- make_rt_17_no_model("old")
 
+#redo no_rt
+no_rt_x_no_rt <- flat_x_no_rt
+no_rt_x_no_rt$extra <- NULL
+no_rt_x_no_rt$sample_struct_list$flat_x_no_rt$FixedCatch <- NULL
+names(no_rt_x_no_rt$sample_struct_list)[1] <- "no_rt_x_no_rt"
+no_rt_x_no_rt$scen_name_vec <- "no_rt_x_no_rt"
 
 # put the scenarios you want to run into a list
 
@@ -664,6 +667,8 @@ all_scenarios <- c(
   all_yrs_scenarios_extra
 )
 
+all_scenarios <- all_scenarios[1]
+
 scen_list_str <- all_scenarios %>%
   map_chr(\(x) x$scen_name_vec) %>%
   str_flatten(collapse = ", ", last = ", and ")
@@ -671,47 +676,49 @@ scen_list_str <- all_scenarios %>%
 ##### RUN SSMSE #####
 
 # walk through the scenario list and run_SSMSE
-#walk(all_scenarios, ~exec(run_SSMSE, !!!.x))  # !!! makes the scenario list into arguements that can be used by a function
+walk(all_scenarios, ~exec(run_SSMSE, !!!.x))  # !!! makes the scenario list into arguments that can be used by a function
 
 # Testing parallel code and GitHub Notifications
-
-library(foreach)
-library(doParallel)
-
-# 1. Set up a standard socket cluster with 45 workers
-# (Since SSMSE uses foreach internally, this cluster handles both layers)
-cl <- makeCluster(45)
-registerDoParallel(cl)
-
-# 2. Run the 45 scenarios using %dopar%
-results <- foreach(
-  scenario = all_scenarios,
-  .packages = c("SSMSE") # Ensures SSMSE is loaded on all 45 workers
-) %dopar% {
-
-  # Inside each worker, run the scenario.
-  # Note: If run_SSMSE has an 'ncores' or 'parallel' argument,
-  # set it to 1 or FALSE here so the 45 workers don't try to split further.
-  do.call(run_SSMSE, scenario)
-
-}
-
-# 3. Clean up the cluster when finished
-stopCluster(cl)
-registerDoSEQ()
+# 
+# library(foreach)
+# library(doParallel)
+# 
+# # 1. Set up a standard socket cluster with 45 workers
+# # (Since SSMSE uses foreach internally, this cluster handles both layers)
+# cl <- makeCluster(45)
+# registerDoParallel(cl)
+# 
+# # 2. Run the 45 scenarios using %dopar%
+# results <- foreach(
+#   scenario = all_scenarios,
+#   .packages = c("SSMSE") # Ensures SSMSE is loaded on all 45 workers
+# ) %dopar% {
+# 
+#   # Inside each worker, run the scenario.
+#   # Note: If run_SSMSE has an 'ncores' or 'parallel' argument,
+#   # set it to 1 or FALSE here so the 45 workers don't try to split further.
+#   do.call(run_SSMSE, scenario)
+# 
+# }
+# 
+# # 3. Clean up the cluster when finished
+# stopCluster(cl)
+# registerDoSEQ()
 
 # make a summary with all the outputs in the same folder
-summary <- SSMSE::SSMSE_summary_all(bucket_path)
+summary <- SSMSE::SSMSE_summary_all(bucket_path, overwrite = TRUE)
 saveRDS(summary, file = file.path(bucket_path, paste0("results_summary_", results_name, ".rda")))
 
 # end timer
 end_time <- Sys.time()
 time_dif <- end_time - start_time
 
+saveRDS(time_dif, file = "timer_save.rda")
+
 ##### END PROCESS #####
 
 # create a unique tag name using the current timestamp
-tag_name <- paste0("alert-", format(Sys.time(), "%Y%m%d-%H%M%S"), "time_dif = ", time_dif)
+tag_name <- paste0("alert-", time_dif)
 
 # create and push the tag locally pointing to your current commit
 system(paste("git tag", tag_name))
