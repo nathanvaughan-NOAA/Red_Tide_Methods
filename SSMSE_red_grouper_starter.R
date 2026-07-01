@@ -8,7 +8,7 @@ start_time <- Sys.time()
 #devtools::load_all("C:/Users/apn26/Documents/SSMSE")  # needs to be the cloned SSMSE repo
 
 library(tidyverse)
-library(SSMSE)
+#library(SSMSE)
 
 # Check versions
 packageVersion("r4ss")
@@ -16,13 +16,14 @@ packageVersion("ss3sim")
 packageVersion("SSMSE")
 
 # Create a folder for the output in the working directory.
-results_name <- "red_tide_em"
+results_name <- "red_tide_no_rt_fix"
 run_SSMSE_dir <- file.path("./runs_output")
 run_res_path <- file.path(run_SSMSE_dir, paste0("results_", results_name))
 if (!dir.exists(run_res_path)) {
   dir.create(run_res_path, recursive = TRUE)
 }
-bucket_path <- normalizePath(paste0("gs://ecsai-red-tide-simulation-project/2026_06_24_red_tide_em/results_", results_name)) 
+bucket_path <- normalizePath(paste0("gs://ecsai-red-tide-simulation-project/2026_07_01_red_tide_no_rt_fix/results_", results_name)) 
+mount_path <- file.path("./bucket")
 
 # OM locations
 model_SSMSE_dir <- file.path("base_models")
@@ -583,7 +584,7 @@ make_rt_17_no_model <- function(OM_name = "flat") {
       scen_name_vec = scen_name,
       sample_struct_list = setNames(list(sample_struct_rt_17_x_no_rt), scen_name),
       OM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, OM_name)),
-      EM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, "flat")), 
+      EM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, "none")), 
       extra = list(new_extras[-2])
     ))
 }
@@ -667,8 +668,6 @@ all_scenarios <- c(
   all_yrs_scenarios_extra
 )
 
-all_scenarios <- all_scenarios[1]
-
 scen_list_str <- all_scenarios %>%
   map_chr(\(x) x$scen_name_vec) %>%
   str_flatten(collapse = ", ", last = ", and ")
@@ -676,38 +675,38 @@ scen_list_str <- all_scenarios %>%
 ##### RUN SSMSE #####
 
 # walk through the scenario list and run_SSMSE
-walk(all_scenarios, ~exec(run_SSMSE, !!!.x))  # !!! makes the scenario list into arguments that can be used by a function
+#walk(all_scenarios, ~exec(run_SSMSE, !!!.x))  # !!! makes the scenario list into arguments that can be used by a function
 
-# Testing parallel code and GitHub Notifications
-# 
-# library(foreach)
-# library(doParallel)
-# 
-# # 1. Set up a standard socket cluster with 45 workers
-# # (Since SSMSE uses foreach internally, this cluster handles both layers)
-# cl <- makeCluster(45)
-# registerDoParallel(cl)
-# 
-# # 2. Run the 45 scenarios using %dopar%
-# results <- foreach(
-#   scenario = all_scenarios,
-#   .packages = c("SSMSE") # Ensures SSMSE is loaded on all 45 workers
-# ) %dopar% {
-# 
-#   # Inside each worker, run the scenario.
-#   # Note: If run_SSMSE has an 'ncores' or 'parallel' argument,
-#   # set it to 1 or FALSE here so the 45 workers don't try to split further.
-#   do.call(run_SSMSE, scenario)
-# 
-# }
-# 
-# # 3. Clean up the cluster when finished
-# stopCluster(cl)
-# registerDoSEQ()
+# Split runs across multiple clusters and cores to maximize cores.  
+
+library(foreach)
+library(doParallel)
+
+# 1. Set up a standard socket cluster with 45 workers
+# (Since SSMSE uses foreach internally, this cluster handles both layers)
+cl <- makeCluster(45)
+registerDoParallel(cl)
+
+# 2. Run the 45 scenarios using %dopar%
+results <- foreach(
+  scenario = all_scenarios,
+  .packages = c("SSMSE") # Ensures SSMSE is loaded on all 45 workers
+) %dopar% {
+
+  # Inside each worker, run the scenario.
+  # Note: If run_SSMSE has an 'ncores' or 'parallel' argument,
+  # set it to 1 or FALSE here so the 45 workers don't try to split further.
+  do.call(run_SSMSE, scenario)
+
+}
+
+# 3. Clean up the cluster when finished
+stopCluster(cl)
+registerDoSEQ()
 
 # make a summary with all the outputs in the same folder
-summary <- SSMSE::SSMSE_summary_all(bucket_path, overwrite = TRUE)
-saveRDS(summary, file = file.path(bucket_path, paste0("results_summary_", results_name, ".rda")))
+summary <- SSMSE::SSMSE_summary_all(file.path(mount_path, paste0("results_", results_name)), n_cores = 190, run_parallel = TRUE)
+saveRDS(summary, file = file.path(mount_path, paste0("results_summary_", results_name, ".rda")))
 
 # end timer
 end_time <- Sys.time()
