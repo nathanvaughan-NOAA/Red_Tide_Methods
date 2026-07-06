@@ -306,7 +306,7 @@ base_params <- list(
   nyrs_assess_vec = 3,
   future_om_list  = future_OM_list_recdevs,
   run_parallel    = TRUE,
-  n_cores         = 4,
+  n_cores         = 100,
   seed            = 12345,
   # Normalize these once here
   OM_in_dir_vec   = normalizePath(default),
@@ -523,6 +523,7 @@ all_yrs_scenarios_extra <- scenario_factorial(model_names = model_names, type_na
 rt_2_scenarios_extra <- scenario_factorial(model_names = model_names, type_name = "_rt_2", varied_mortality = TRUE, base_extras = extras_base) 
 
 # add no_rt to the 34 random models
+sample_struct_no_rt_x_all_yrs <- add_sample_struct_FixedCatches(sample_struct, om_on = TRUE, rt_year_om = NULL, rt_year_em = seq(from = 2018, to = 2017+projyrs, by = 1))
 
 make_no_rt_all_yrs_model <- function(EM_name = "flat", EM_type = "all_yrs"){
   no_rt_all_yrs_model <- modifyList(
@@ -530,7 +531,7 @@ make_no_rt_all_yrs_model <- function(EM_name = "flat", EM_type = "all_yrs"){
     list(
       scen_name_vec = paste0("no_rt_x_", EM_name,"_", EM_type),
       sample_struct_list = setNames(list(sample_struct_no_rt_x_all_yrs), paste0("no_rt_x_", EM_name,"_", EM_type)),
-      OM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, "no_rt")),
+      OM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, "none")),
       EM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, paste0(EM_name, "_adj")))))
 }
 
@@ -540,7 +541,7 @@ no_rt_x_young_all_yrs <- make_no_rt_all_yrs_model("young")
 no_rt_x_mid_all_yrs <- make_no_rt_all_yrs_model("mid")
 no_rt_x_old_all_yrs <- make_no_rt_all_yrs_model("old")
 
-sample_struct_no_rt_x_rt_17 <- add_sample_struct_FixedCatches(sample_struct, om_on = FALSE)
+sample_struct_no_rt_x_rt_17 <- add_sample_struct_FixedCatches(sample_struct, om_on = TRUE, rt_year_om = NULL)
 
 make_no_rt_17_model <- function(EM_name = "flat", EM_type = "rt_17"){
   no_rt_all_yrs_model <- modifyList(
@@ -548,7 +549,7 @@ make_no_rt_17_model <- function(EM_name = "flat", EM_type = "rt_17"){
     list(
       scen_name_vec = paste0("no_rt_x_", EM_name,"_", EM_type),
       sample_struct_list = setNames(list(sample_struct_no_rt_x_rt_17), paste0("no_rt_x_", EM_name,"_", EM_type)),
-      OM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, "no_rt")),
+      OM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, "none")),
       EM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, paste0(EM_name, "_adj"))), 
       extra = list(extras_base[-1])
     ))
