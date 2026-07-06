@@ -8,7 +8,7 @@ start_time <- Sys.time()
 #devtools::load_all("C:/Users/apn26/Documents/SSMSE")  # needs to be the cloned SSMSE repo
 
 library(tidyverse)
-#library(SSMSE)
+library(SSMSE)
 
 # Check versions
 packageVersion("r4ss")
@@ -530,7 +530,7 @@ make_no_rt_all_yrs_model <- function(EM_name = "flat", EM_type = "all_yrs"){
     list(
       scen_name_vec = paste0("no_rt_x_", EM_name,"_", EM_type),
       sample_struct_list = setNames(list(sample_struct_no_rt_x_all_yrs), paste0("no_rt_x_", EM_name,"_", EM_type)),
-      OM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, "flat")),
+      OM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, "no_rt")),
       EM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, paste0(EM_name, "_adj")))))
 }
 
@@ -548,7 +548,7 @@ make_no_rt_17_model <- function(EM_name = "flat", EM_type = "rt_17"){
     list(
       scen_name_vec = paste0("no_rt_x_", EM_name,"_", EM_type),
       sample_struct_list = setNames(list(sample_struct_no_rt_x_rt_17), paste0("no_rt_x_", EM_name,"_", EM_type)),
-      OM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, "flat")),
+      OM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, "no_rt")),
       EM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, paste0(EM_name, "_adj"))), 
       extra = list(extras_base[-1])
     ))
@@ -668,6 +668,17 @@ all_scenarios <- c(
   all_yrs_scenarios_extra
 )
 
+all_scenarios <- list(
+  no_rt_x_flat_all_yrs,
+  no_rt_x_young_all_yrs,
+  no_rt_x_mid_all_yrs,
+  no_rt_x_old_all_yrs,
+  no_rt_x_flat_rt_17,
+  no_rt_x_young_rt_17,
+  no_rt_x_mid_rt_17,
+  no_rt_x_old_rt_17
+)
+
 scen_list_str <- all_scenarios %>%
   map_chr(\(x) x$scen_name_vec) %>%
   str_flatten(collapse = ", ", last = ", and ")
@@ -675,37 +686,37 @@ scen_list_str <- all_scenarios %>%
 ##### RUN SSMSE #####
 
 # walk through the scenario list and run_SSMSE
-#walk(all_scenarios, ~exec(run_SSMSE, !!!.x))  # !!! makes the scenario list into arguments that can be used by a function
+walk(all_scenarios, ~exec(run_SSMSE, !!!.x))  # !!! makes the scenario list into arguments that can be used by a function
 
 # Split runs across multiple clusters and cores to maximize cores.  
 
-library(foreach)
-library(doParallel)
-
-# 1. Set up a standard socket cluster with 45 workers
-# (Since SSMSE uses foreach internally, this cluster handles both layers)
-cl <- makeCluster(45)
-registerDoParallel(cl)
-
-# 2. Run the 45 scenarios using %dopar%
-results <- foreach(
-  scenario = all_scenarios,
-  .packages = c("SSMSE") # Ensures SSMSE is loaded on all 45 workers
-) %dopar% {
-
-  # Inside each worker, run the scenario.
-  # Note: If run_SSMSE has an 'ncores' or 'parallel' argument,
-  # set it to 1 or FALSE here so the 45 workers don't try to split further.
-  do.call(run_SSMSE, scenario)
-
-}
-
-# 3. Clean up the cluster when finished
-stopCluster(cl)
-registerDoSEQ()
+# library(foreach)
+# library(doParallel)
+# 
+# # 1. Set up a standard socket cluster with 45 workers
+# # (Since SSMSE uses foreach internally, this cluster handles both layers)
+# cl <- makeCluster(45)
+# registerDoParallel(cl)
+# 
+# # 2. Run the 45 scenarios using %dopar%
+# results <- foreach(
+#   scenario = all_scenarios,
+#   .packages = c("SSMSE") # Ensures SSMSE is loaded on all 45 workers
+# ) %dopar% {
+# 
+#   # Inside each worker, run the scenario.
+#   # Note: If run_SSMSE has an 'ncores' or 'parallel' argument,
+#   # set it to 1 or FALSE here so the 45 workers don't try to split further.
+#   do.call(run_SSMSE, scenario)
+# 
+# }
+# 
+# # 3. Clean up the cluster when finished
+# stopCluster(cl)
+# registerDoSEQ()
 
 # make a summary with all the outputs in the same folder
-summary <- SSMSE::SSMSE_summary_all(file.path(mount_path, paste0("results_", results_name)), n_cores = 190, run_parallel = TRUE)
+summary <- SSMSE::SSMSE_summary_all(file.path(mount_path, paste0("results_", results_name)), n_cores = 120, run_parallel = TRUE)
 saveRDS(summary, file = file.path(mount_path, paste0("results_summary_", results_name, ".rda")))
 
 # end timer
