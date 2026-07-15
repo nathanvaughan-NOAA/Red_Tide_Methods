@@ -6,6 +6,7 @@ start_time <- Sys.time()
 # Load packages
 
 #devtools::load_all("C:/Users/apn26/Documents/SSMSE")  # needs to be the cloned SSMSE repo
+#debug(EnvirEM)
 
 library(tidyverse)
 library(SSMSE)
@@ -16,13 +17,13 @@ packageVersion("ss3sim")
 packageVersion("SSMSE")
 
 # Create a folder for the output in the working directory.
-results_name <- "red_tide_no_rt_fix"
+results_name <- "timing_old_method"
 run_SSMSE_dir <- file.path("./runs_output")
 run_res_path <- file.path(run_SSMSE_dir, paste0("results_", results_name))
 if (!dir.exists(run_res_path)) {
   dir.create(run_res_path, recursive = TRUE)
 }
-bucket_path <- normalizePath(paste0("gs://ecsai-red-tide-simulation-project/2026_07_01_red_tide_no_rt_fix/results_", results_name)) 
+bucket_path <- normalizePath(paste0("gs://ecsai-red-tide-simulation-project/2026_07_15_timing_old_method/results_", results_name)) 
 mount_path <- file.path("./bucket")
 
 # OM locations
@@ -32,7 +33,7 @@ default <- file.path(model_SSMSE_dir, "default_sigmaR")
 # number of simulation years
 projyrs <- 51
 rt_yrs <- 17
-my_niter <- 100
+my_niter <- 4
 
 # to get the names of parameter values
 ctl <- r4ss::SS_readctl(file.path(default, "red_grouper_1986_2017_RedTideFleet.ctl"), 
@@ -306,12 +307,11 @@ base_params <- list(
   nyrs_assess_vec = 3,
   future_om_list  = future_OM_list_recdevs,
   run_parallel    = TRUE,
-  n_cores         = 100,
+  n_cores         = 4,
   seed            = 12345,
   # Normalize these once here
   OM_in_dir_vec   = normalizePath(default),
-  EM_in_dir_vec   = normalizePath(default), 
-  cloud_bucket = bucket_path
+  EM_in_dir_vec   = normalizePath(default)
 )
 
 # use modifyList() to adjust the run_SSMSE parameters
@@ -541,8 +541,7 @@ no_rt_x_young_all_yrs <- make_no_rt_all_yrs_model("young")
 no_rt_x_mid_all_yrs <- make_no_rt_all_yrs_model("mid")
 no_rt_x_old_all_yrs <- make_no_rt_all_yrs_model("old")
 
-sample_struct_no_rt_x_rt_17 <- add_sample_struct_FixedCatches(sample_struct, om_on = TRUE, rt_year_om = NULL)
-
+sample_struct_no_rt_x_rt_17 <- add_sample_struct_FixedCatches(sample_struct, om_on = FALSE)
 make_no_rt_17_model <- function(EM_name = "flat", EM_type = "rt_17"){
   no_rt_all_yrs_model <- modifyList(
     base_params,
@@ -669,17 +668,6 @@ all_scenarios <- c(
   all_yrs_scenarios_extra
 )
 
-all_scenarios <- list(
-  no_rt_x_flat_all_yrs,
-  no_rt_x_young_all_yrs,
-  no_rt_x_mid_all_yrs,
-  no_rt_x_old_all_yrs,
-  no_rt_x_flat_rt_17,
-  no_rt_x_young_rt_17,
-  no_rt_x_mid_rt_17,
-  no_rt_x_old_rt_17
-)
-
 scen_list_str <- all_scenarios %>%
   map_chr(\(x) x$scen_name_vec) %>%
   str_flatten(collapse = ", ", last = ", and ")
@@ -687,38 +675,38 @@ scen_list_str <- all_scenarios %>%
 ##### RUN SSMSE #####
 
 # walk through the scenario list and run_SSMSE
-walk(all_scenarios, ~exec(run_SSMSE, !!!.x))  # !!! makes the scenario list into arguments that can be used by a function
+#walk(all_scenarios, ~exec(run_SSMSE, !!!.x))  # !!! makes the scenario list into arguments that can be used by a function
 
 # Split runs across multiple clusters and cores to maximize cores.  
 
-# library(foreach)
-# library(doParallel)
-# 
-# # 1. Set up a standard socket cluster with 45 workers
-# # (Since SSMSE uses foreach internally, this cluster handles both layers)
-# cl <- makeCluster(45)
-# registerDoParallel(cl)
-# 
-# # 2. Run the 45 scenarios using %dopar%
-# results <- foreach(
-#   scenario = all_scenarios,
-#   .packages = c("SSMSE") # Ensures SSMSE is loaded on all 45 workers
-# ) %dopar% {
-# 
-#   # Inside each worker, run the scenario.
-#   # Note: If run_SSMSE has an 'ncores' or 'parallel' argument,
-#   # set it to 1 or FALSE here so the 45 workers don't try to split further.
-#   do.call(run_SSMSE, scenario)
-# 
-# }
-# 
-# # 3. Clean up the cluster when finished
-# stopCluster(cl)
-# registerDoSEQ()
+library(foreach)
+library(doParallel)
+
+# 1. Set up a standard socket cluster with 45 workers
+# (Since SSMSE uses foreach internally, this cluster handles both layers)
+cl <- makeCluster(45)
+registerDoParallel(cl)
+
+# 2. Run the 45 scenarios using %dopar%
+results <- foreach(
+  scenario = all_scenarios,
+  .packages = c("SSMSE") # Ensures SSMSE is loaded on all 45 workers
+) %dopar% {
+
+  # Inside each worker, run the scenario.
+  # Note: If run_SSMSE has an 'ncores' or 'parallel' argument,
+  # set it to 1 or FALSE here so the 45 workers don't try to split further.
+  do.call(run_SSMSE, scenario)
+
+}
+
+# 3. Clean up the cluster when finished
+stopCluster(cl)
+registerDoSEQ()
 
 # make a summary with all the outputs in the same folder
-summary <- SSMSE::SSMSE_summary_all(file.path(mount_path, paste0("results_", results_name)), n_cores = 120, run_parallel = TRUE)
-saveRDS(summary, file = file.path(mount_path, paste0("results_summary_", results_name, ".rda")))
+summary <- SSMSE::SSMSE_summary_all(file.path(mount_path, paste0("results_test_", results_name)), n_cores = 120, run_parallel = TRUE)
+saveRDS(summary, file = file.path(mount_path, paste0("results_summary_test_", results_name, ".rda")))
 
 # end timer
 end_time <- Sys.time()

@@ -9,7 +9,7 @@
 # create the folder at /home/your_username/my_gcs_bucket.
 BUCKET_NAME="ecsai-red-tide-simulation-project"
 MOUNT_POINT="$HOME/Red_Tide_Methods/bucket"
-FOLDER_NAME="2026_07_01_red_tide_no_rt_fix/"
+FOLDER_NAME="2026_07_15_timing_old_method/"
 
 # --- Authentication ---
 # This command authenticates your user account with Google Cloud.
@@ -49,3 +49,5 @@ echo "Mounting complete. You can now access the bucket contents at $MOUNT_POINT"
 
 # Optional: List the contents to verify the mount was successful.
 ls -l "$MOUNT_POINT"
+
+gcloud auth login --no-launch-browser
