@@ -17,13 +17,13 @@ packageVersion("ss3sim")
 packageVersion("SSMSE")
 
 # Create a folder for the output in the working directory.
-results_name <- "timing_old_method"
+results_name <- "timing_new_method"
 run_SSMSE_dir <- file.path("./runs_output")
 run_res_path <- file.path(run_SSMSE_dir, paste0("results_", results_name))
 if (!dir.exists(run_res_path)) {
   dir.create(run_res_path, recursive = TRUE)
 }
-bucket_path <- normalizePath(paste0("gs://ecsai-red-tide-simulation-project/2026_07_15_timing_old_method/results_", results_name)) 
+bucket_path <- normalizePath(paste0("gs://ecsai-red-tide-simulation-project/2026_07_16_timing_new_method/results_", results_name)) 
 mount_path <- file.path("./bucket")
 
 # OM locations
@@ -706,8 +706,8 @@ stopCluster(cl)
 registerDoSEQ()
 
 # make a summary with all the outputs in the same folder
-summary <- SSMSE::SSMSE_summary_all(file.path(mount_path, paste0("results_test_", results_name)), n_cores = 120, run_parallel = TRUE)
-saveRDS(summary, file = file.path(mount_path, paste0("results_summary_test_", results_name, ".rda")))
+summary <- SSMSE::SSMSE_summary_all(file.path(mount_path, paste0("results_", results_name)), n_cores = 120, run_parallel = TRUE)
+saveRDS(summary, file = file.path(mount_path, paste0("results_summary_", results_name, ".rda")))
 
 # end timer
 end_time <- Sys.time()
