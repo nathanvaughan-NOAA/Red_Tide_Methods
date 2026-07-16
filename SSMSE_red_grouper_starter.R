@@ -311,7 +311,8 @@ base_params <- list(
   seed            = 12345,
   # Normalize these once here
   OM_in_dir_vec   = normalizePath(default),
-  EM_in_dir_vec   = normalizePath(default)
+  EM_in_dir_vec   = normalizePath(default), 
+  cloud_bucket = bucket_path
 )
 
 # use modifyList() to adjust the run_SSMSE parameters
