@@ -542,7 +542,7 @@ no_rt_x_young_all_yrs <- make_no_rt_all_yrs_model("young")
 no_rt_x_mid_all_yrs <- make_no_rt_all_yrs_model("mid")
 no_rt_x_old_all_yrs <- make_no_rt_all_yrs_model("old")
 
-sample_struct_no_rt_x_rt_17 <- add_sample_struct_FixedCatches(sample_struct, om_on = FALSE)
+sample_struct_no_rt_x_rt_17 <- add_sample_struct_FixedCatches(sample_struct, om_on = TRUE, rt_year_om = NULL)
 make_no_rt_17_model <- function(EM_name = "flat", EM_type = "rt_17"){
   no_rt_all_yrs_model <- modifyList(
     base_params,
