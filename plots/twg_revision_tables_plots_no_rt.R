@@ -13,14 +13,14 @@ library(kableExtra)
 #location of the inputs
 model_SSMSE_dir <- file.path("base_models")
 run_SSMSE_dir <- file.path("runs_output")
-plot_folder <- "merged_no_rt_plots"
+plot_folder <- "red_tide_no_rt_fix_final"
 
 #name of the results files and input settings
-results_name <- "_merged_no_rt"
+results_name <- "_red_tide_no_rt_fix"
 n_iterations <- 100
 min_year <- 2018
-max_year <- 2065
-model_run_selection <- 2065
+max_year <- 2068
+model_run_selection <- 2068
 max_year_short_term <- min_year+4
 save <- TRUE
 
@@ -41,38 +41,38 @@ scen_list <- c(
   "young_x_no_rt",
   "mid_x_no_rt",
   "old_x_no_rt",
-  "flat_x_flat_rt_34",
-  "young_x_young_rt_34",
-  "old_x_old_rt_34",
-  "mid_x_mid_rt_34",
-  "flat_x_young_rt_34",
-  "flat_x_old_rt_34",
-  "flat_x_mid_rt_34",
-  "young_x_flat_rt_34",
-  "young_x_old_rt_34",
-  "young_x_mid_rt_34",
-  "old_x_flat_rt_34",
-  "old_x_young_rt_34",
-  "old_x_mid_rt_34",
-  "mid_x_flat_rt_34",
-  "mid_x_young_rt_34",
-  "mid_x_old_rt_34",
-  "flat_x_flat_34_all_yrs",
-  "young_x_young_34_all_yrs",
-  "old_x_old_34_all_yrs",
-  "mid_x_mid_34_all_yrs",
-  "flat_x_young_34_all_yrs",
-  "flat_x_old_34_all_yrs",
-  "flat_x_mid_34_all_yrs",
-  "young_x_flat_34_all_yrs",
-  "young_x_old_34_all_yrs",
-  "young_x_mid_34_all_yrs",
-  "old_x_flat_34_all_yrs",
-  "old_x_young_34_all_yrs",
-  "old_x_mid_34_all_yrs",
-  "mid_x_flat_34_all_yrs",
-  "mid_x_young_34_all_yrs",
-  "mid_x_old_34_all_yrs"
+  "flat_x_flat_rt_2",
+  "young_x_young_rt_2",
+  "old_x_old_rt_2",
+  "mid_x_mid_rt_2",
+  "flat_x_young_rt_2",
+  "flat_x_old_rt_2",
+  "flat_x_mid_rt_2",
+  "young_x_flat_rt_2",
+  "young_x_old_rt_2",
+  "young_x_mid_rt_2",
+  "old_x_flat_rt_2",
+  "old_x_young_rt_2",
+  "old_x_mid_rt_2",
+  "mid_x_flat_rt_2",
+  "mid_x_young_rt_2",
+  "mid_x_old_rt_2",
+  "flat_x_flat_all_yrs",
+  "young_x_young_all_yrs",
+  "old_x_old_all_yrs",
+  "mid_x_mid_all_yrs",
+  "flat_x_young_all_yrs",
+  "flat_x_old_all_yrs",
+  "flat_x_mid_all_yrs",
+  "young_x_flat_all_yrs",
+  "young_x_old_all_yrs",
+  "young_x_mid_all_yrs",
+  "old_x_flat_all_yrs",
+  "old_x_young_all_yrs",
+  "old_x_mid_all_yrs",
+  "mid_x_flat_all_yrs",
+  "mid_x_young_all_yrs",
+  "mid_x_old_all_yrs"
 )
 
 
@@ -95,30 +95,22 @@ summary$ts <- summary$ts %>%
     str_detect(model_run, "_EM") ~ years_until_terminal > 2,
     TRUE ~ TRUE # Keep all other rows if no _EM
   )) %>%
-  mutate(
-    scenario = factor(scenario, scen_list)
-  ) %>%
   filter(!is.na(scenario)) %>%
   separate_wider_regex(
     cols = scenario,
     patterns = c(
-      om_name = "^[^_]+(?:_[^_]+)*", 
-      "_x_",                          
-      em_name = "[a-z]+(?:_[a-z]+)*", 
-      exp_type = ".*"                 
+      om_name  = "^(?:old|mid|young|flat|no_rt)", # Added ?: here
+      "_x_", 
+      em_name  = "(?:old|mid|young|flat|no_rt)",  # Added ?: here
+      exp_type = ".*"
     ),
     too_few = "align_start",
     cols_remove = FALSE
   ) %>%
+  # --- CLEANUP EXP_TYPE ---
   mutate(
-    # Clean up leading underscores in exp_type
     exp_type = str_remove(exp_type, "^_"),
-    
-    # Add "rt_" back to exp_type ONLY if it is purely a number
-    exp_type = if_else(str_detect(exp_type, "^\\d+$"), str_c("rt_", exp_type), exp_type),
-    
-    # Strip "_rt" only if it follows flat, young, old, or mid
-    across(c(om_name, em_name), ~ str_replace_all(.x, "(flat|young|old|mid)_rt", "\\1")) 
+    exp_type = if_else(str_detect(exp_type, "^\\d+$"), str_c("rt_", exp_type), exp_type)
   ) %>%
   mutate(Commercial = deadB_1 + deadB_2, Recreational = deadB_4)
 
@@ -137,24 +129,19 @@ summary$dq <- summary$dq %>%
   separate_wider_regex(
     cols = scenario,
     patterns = c(
-      om_name = "^[^_]+(?:_[^_]+)*", 
-      "_x_",                          
-      em_name = "[a-z]+(?:_[a-z]+)*", 
-      exp_type = ".*"                 
+      om_name  = "^(?:old|mid|young|flat|no_rt)", # Added ?: here
+      "_x_", 
+      em_name  = "(?:old|mid|young|flat|no_rt)",  # Added ?: here
+      exp_type = ".*"
     ),
     too_few = "align_start",
     cols_remove = FALSE
   ) %>%
+  # --- CLEANUP EXP_TYPE ---
   mutate(
-    # Clean up leading underscores in exp_type
     exp_type = str_remove(exp_type, "^_"),
-    
-    # Add "rt_" back to exp_type ONLY if it is purely a number
-    exp_type = if_else(str_detect(exp_type, "^\\d+$"), str_c("rt_", exp_type), exp_type),
-    
-    # Strip "_rt" only if it follows flat, young, old, or mid
-    across(c(om_name, em_name), ~ str_replace_all(.x, "(flat|young|old|mid)_rt", "\\1"))
-  ) 
+    exp_type = if_else(str_detect(exp_type, "^\\d+$"), str_c("rt_", exp_type), exp_type)
+  )
   
 
 summary$scalar <- summary$scalar %>%
@@ -163,70 +150,65 @@ summary$scalar <- summary$scalar %>%
   separate_wider_regex(
     cols = scenario,
     patterns = c(
-      om_name = "^[^_]+(?:_[^_]+)*", 
-      "_x_",                          
-      em_name = "[a-z]+(?:_[a-z]+)*", 
-      exp_type = ".*"                 
+      om_name  = "^(?:old|mid|young|flat|no_rt)", # Added ?: here
+      "_x_", 
+      em_name  = "(?:old|mid|young|flat|no_rt)",  # Added ?: here
+      exp_type = ".*"
     ),
     too_few = "align_start",
     cols_remove = FALSE
   ) %>%
+  # --- CLEANUP EXP_TYPE ---
   mutate(
-    # Clean up leading underscores in exp_type
     exp_type = str_remove(exp_type, "^_"),
-    
-    # Add "rt_" back to exp_type ONLY if it is purely a number
-    exp_type = if_else(str_detect(exp_type, "^\\d+$"), str_c("rt_", exp_type), exp_type),
-    
-    # Strip "_rt" only if it follows flat, young, old, or mid
-    across(c(om_name, em_name), ~ str_replace_all(.x, "(flat|young|old|mid)_rt", "\\1"))
-  )
+    exp_type = if_else(str_detect(exp_type, "^\\d+$"), str_c("rt_", exp_type), exp_type)
+  ) 
 
 # Sets of scenarios for filtering
 
 core_4 <- c("no_rt_x_no_rt",
             "no_rt_x_flat_rt_17",
             "flat_x_no_rt",
-            "flat_x_flat_rt_34")
+            "flat_x_flat_rt_2")
 
-all_years <- c("no_rt_x_flat_all_yrs", "flat_x_flat_34_all_yrs")
+all_years <- c("no_rt_x_flat_all_yrs", "flat_x_flat_all_yrs")
 
-selectivity_rt_34 <- c(
-  "flat_x_flat_rt_34",
-  "young_x_young_rt_34",
-  "old_x_old_rt_34",
-  "mid_x_mid_rt_34",
-  "flat_x_young_rt_34",
-  "flat_x_old_rt_34",
-  "flat_x_mid_rt_34",
-  "young_x_flat_rt_34",
-  "young_x_old_rt_34",
-  "young_x_mid_rt_34",
-  "old_x_flat_rt_34",
-  "old_x_young_rt_34",
-  "old_x_mid_rt_34",
-  "mid_x_flat_rt_34",
-  "mid_x_young_rt_34",
-  "mid_x_old_rt_34"
+selectivity_rt_2 <- c(
+  "flat_x_flat_rt_2",
+  "young_x_young_rt_2",
+  "old_x_old_rt_2",
+  "mid_x_mid_rt_2",
+  "flat_x_young_rt_2",
+  "flat_x_old_rt_2",
+  "flat_x_mid_rt_2",
+  "young_x_flat_rt_2",
+  "young_x_old_rt_2",
+  "young_x_mid_rt_2",
+  "old_x_flat_rt_2",
+  "old_x_young_rt_2",
+  "old_x_mid_rt_2",
+  "mid_x_flat_rt_2",
+  "mid_x_young_rt_2",
+  "mid_x_old_rt_2"
 )
 
 selectivity_all_yrs <- c(
-  "flat_x_flat_34_all_yrs",
-  "young_x_young_34_all_yrs",
-  "old_x_old_34_all_yrs",
-  "mid_x_mid_34_all_yrs",
-  "flat_x_young_34_all_yrs",
-  "flat_x_old_34_all_yrs",
-  "flat_x_mid_34_all_yrs",
-  "young_x_flat_34_all_yrs",
-  "young_x_old_34_all_yrs",
-  "young_x_mid_34_all_yrs",
-  "old_x_flat_34_all_yrs",
-  "old_x_young_34_all_yrs",
-  "old_x_mid_34_all_yrs",
-  "mid_x_flat_34_all_yrs",
-  "mid_x_young_34_all_yrs",
-  "mid_x_old_34_all_yrs"
+  "flat_x_flat_all_yrs",
+  "young_x_young_all_yrs",
+  "old_x_old_all_yrs",
+  "mid_x_mid_all_yrs",
+  "flat_x_young_all_yrs",
+  "flat_x_old_all_yrs",
+  "flat_x_mid_all_yrs",
+  "young_x_flat_all_yrs",
+  "young_x_old_all_yrs",
+  "young_x_mid_all_yrs",
+  "old_x_flat_all_yrs",
+  "old_x_young_all_yrs",
+  "old_x_mid_all_yrs",
+  "mid_x_flat_all_yrs",
+  "mid_x_young_all_yrs",
+  "mid_x_old_all_yrs"
 )
 
 OM_runs <- summary$ts %>%
@@ -317,6 +299,36 @@ plot_variable_ts <- function(data = combined_lines, variable = "deadB_5", stat_t
     coord_cartesian(xlim = years)
 }
 
+
+combined_lines %>%
+  filter(scenario %in% c("flat_x_no_rt", "mid_x_no_rt", "young_x_no_rt", "old_x_no_rt")) %>%
+  plot_variable_ts(data = ., variable = "F_5", stat_type = "mean") +
+  ggtitle("Average red tide mortality over time - Core") +
+  theme_bw() +
+  xlab("Year") + ylab("Average Red Tide Mortality")
+
+combined_lines %>%
+  filter(scenario %in% c(  "no_rt_x_no_rt",
+                           "no_rt_x_flat_all_yrs",
+                           "no_rt_x_young_all_yrs",
+                           "no_rt_x_mid_all_yrs",
+                           "no_rt_x_old_all_yrs",
+                           "no_rt_x_flat_rt_17",
+                           "no_rt_x_young_rt_17",
+                           "no_rt_x_mid_rt_17",
+                           "no_rt_x_old_rt_17",
+                           "flat_x_no_rt",
+                           "young_x_no_rt",
+                           "mid_x_no_rt",
+                           "old_x_no_rt")) %>%
+  plot_variable_ts(data = ., variable = "F_5", stat_type = "mean") +
+  ggtitle("Average red tide mortality over time - Core") +
+  theme_bw() +
+  xlab("Year") + ylab("Average Red Tide Mortality")
+
+
+unique(summary$ts$scenario)
+
 # #### Core 4
 
 combined_lines %>%
@@ -347,10 +359,10 @@ if(save == TRUE){
 
 #### Selectivity
 
-just_matching_selectivity_rt_2 <- c("flat_x_flat_rt_34",
-                                    "young_x_young_rt_34",
-                                    "old_x_old_rt_34",
-                                    "mid_x_mid_rt_34")
+just_matching_selectivity_rt_2 <- c("flat_x_flat_rt_2",
+                                    "young_x_young_rt_2",
+                                    "old_x_old_rt_2",
+                                    "mid_x_mid_rt_2")
 
 combined_lines %>% 
   filter(scenario %in% just_matching_selectivity_rt_2) %>%
@@ -364,13 +376,13 @@ if(save == TRUE){
          width = 8, height = 6, units = "in", device = "png")
 }
 
-just_matching_selectivity_rt_34 <- c("flat_x_flat_34_all_yrs",
-                                    "young_x_young_34_all_yrs",
-                                    "old_x_old_34_all_yrs",
-                                    "mid_x_mid_34_all_yrs")
+just_matching_selectivity_rt_2 <- c("flat_x_flat_all_yrs",
+                                    "young_x_young_all_yrs",
+                                    "old_x_old_all_yrs",
+                                    "mid_x_mid_all_yrs")
 
 combined_lines %>% 
-  filter(scenario %in% just_matching_selectivity_rt_34) %>%
+  filter(scenario %in% just_matching_selectivity_rt_2) %>%
   plot_variable_ts(data = ., variable = "F_5", stat_type = "mean") + 
   ggtitle("Average red tide mortality over time - All Years") +
   theme_bw() + 
@@ -429,6 +441,15 @@ create_residual_kable <- function(min_year, max_year, scenario_list, em_run_year
 
 #### Core 4
 
+kable_all <- create_residual_kable(min_year, max_year_short_term, scen_list, max_year)
+kable_all
+
+if(save == TRUE){
+  save_kable(kable_all, file = file.path(run_SSMSE_dir, plot_folder,"all_kable.html"))
+}
+
+#### Core 4
+
 kable_core <- create_residual_kable(min_year, max_year_short_term, core_4, max_year)
 kable_core
 
@@ -445,13 +466,13 @@ if(save == TRUE){
   save_kable(kable_all_yrs, file = file.path(run_SSMSE_dir,plot_folder,"all_years_kable.html"))
 }
 
-#### Selectivity rt_34
+#### Selectivity rt_2
 
-kable_sel_rt_34 <- create_residual_kable(min_year, max_year_short_term, selectivity_rt_34, max_year)
-kable_sel_rt_34
+kable_sel_rt_2 <- create_residual_kable(min_year, max_year_short_term, selectivity_rt_2, max_year)
+kable_sel_rt_2
 
 if(save == TRUE){
-  save_kable(kable_sel_rt_34, file = file.path(run_SSMSE_dir,plot_folder,"sel_rt_34_kable.html"))
+  save_kable(kable_sel_rt_2, file = file.path(run_SSMSE_dir,plot_folder,"sel_rt_2_kable.html"))
 }
 
 #### Selectivity all_yrs
@@ -485,11 +506,11 @@ if(save == TRUE){
 
 #### Selectivity rt_2
 
-kable_sel_rt_2 <- create_residual_kable(min_year, max_year, selectivity_rt_34, max_year)
+kable_sel_rt_2 <- create_residual_kable(min_year, max_year, selectivity_rt_2, max_year)
 kable_sel_rt_2
 
 if(save == TRUE){
-  save_kable(kable_sel_rt_2, file = file.path(run_SSMSE_dir,plot_folder,"sel_rt_34_longterm_kable.html"))
+  save_kable(kable_sel_rt_2, file = file.path(run_SSMSE_dir,plot_folder,"sel_rt_2_longterm_kable.html"))
 }
 
 #### Selectivity all_yrs
@@ -536,42 +557,44 @@ plot_median_ts_om <- function (summary_data = summary$ts, scenario_list, min_yr 
 }
 
 ##### Recreational #####
-# generic rt_34 and all years
-plot_median_ts_om(min_yr = 2017, max_yr = 2060, scenario_list = selectivity_rt_34, experiment_type = "Correct Years")
+# generic rt_2 and all years
+plot_median_ts_om(min_yr = 2017, max_yr = 2060, scenario_list = selectivity_rt_2, experiment_type = "Correct Years")
 plot_median_ts_om(min_yr = 2017, max_yr = 2060, scenario_list = selectivity_all_yrs, experiment_type = "All Years")
 
 # add no years line
-plot_median_ts_om(min_yr = 2017, max_yr = 2060, scenario_list = c(selectivity_rt_34, "no_rt_x_flat_rt_17", "no_rt_x_old_rt_17", "no_rt_x_young_rt_17", "no_rt_x_mid_rt_17", "no_rt_x_no_rt"), experiment_type = "Correct Years")
-plot_median_ts_om(min_yr = 2017, max_yr = 2060, scenario_list = c(selectivity_rt_34, "flat_x_no_rt", "young_x_no_rt", "mid_x_no_rt", "old_x_no_rt"), experiment_type = "Correct Years")
+plot_median_ts_om(min_yr = 2017, max_yr = 2060, col_name = "SPRratio", scenario_list = c(selectivity_rt_2, "no_rt_x_flat_rt_17", "no_rt_x_old_rt_17", "no_rt_x_young_rt_17", "no_rt_x_mid_rt_17","flat_x_no_rt", "young_x_no_rt", "mid_x_no_rt", "old_x_no_rt", "no_rt_x_no_rt"), experiment_type = "Correct Years")
+plot_median_ts_om(min_yr = 2017, max_yr = 2060, scenario_list = c(selectivity_rt_2, "flat_x_no_rt", "young_x_no_rt", "mid_x_no_rt", "old_x_no_rt"), experiment_type = "Correct Years")
+
+plot_median_ts_om(summary$dq, min_yr = 2017, max_yr = 2060, col_name = "Value.Bratio", scenario_list = c(selectivity_all_yrs, "no_rt_x_flat_all_yrs", "no_rt_x_old_all_yrs", "no_rt_x_young_all_yrs", "no_rt_x_mid_all_yrs","flat_x_no_rt", "young_x_no_rt", "mid_x_no_rt", "old_x_no_rt", "no_rt_x_no_rt"), experiment_type = "All Years")
 
 
 ##### Commercial #####
-# generic rt_34 and all years
-plot_median_ts_om(min_yr = 2017, max_yr = 2060, col_name = "Commercial", scenario_list = selectivity_rt_34, experiment_type = "Correct Years")
+# generic rt_2 and all years
+plot_median_ts_om(min_yr = 2017, max_yr = 2060, col_name = "Commercial", scenario_list = selectivity_rt_2, experiment_type = "Correct Years")
 plot_median_ts_om(min_yr = 2017, max_yr = 2060, col_name = "Commercial", scenario_list = selectivity_all_yrs, experiment_type = "All Years")
 
 # add no years line
-plot_median_ts_om(min_yr = 2017, max_yr = 2060, col_name = "Commercial", scenario_list = c(selectivity_rt_34, "no_rt_x_flat_rt_17", "no_rt_x_old_rt_17", "no_rt_x_young_rt_17", "no_rt_x_mid_rt_17", "no_rt_x_no_rt"), experiment_type = "Correct Years")
-plot_median_ts_om(min_yr = 2017, max_yr = 2060, col_name = "Commercial", scenario_list = c(selectivity_rt_34, "flat_x_no_rt", "young_x_no_rt", "mid_x_no_rt", "old_x_no_rt"), experiment_type = "Correct Years")
+plot_median_ts_om(min_yr = 2017, max_yr = 2060, col_name = "Commercial", scenario_list = c(selectivity_rt_2, "no_rt_x_flat_rt_17", "no_rt_x_old_rt_17", "no_rt_x_young_rt_17", "no_rt_x_mid_rt_17", "no_rt_x_no_rt"), experiment_type = "Correct Years")
+plot_median_ts_om(min_yr = 2017, max_yr = 2060, col_name = "Commercial", scenario_list = c(selectivity_rt_2, "flat_x_no_rt", "young_x_no_rt", "mid_x_no_rt", "old_x_no_rt"), experiment_type = "Correct Years")
 
 
 ##### Recruitment #####
-# generic rt_34 and all years
-plot_median_ts_om(min_yr = 2017, max_yr = 2060, col_name = "Recruit_0", scenario_list = selectivity_rt_34, experiment_type = "Correct Years")
+# generic rt_2 and all years
+plot_median_ts_om(min_yr = 2017, max_yr = 2060, col_name = "Recruit_0", scenario_list = selectivity_rt_2, experiment_type = "Correct Years")
 plot_median_ts_om(min_yr = 2017, max_yr = 2060, col_name = "Recruit_0", scenario_list = selectivity_all_yrs, experiment_type = "All Years")
 
 # add no years line
-plot_median_ts_om(min_yr = 2017, max_yr = 2060, col_name = "Recruit_0", scenario_list = c(selectivity_rt_34, "no_rt_x_flat_rt_17", "no_rt_x_old_rt_17", "no_rt_x_young_rt_17", "no_rt_x_mid_rt_17", "no_rt_x_no_rt"), experiment_type = "Correct Years")
-plot_median_ts_om(min_yr = 2017, max_yr = 2060, col_name = "Recruit_0", scenario_list = c(selectivity_rt_34, "flat_x_no_rt", "young_x_no_rt", "mid_x_no_rt", "old_x_no_rt"), experiment_type = "Correct Years")
+plot_median_ts_om(min_yr = 2017, max_yr = 2060, col_name = "Recruit_0", scenario_list = c(selectivity_rt_2, "no_rt_x_flat_rt_17", "no_rt_x_old_rt_17", "no_rt_x_young_rt_17", "no_rt_x_mid_rt_17", "no_rt_x_no_rt"), experiment_type = "Correct Years")
+plot_median_ts_om(min_yr = 2017, max_yr = 2060, col_name = "Recruit_0", scenario_list = c(selectivity_rt_2, "flat_x_no_rt", "young_x_no_rt", "mid_x_no_rt", "old_x_no_rt"), experiment_type = "Correct Years")
 
 ##### SSB #####
-# generic rt_34 and all years
-plot_median_ts_om(min_yr = 2017, max_yr = 2060, col_name = "SpawnBio", scenario_list = selectivity_rt_34, experiment_type = "Correct Years")
+# generic rt_2 and all years
+plot_median_ts_om(min_yr = 2017, max_yr = 2060, col_name = "SpawnBio", scenario_list = selectivity_rt_2, experiment_type = "Correct Years")
 plot_median_ts_om(min_yr = 2017, max_yr = 2060, col_name = "SpawnBio", scenario_list = selectivity_all_yrs, experiment_type = "All Years")
 
 # add no years line
-plot_median_ts_om(min_yr = 2017, max_yr = 2060, col_name = "SpawnBio", scenario_list = c(selectivity_rt_34, "no_rt_x_flat_rt_17", "no_rt_x_old_rt_17", "no_rt_x_young_rt_17", "no_rt_x_mid_rt_17", "no_rt_x_no_rt"), experiment_type = "Correct Years")
-plot_median_ts_om(min_yr = 2017, max_yr = 2060, col_name = "SpawnBio", scenario_list = c(selectivity_rt_34, "flat_x_no_rt", "young_x_no_rt", "mid_x_no_rt", "old_x_no_rt"), experiment_type = "Correct Years")
+plot_median_ts_om(min_yr = 2017, max_yr = 2060, col_name = "SpawnBio", scenario_list = c(selectivity_rt_2, "no_rt_x_flat_rt_17", "no_rt_x_old_rt_17", "no_rt_x_young_rt_17", "no_rt_x_mid_rt_17", "no_rt_x_no_rt"), experiment_type = "Correct Years")
+plot_median_ts_om(min_yr = 2017, max_yr = 2060, col_name = "SpawnBio", scenario_list = c(selectivity_rt_2, "flat_x_no_rt", "young_x_no_rt", "mid_x_no_rt", "old_x_no_rt"), experiment_type = "Correct Years")
 
 plot_median_ts_om(min_yr = 2017, max_yr = 2060, col_name = "SpawnBio", scenario_list = core_4, experiment_type = "Presense or Absense of Red Tide")
 
@@ -616,7 +639,7 @@ plot_median_ts_om_lines <- function (summary_data = summary$ts, scenario_list, m
     geom_ribbon(data = plot_summary_data, 
                 aes(x = year, ymin = low, ymax = high, fill = em_name), alpha = 0.2) +
     geom_line(data = plot_summary_data, 
-              aes(x = year, y = med_val, color = em_name), linewidth = 1) + # Slightly thicker to pop out
+              aes(x = year, y = med_val, color = em_name), linewidth = .8) + # Slightly thicker to pop out
     
     # --- Formatting layers ---
     ggtitle(paste0("Achieved ", col_name, " over time - ", experiment_type)) + 
@@ -626,6 +649,174 @@ plot_median_ts_om_lines <- function (summary_data = summary$ts, scenario_list, m
     xlab("Year")
 }
 
-plot_median_ts_om_lines(min_yr = 2017, max_yr = 2060, col_name = "SpawnBio", scenario_list = core_4, experiment_type = "Presense or Absense of Red Tide")
+# generic rt_2 and all years
+plot_median_ts_om_lines(min_yr = 2017, max_yr = 2060, scenario_list = selectivity_rt_2, experiment_type = "Correct Years")
+plot_median_ts_om_lines(min_yr = 2017, max_yr = 2060, scenario_list = selectivity_all_yrs, experiment_type = "All Years")
 
-plot_median_ts_om_lines(min_yr = 2017, max_yr = 2060, col_name = "SpawnBio", scenario_list = selectivity_rt_34, experiment_type = "Correct Years")
+# generic rt_2 and all years
+plot_median_ts_om_lines(min_yr = 2017, max_yr = 2060, scenario_list = all_years, experiment_type = "Correct Years")
+plot_median_ts_om_lines(min_yr = 2017, max_yr = 2060, scenario_list = selectivity_all_yrs, experiment_type = "All Years")
+
+# Spawn Bio
+plot_median_ts_om_lines(min_yr = 2017, max_yr = 2060, col_name = "SpawnBio", scenario_list = core_4, experiment_type = "Presense or Absense of Red Tide")
+plot_median_ts_om_lines(min_yr = 2017, max_yr = 2060, col_name = "SpawnBio", scenario_list = selectivity_rt_2, experiment_type = "Correct Years")
+
+# Bratio
+plot_median_ts_om_lines(summary$dq, min_yr = 2017, max_yr = 2060, col_name = "Value.Bratio", scenario_list = core_4, experiment_type = "Presense or Absense of Red Tide")
+plot_median_ts_om_lines(summary$dq, min_yr = 2017, max_yr = 2060, col_name = "Value.Bratio", scenario_list = selectivity_rt_2, experiment_type = "Correct Years")
+
+plot_median_ts_om_lines(summary$dq, min_yr = 2017, max_yr = 2060, col_name = "Value.Bratio", scenario_list = c(selectivity_all_yrs, "no_rt_x_flat_all_yrs", "no_rt_x_old_all_yrs", "no_rt_x_young_all_yrs", "no_rt_x_mid_all_yrs", "no_rt_x_no_rt", "flat_x_no_rt", "young_x_no_rt", "mid_x_no_rt", "old_x_no_rt"), experiment_type = "All Years")
+plot_median_ts_om_lines(summary$dq, min_yr = 2017, max_yr = 2060, col_name = "Value.Bratio", scenario_list = c(selectivity_rt_2, "no_rt_x_flat_rt_17", "no_rt_x_old_rt_17", "no_rt_x_young_rt_17", "no_rt_x_mid_rt_17", "no_rt_x_no_rt", "flat_x_no_rt", "young_x_no_rt", "mid_x_no_rt", "old_x_no_rt"), experiment_type = "Correct Years")
+
+### Add more Lines 
+plot_median_ts_lines <- function (summary_data = summary$ts, scenario_list, target_em, min_yr = min_year, max_yr = max_year, col_name = "Recreational", experiment_type) {
+  
+  # 1. First, get the filtered, raw iteration-level data
+  raw_filtered_data <- summary_data %>%
+    filter(
+      scenario %in% c(scenario_list),
+      str_detect(model_run, target_em),
+      year >= min_yr,
+      year <= max_yr
+    )
+  
+  # 2. Then, calculate your summary statistics from that filtered data
+  plot_summary_data <- raw_filtered_data %>%
+    group_by(om_name, em_name, year) %>%
+    reframe(
+      med_val = mean(.data[[col_name]], na.rm = TRUE),
+      low  = Hmisc::smedian.hilow(.data[[col_name]], conf.int = 0.95)[2],
+      high = Hmisc::smedian.hilow(.data[[col_name]], conf.int = 0.95)[3],
+      .groups = "drop" 
+    )
+  
+  new_labels <- c("young" = "True: Young Selectivity", 
+                  "mid" = "True: Middle Selectivity",
+                  "old" = "True: Old Selectivity", 
+                  "flat" = "True: Flat Selectivity", 
+                  "no_rt" = "True: No Red Tide")
+  
+  # 3. Plotting
+  ggplot() +
+    # --- NEW: Individual iteration lines ---
+    # We use the raw data here. 
+    geom_line(data = filter(raw_filtered_data, iteration %in% c(1:5)), 
+              aes(x = year, y = .data[[col_name]], color = em_name, group = interaction(iteration, om_name, em_name)), 
+              alpha = 0.2) + # Low alpha to keep it in the background
+    
+    # --- Your original summary layers (using the summary dataset) ---
+    geom_ribbon(data = plot_summary_data, 
+                aes(x = year, ymin = low, ymax = high, fill = em_name), alpha = 0.2) +
+    geom_line(data = plot_summary_data, 
+              aes(x = year, y = med_val, color = em_name), linewidth = 1) + # Slightly thicker to pop out
+    # --- Formatting layers ---
+    ggtitle(paste0("Estimated ", col_name, " over time - ", experiment_type)) + 
+    ylab(paste0(col_name, " (MT)")) + 
+    facet_wrap(~om_name, labeller = labeller(om_name = new_labels)) + 
+    labs(color = "Assumed Selectivity", fill = "Assumed Selectivity") + 
+    xlab("Year")
+}
+
+plot_median_ts_lines(summary$dq, min_yr = 2017, max_yr = 2060, col_name = "Value.Bratio", scenario_list = c(selectivity_rt_2, "flat_x_no_rt", "young_x_no_rt", "mid_x_no_rt", "old_x_no_rt"), target_em = "_2065", experiment_type = "Correct Years")
+plot_median_ts_lines(summary$dq, min_yr = 2017, max_yr = 2060, col_name = "Value.Bratio", scenario_list = core_4, target_em = "_2065", experiment_type = "Presense or Absense of Red Tide")
+plot_median_ts_lines(summary$dq, min_yr = 2017, max_yr = 2060, col_name = "Value.Bratio", target_em = "_2068", scenario_list = c(selectivity_rt_2, "no_rt_x_flat_rt_17", "no_rt_x_old_rt_17", "no_rt_x_young_rt_17", "no_rt_x_mid_rt_17", "no_rt_x_no_rt","flat_x_no_rt", "young_x_no_rt", "mid_x_no_rt", "old_x_no_rt"), experiment_type = "Correct Years")
+
+plot_median_ts_om_lines(summary$dq, min_yr = 2017, max_yr = 2060, col_name = "Value.Bratio", scenario_list = c(selectivity_rt_2, "no_rt_x_flat_rt_17", "no_rt_x_old_rt_17", "no_rt_x_young_rt_17", "no_rt_x_mid_rt_17", "no_rt_x_no_rt","flat_x_no_rt", "young_x_no_rt", "mid_x_no_rt", "old_x_no_rt"), experiment_type = "Correct Years")
+
+plot_median_ts_om_lines(summary$dq, min_yr = 2017, max_yr = 2060, col_name = "Value.Bratio", scenario_list = core_4, experiment_type = "Presense or Absense of Red Tide")
+
+plot_median_ts_om_lines(summary$dq, min_yr = 2017, max_yr = 2068, col_name = "Value.Bratio", scenario_list = c(selectivity_rt_2, "no_rt_x_flat_rt_17", "no_rt_x_old_rt_17", "no_rt_x_young_rt_17", "no_rt_x_mid_rt_17", "no_rt_x_no_rt","flat_x_no_rt", "young_x_no_rt", "mid_x_no_rt", "old_x_no_rt"), experiment_type = "Correct Years")
+
+plot_median_ts_om_lines( min_yr = 1986, max_yr = 2060, col_name = "SPRratio", scenario_list = c(selectivity_rt_2, "no_rt_x_flat_rt_17", "no_rt_x_old_rt_17", "no_rt_x_young_rt_17", "no_rt_x_mid_rt_17", "no_rt_x_no_rt","flat_x_no_rt", "young_x_no_rt", "mid_x_no_rt", "old_x_no_rt"), experiment_type = "Correct Years")
+
+plot_median_ts_om_lines(min_yr = 2017, max_yr = 2060, col_name = "SPRratio", scenario_list = c(selectivity_rt_2, "no_rt_x_flat_rt_17", "no_rt_x_old_rt_17", "no_rt_x_young_rt_17", "no_rt_x_mid_rt_17", "no_rt_x_no_rt","flat_x_no_rt", "young_x_no_rt", "mid_x_no_rt", "old_x_no_rt"), experiment_type = "Correct Years")
+
+
+plot_median_ts_om_lines(min_yr = 2017, max_yr = 2060, col_name = "SPRratio", scenario_list = c(selectivity_rt_2, "no_rt_x_flat_rt_17", "no_rt_x_old_rt_17", "no_rt_x_young_rt_17", "no_rt_x_mid_rt_17"), experiment_type = "Correct Years")
+
+
+#most looked at:
+
+#OM Data
+plot_median_ts_om_lines(summary$dq, min_yr = 2017, max_yr = 2068, col_name = "Value.Bratio", scenario_list = c(selectivity_rt_2, "no_rt_x_flat_rt_17", "no_rt_x_old_rt_17", "no_rt_x_young_rt_17", "no_rt_x_mid_rt_17", "no_rt_x_no_rt","flat_x_no_rt", "young_x_no_rt", "mid_x_no_rt", "old_x_no_rt"), experiment_type = "Correct Years") + geom_hline(yintercept = 0.3, linetype = "dashed")
+plot_median_ts_om_lines(summary$dq, min_yr = 2017, max_yr = 2068, col_name = "Value.Bratio", scenario_list = c(selectivity_all_yrs, "no_rt_x_flat_all_yrs", "no_rt_x_old_all_yrs", "no_rt_x_young_all_yrs", "no_rt_x_mid_all_yrs", "no_rt_x_no_rt","flat_x_no_rt", "young_x_no_rt", "mid_x_no_rt", "old_x_no_rt"), experiment_type = "All Years") + geom_hline(yintercept = 0.3, linetype = "dashed")
+
+#EM Data
+plot_median_ts_lines(summary$dq, min_yr = 2017, max_yr = 2068, col_name = "Value.Bratio", target_em = "_2068", scenario_list = c(selectivity_rt_2, "no_rt_x_flat_rt_17", "no_rt_x_old_rt_17", "no_rt_x_young_rt_17", "no_rt_x_mid_rt_17", "no_rt_x_no_rt","flat_x_no_rt", "young_x_no_rt", "mid_x_no_rt", "old_x_no_rt"), experiment_type = "Correct Years") + geom_hline(yintercept = 0.3, linetype = "dashed")
+plot_median_ts_lines(summary$dq, min_yr = 2017, max_yr = 2068, col_name = "Value.Bratio", target_em = "_2068", scenario_list = c(selectivity_all_yrs, "no_rt_x_flat_all_yrs", "no_rt_x_old_all_yrs", "no_rt_x_young_all_yrs", "no_rt_x_mid_all_yrs", "no_rt_x_no_rt","flat_x_no_rt", "young_x_no_rt", "mid_x_no_rt", "old_x_no_rt"), experiment_type = "All Years") + geom_hline(yintercept = 0.3, linetype = "dashed")
+
+# New Plots --------------------------------------------------
+
+###### Gradients ###### 
+
+# plot of raw gradients 
+
+summary$scalar %>% 
+  mutate(model_run_year = str_extract(model_run, "\\d+")) %>% #extract year from model_run
+  ggplot(aes(model_run_year, max_grad))+
+  geom_point() + 
+  facet_wrap(~scenario) +
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)
+  )
+
+# List of iterations that have max_grad > 1 in any model_run.  
+
+bad_runs <- summary$scalar %>% 
+  filter(max_grad > 1) %>%
+  select(scenario, iteration) %>%
+  distinct() 
+
+summary$scalar %>% 
+  filter(max_grad > 1) %>%
+  select(scenario, iteration) %>%
+  distinct() %>%
+  count(scenario)
+
+summary_2 <- summary
+
+summary_2$dq <- summary$dq %>%
+  anti_join(bad_runs, by = c("scenario", "iteration"))
+
+#OM Data
+plot_median_ts_om_lines(summary_2$dq, min_yr = 2017, max_yr = 2068, col_name = "Value.Bratio", scenario_list = c(selectivity_rt_2, "no_rt_x_flat_rt_17", "no_rt_x_old_rt_17", "no_rt_x_young_rt_17", "no_rt_x_mid_rt_17", "no_rt_x_no_rt","flat_x_no_rt", "young_x_no_rt", "mid_x_no_rt", "old_x_no_rt"), experiment_type = "Correct Years") + geom_hline(yintercept = 0.3, linetype = "dashed")
+plot_median_ts_om_lines(summary_2$dq, min_yr = 2017, max_yr = 2068, col_name = "Value.Bratio", scenario_list = c(selectivity_all_yrs, "no_rt_x_flat_all_yrs", "no_rt_x_old_all_yrs", "no_rt_x_young_all_yrs", "no_rt_x_mid_all_yrs", "no_rt_x_no_rt","flat_x_no_rt", "young_x_no_rt", "mid_x_no_rt", "old_x_no_rt"), experiment_type = "All Years") + geom_hline(yintercept = 0.3, linetype = "dashed")
+
+#EM Data
+plot_median_ts_lines(summary_2$dq, min_yr = 2017, max_yr = 2068, col_name = "Value.Bratio", target_em = "_2068", scenario_list = c(selectivity_rt_2, "no_rt_x_flat_rt_17", "no_rt_x_old_rt_17", "no_rt_x_young_rt_17", "no_rt_x_mid_rt_17", "no_rt_x_no_rt","flat_x_no_rt", "young_x_no_rt", "mid_x_no_rt", "old_x_no_rt"), experiment_type = "Correct Years") + geom_hline(yintercept = 0.3, linetype = "dashed")
+plot_median_ts_lines(summary_2$dq, min_yr = 2017, max_yr = 2068, col_name = "Value.Bratio", target_em = "_2068", scenario_list = c(selectivity_all_yrs, "no_rt_x_flat_all_yrs", "no_rt_x_old_all_yrs", "no_rt_x_young_all_yrs", "no_rt_x_mid_all_yrs", "no_rt_x_no_rt","flat_x_no_rt", "young_x_no_rt", "mid_x_no_rt", "old_x_no_rt"), experiment_type = "All Years") + geom_hline(yintercept = 0.3, linetype = "dashed")
+
+summary_2$ts <- summary$ts %>%
+  anti_join(bad_runs, by = c("scenario", "iteration"))
+
+OM_runs <- summary_2$ts %>%
+  filter(str_detect(model_run, "OM"))
+
+EM_runs <- summary_2$ts %>%
+  filter(str_detect(model_run, "EM"))
+
+kable_all <- create_residual_kable(min_year, max_year_short_term, scen_list, max_year)
+kable_all
+
+##### R0 ##### 
+
+summary$scalar %>% 
+  ggplot(aes(scenario, SR_LN_R0)) + 
+  geom_boxplot() +
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)
+  )
+
+summary_2$scalar <- summary$scalar %>%
+  anti_join(bad_runs, by = c("scenario", "iteration"))
+
+summary_2$scalar %>% 
+  ggplot(aes(scenario, SR_LN_R0)) + 
+  geom_boxplot() +
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)
+  )
+
