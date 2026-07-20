@@ -86,9 +86,16 @@ summary <- readRDS(file = file.path(run_SSMSE_dir, paste0("results_summary", res
 #         om_name (no_rt, flat, young, old, mid), 
 #         em_name (no_rt, flat, young, old, mid), 
 #         exp_type (all_yrs, rt_34, no_rt)
+# Remove bad gradients
+
+bad_runs <- summary$scalar %>% 
+  filter(max_grad > 1) %>%
+  select(scenario, iteration) %>%
+  distinct() 
 
 summary$ts <- summary$ts %>%
   filter(model_run != "", !str_detect(model_run, "Base")) %>% #remove "Base" model 
+  anti_join(bad_runs, by = c("scenario", "iteration")) %>%
   mutate(end_year = as.numeric(str_extract(model_run, "\\d{4}$")) + 3, 
          years_until_terminal = end_year - year) %>%
   filter(case_when(
@@ -115,6 +122,7 @@ summary$ts <- summary$ts %>%
   mutate(Commercial = deadB_1 + deadB_2, Recreational = deadB_4)
 
 summary$dq <- summary$dq %>%
+  anti_join(bad_runs, by = c("scenario", "iteration")) %>%
   filter(model_run != "", !str_detect(model_run, "Base")) %>%
   mutate(end_year = as.numeric(str_extract(model_run, "\\d{4}$")) + 3,
          years_until_terminal = end_year - year) %>%
@@ -145,6 +153,7 @@ summary$dq <- summary$dq %>%
   
 
 summary$scalar <- summary$scalar %>%
+  anti_join(bad_runs, by = c("scenario", "iteration")) %>%
   filter(model_run != "", !str_detect(model_run, "Base")) %>%
   filter(!is.na(scenario)) %>%
   separate_wider_regex(
