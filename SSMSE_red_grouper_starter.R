@@ -17,13 +17,13 @@ packageVersion("ss3sim")
 packageVersion("SSMSE")
 
 # Create a folder for the output in the working directory.
-results_name <- "timing_old_method"
+results_name <- "optimal_method"
 run_SSMSE_dir <- file.path("./runs_output")
 run_res_path <- file.path(run_SSMSE_dir, paste0("results_", results_name))
 if (!dir.exists(run_res_path)) {
   dir.create(run_res_path, recursive = TRUE)
 }
-bucket_path <- normalizePath(paste0("gs://ecsai-red-tide-simulation-project/2026_07_15_timing_old_method/results_", results_name)) 
+bucket_path <- normalizePath(paste0("gs://ecsai-red-tide-simulation-project/2026_07_20_optimal_method/results_", results_name)) 
 mount_path <- file.path("./bucket")
 
 # OM locations
@@ -33,7 +33,7 @@ default <- file.path(model_SSMSE_dir, "default_sigmaR")
 # number of simulation years
 projyrs <- 51
 rt_yrs <- 17
-my_niter <- 4
+my_niter <- 100
 
 # to get the names of parameter values
 ctl <- r4ss::SS_readctl(file.path(default, "red_grouper_1986_2017_RedTideFleet.ctl"), 
@@ -311,8 +311,7 @@ base_params <- list(
   seed            = 12345,
   # Normalize these once here
   OM_in_dir_vec   = normalizePath(default),
-  EM_in_dir_vec   = normalizePath(default), 
-  cloud_bucket = bucket_path
+  EM_in_dir_vec   = normalizePath(default)
 )
 
 # use modifyList() to adjust the run_SSMSE parameters
@@ -706,8 +705,18 @@ stopCluster(cl)
 registerDoSEQ()
 
 # make a summary with all the outputs in the same folder
-summary <- SSMSE::SSMSE_summary_all(file.path(mount_path, paste0("results_test_", results_name)), n_cores = 120, run_parallel = TRUE)
-saveRDS(summary, file = file.path(mount_path, paste0("results_summary_test_", results_name, ".rda")))
+summary <- SSMSE::SSMSE_summary_all(file.path(run_SSMSE_dir, paste0("results_", results_name)), n_cores = 120, run_parallel = TRUE)
+saveRDS(summary, file = file.path(run_SSMSE_dir, paste0("results_summary_", results_name, ".rda")))
+
+rsync_cmd <- paste(
+  "gcloud storage rsync",
+  shQuote(run_SSMSE_dir),
+  shQuote(bucket_path),
+  "-r"
+)
+
+# Run the system command and capture the exit status (0 means success)
+system(rsync_cmd)
 
 # end timer
 end_time <- Sys.time()
