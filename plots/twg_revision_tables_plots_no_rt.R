@@ -684,7 +684,7 @@ plot_median_ts_om_lines <- function (summary_data = summary$ts, scenario_list, m
                   "mid" = "True: Middle Selectivity",
                   "old" = "True: Old Selectivity", 
                   "flat" = "True: Flat Selectivity", 
-                  "no_rt" = "True: No Red Tide")
+                  "no_rt" = "True: No Red Tide (OM)")
   
   # 3. Plotting
   ggplot() +
@@ -704,7 +704,7 @@ plot_median_ts_om_lines <- function (summary_data = summary$ts, scenario_list, m
     ggtitle(paste0("Achieved ", col_name, " over time - ", experiment_type)) + 
     ylab(paste0(col_name, " (MT)")) + 
     facet_wrap(~om_name, labeller = labeller(om_name = new_labels)) + 
-    labs(color = "Assumed Selectivity", fill = "Assumed Selectivity") + 
+    labs(color = "Assumed\nSelectivity (EM)", fill = "Assumed\nSelectivity (EM)") + 
     xlab("Year")
 }
 
@@ -807,7 +807,7 @@ plot_median_ts_lines(summary$dq, min_yr = 2017, max_yr = 2068, col_name = "Value
 
 # True: No Red Tide
 plot_median_ts_om_lines(summary$dq, min_yr = 2017, max_yr = 2068, col_name = "Value.Bratio", scenario_list = c("no_rt_x_flat_rt_17", "no_rt_x_old_rt_17", "no_rt_x_young_rt_17", "no_rt_x_mid_rt_17", "no_rt_x_no_rt"), experiment_type = "Correct Years") + geom_hline(yintercept = 0.3, linetype = "dashed") +
-  ylab("SSB Ratio") + ggtitle("Achieved SSB Ratio over time - Correct Years") + 
+  ylab("SSB Ratio") + ggtitle("Achieved SSB Ratio over time - Known Years") + 
   theme_bw() + scale_color_viridis_d() + scale_fill_viridis_d()  +
   theme(
     text = element_text(size = 14),    
@@ -817,11 +817,11 @@ plot_median_ts_om_lines(summary$dq, min_yr = 2017, max_yr = 2068, col_name = "Va
 
 if(save == TRUE){
   ggsave(file.path(run_SSMSE_dir,plot_folder, "no_rt_true_bratio.png"),
-         width = 6, height = 5, units = "in", device = "png")
+         width = 6.5, height = 5, units = "in", device = "png")
 }
 
 plot_median_ts_om_lines(summary$dq, min_yr = 2017, max_yr = 2068, col_name = "Value.Bratio", scenario_list = c(selectivity_rt_2, "flat_x_no_rt", "young_x_no_rt", "mid_x_no_rt", "old_x_no_rt"), experiment_type = "Correct Years") + geom_hline(yintercept = 0.3, linetype = "dashed") +
-  ylab("SSB Ratio") + ggtitle("Achieved SSB Ratio over time - Correct Years") + 
+  ylab("SSB Ratio") + ggtitle("Achieved SSB Ratio over time - Known Years") + 
   theme_bw() + scale_color_viridis_d() + scale_fill_viridis_d()  +
   theme(
     text = element_text(size = 14),    
@@ -829,7 +829,7 @@ plot_median_ts_om_lines(summary$dq, min_yr = 2017, max_yr = 2068, col_name = "Va
 
 if(save == TRUE){
   ggsave(file.path(run_SSMSE_dir,plot_folder, "rt_17_bratio.png"),
-         width = 6, height = 5, units = "in", device = "png")
+         width = 6.5, height = 5, units = "in", device = "png")
 }
 
 plot_median_ts_om_lines(summary$dq, min_yr = 2017, max_yr = 2068, col_name = "Value.Bratio", scenario_list = c(selectivity_all_yrs, "flat_x_no_rt", "young_x_no_rt", "mid_x_no_rt", "old_x_no_rt"), experiment_type = "Correct Years") + geom_hline(yintercept = 0.3, linetype = "dashed") +
@@ -841,7 +841,7 @@ plot_median_ts_om_lines(summary$dq, min_yr = 2017, max_yr = 2068, col_name = "Va
 
 if(save == TRUE){
   ggsave(file.path(run_SSMSE_dir,plot_folder, "all_yrs_bratio.png"),
-         width = 6, height = 5, units = "in", device = "png")
+         width = 6.5, height = 5, units = "in", device = "png")
 }
 
 summary_data <- summary$dq 
@@ -875,7 +875,7 @@ new_labels <- c("young" = "True: Young Selectivity",
                 "mid" = "True: Middle Selectivity",
                 "old" = "True: Old Selectivity", 
                 "flat" = "True: Flat Selectivity", 
-                "no_rt" = "True: No Red Tide")
+                "no_rt" = "No Red Tide (EM)")
 
 # 3. Plotting
 ggplot() +
@@ -893,9 +893,10 @@ ggplot() +
   # --- Formatting layers ---
   ggtitle(paste0("Achieved ", col_name, " over time - ", experiment_type)) + 
   ylab(paste0(col_name, " (MT)")) + 
-  labs(color = "Assumed Selectivity", fill = "Assumed Selectivity") + 
+  labs(color = "True Selectivity (OM)", fill = "True Selectivity (OM)") + 
   xlab("Year") + geom_hline(yintercept = 0.3, linetype = "dashed") +
-  ylab("SSB Ratio") + ggtitle("Achieved SSB Ratio over time - Correct Years") + 
+  ylab("SSB Ratio") + ggtitle("Achieved SSB Ratio over time - Known Years") + 
+  facet_grid(~em_name, labeller = labeller(em_name = new_labels)) + 
   theme_bw() + scale_color_viridis_d() + scale_fill_viridis_d()  +
   theme(
     text = element_text(size = 14),    
@@ -1022,3 +1023,117 @@ base_selectivities %>%
   theme_bw() +
   ggtitle("Red tide selectivity at age") +
   facet_wrap(~model_run) + xlab("Age") + ylab("Selectivity")
+
+
+##### one iteration example #### 
+max_sample_year = 2068
+
+key_models <- unique(summary$ts$model_run)
+key_models <- key_models[grepl("OM", key_models) | grepl(as.character(max_sample_year), key_models)]
+
+plot_data <- summary$ts %>%
+  mutate(model_group = case_when(
+    str_detect(model_run, "_OM") ~ "OM",
+    str_detect(model_run, "_EM") ~ "EM",
+    TRUE ~ "Other"  # Catch-all for anything else
+  )) %>%
+  mutate(model_group = factor(model_group, levels = c("OM", "EM")))
+
+plot_data %>% 
+  filter(model_run %in% key_models, iteration %in% 1, scenario %in% c("flat_x_flat_rt_2", "flat_x_flat_all_yrs"), year %in% 2000:2068) %>% #filters to just OM and max year runs
+  ggplot(aes(x = year, y = F_5)) +
+  geom_vline(xintercept = dat$endyr, color = "gray") +
+  geom_vline(xintercept = 2005, color = "gray", linetype = "dashed") +
+  geom_vline(xintercept = 2014, color = "gray", linetype = "dashed") +
+  geom_line( aes(linetype = model_group, color = model_group))+
+  scale_color_manual(values = c(
+    "OM" = "darkorange", 
+    "EM" = "black"
+  )) +
+  scale_linetype_manual(values = c(
+    "OM" = "solid", 
+    "EM" = "dashed"
+  )) +
+  facet_grid(iteration~scenario) +
+  theme_bw()
+
+plot_data %>% 
+  filter(str_detect(model_run, "OM"), iteration %in% 1, scenario %in% c("flat_x_flat_rt_2"), year %in% 2000:2068) %>% #filters to just OM and max year runs
+  ggplot(aes(x = year, y = F_5)) +
+  geom_vline(xintercept = dat$endyr, color = "gray") +
+  geom_vline(xintercept = 2005, color = "gray", linetype = "dashed") +
+  geom_vline(xintercept = 2014, color = "gray", linetype = "dashed") +
+  geom_line( aes(linetype = model_group, color = model_group), linewidth = 1)+
+  scale_color_manual(values = c(
+    "OM" = "darkorange", 
+    "EM" = "black"
+  )) +
+  scale_linetype_manual(values = c(
+    "OM" = "solid", 
+    "EM" = "dashed"
+  )) +
+  theme_bw()+
+  theme(
+    text = element_text(size = 14),    
+    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)
+  ) 
+
+if(save == TRUE){
+  ggsave(file.path(run_SSMSE_dir,plot_folder, "rt_17_example.png"),
+         width = 6, height = 3, units = "in", device = "png")
+}
+
+plot_data <- plot_data %>% 
+  filter(model_run %in% key_models, iteration %in% 1, scenario %in% c("flat_x_flat_rt_2", "flat_x_flat_all_yrs"), year %in% 2000:2068) #filters to just OM and max year runs
+  
+OM_dat <- filter(plot_data, model_group == "OM")
+EM_dat <- filter(plot_data, model_group == "EM")
+p <-ggplot()+
+  geom_segment(aes(x = OM_dat$F_5, y = OM_dat$year,
+                   yend = EM_dat$year, xend = EM_dat$F_5), #use the $ operator to fetch data from our "Females" tibble
+               color = "#aeb6bf",
+               size = 4.5, #Note that I sized the segment to fit the points
+               alpha = .5) +
+  geom_point(data = plot_data, aes(x = F_5, y = year, color = model_group), size = 4, show.legend = TRUE) +
+  facet_grid(iteration~scenario) 
+p
+
+
+# 1. Prepare data for segments (one row per year/scenario with both OM and EM values)
+dumbbell_data <- plot_data %>%
+  filter(
+    model_run %in% key_models, 
+    iteration == 1, 
+    scenario %in% c("flat_x_flat_rt_2"), 
+    year %in% 2000:2068
+  ) %>%
+  select(year, scenario, iteration, model_group, F_5) %>%
+  pivot_wider(names_from = model_group, values_from = F_5)
+
+# 2. Filter original long data for the points
+points_data <- plot_data %>%
+  filter(
+    model_run %in% key_models, 
+    iteration == 1, 
+    scenario %in% c("flat_x_flat_rt_2"), 
+    year %in% 2000:2068
+  )
+
+# 3. Plot (Year on X-axis, F_5 on Y-axis)
+ggplot() +
+  # Draw vertical segments connecting OM to EM for each year
+  geom_segment(
+    data = dumbbell_data,
+    aes(x = year, xend = year, y = OM, yend = EM),
+    color = "#aeb6bf",
+    linewidth = 1.5,
+    alpha = 0.5
+  ) +
+  # Draw points on top
+  geom_point(
+    data = points_data, 
+    aes(x = year, y = F_5, color = model_group), 
+    size = 3
+  ) +
+  facet_wrap( ~ scenario, ncol = 1) +
+  theme_bw()
