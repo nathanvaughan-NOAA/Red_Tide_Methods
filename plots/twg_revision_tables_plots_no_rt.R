@@ -93,85 +93,7 @@ bad_runs <- summary$scalar %>%
   select(scenario, iteration) %>%
   distinct() 
 
-summary$ts <- summary$ts %>%
-  filter(model_run != "", !str_detect(model_run, "Base")) %>% #remove "Base" model 
-  anti_join(bad_runs, by = c("scenario", "iteration")) %>%
-  mutate(end_year = as.numeric(str_extract(model_run, "\\d{4}$")) + 3, 
-         years_until_terminal = end_year - year) %>%
-  filter(case_when(
-    str_detect(model_run, "_EM") ~ years_until_terminal > 2,
-    TRUE ~ TRUE # Keep all other rows if no _EM
-  )) %>%
-  filter(!is.na(scenario)) %>%
-  separate_wider_regex(
-    cols = scenario,
-    patterns = c(
-      om_name  = "^(?:old|mid|young|flat|no_rt)", # Added ?: here
-      "_x_", 
-      em_name  = "(?:old|mid|young|flat|no_rt)",  # Added ?: here
-      exp_type = ".*"
-    ),
-    too_few = "align_start",
-    cols_remove = FALSE
-  ) %>%
-  # --- CLEANUP EXP_TYPE ---
-  mutate(
-    exp_type = str_remove(exp_type, "^_"),
-    exp_type = if_else(str_detect(exp_type, "^\\d+$"), str_c("rt_", exp_type), exp_type)
-  ) %>%
-  mutate(Commercial = deadB_1 + deadB_2, Recreational = deadB_4)
 
-summary$dq <- summary$dq %>%
-  anti_join(bad_runs, by = c("scenario", "iteration")) %>%
-  filter(model_run != "", !str_detect(model_run, "Base")) %>%
-  mutate(end_year = as.numeric(str_extract(model_run, "\\d{4}$")) + 3,
-         years_until_terminal = end_year - year) %>%
-  filter(case_when(
-    str_detect(model_run, "_EM") ~ years_until_terminal > 2,
-    TRUE ~ TRUE # Keep all other rows if no _EM
-  )) %>%
-  mutate(
-    scenario = factor(scenario, scen_list)
-  ) %>%
-  filter(!is.na(scenario)) %>%
-  separate_wider_regex(
-    cols = scenario,
-    patterns = c(
-      om_name  = "^(?:old|mid|young|flat|no_rt)", # Added ?: here
-      "_x_", 
-      em_name  = "(?:old|mid|young|flat|no_rt)",  # Added ?: here
-      exp_type = ".*"
-    ),
-    too_few = "align_start",
-    cols_remove = FALSE
-  ) %>%
-  # --- CLEANUP EXP_TYPE ---
-  mutate(
-    exp_type = str_remove(exp_type, "^_"),
-    exp_type = if_else(str_detect(exp_type, "^\\d+$"), str_c("rt_", exp_type), exp_type)
-  )
-  
-
-summary$scalar <- summary$scalar %>%
-  anti_join(bad_runs, by = c("scenario", "iteration")) %>%
-  filter(model_run != "", !str_detect(model_run, "Base")) %>%
-  filter(!is.na(scenario)) %>%
-  separate_wider_regex(
-    cols = scenario,
-    patterns = c(
-      om_name  = "^(?:old|mid|young|flat|no_rt)", # Added ?: here
-      "_x_", 
-      em_name  = "(?:old|mid|young|flat|no_rt)",  # Added ?: here
-      exp_type = ".*"
-    ),
-    too_few = "align_start",
-    cols_remove = FALSE
-  ) %>%
-  # --- CLEANUP EXP_TYPE ---
-  mutate(
-    exp_type = str_remove(exp_type, "^_"),
-    exp_type = if_else(str_detect(exp_type, "^\\d+$"), str_c("rt_", exp_type), exp_type)
-  ) 
 
 # Sets of scenarios for filtering
 
@@ -908,6 +830,152 @@ if(save == TRUE){
          width = 6, height = 5, units = "in", device = "png")
 }
 
+# For Lisa
+
+summary_data <- summary$dq 
+min_yr = 2017 
+max_yr = 2068 
+col_name = "Value.Bratio" 
+scenario_list = c("flat_x_no_rt", "no_rt_x_flat_rt_17", "no_rt_x_no_rt", "no_rt_x_flat_all_yrs", "flat_x_flat_rt_2", "flat_x_flat_all_yrs")
+experiment_type = "Correct Years" 
+
+# Assumed: No Red Tide
+# 1. First, get the filtered, raw iteration-level data
+raw_filtered_data <- summary_data %>%
+  filter(
+    scenario %in% c(scenario_list),
+    str_detect(model_run, "OM"),
+    year >= min_yr,
+    year <= max_yr
+  ) %>%
+  mutate(
+    frequency = case_when(
+      str_detect(scenario, "no_rt$")   ~ "No Red Tide (EM)",
+      str_detect(scenario, "rt_2$")   ~ "17 Red Tides (EM)",
+      str_detect(scenario, "rt_17$")   ~ "17 Red Tides (EM)",
+      str_detect(scenario, "all_yrs$") ~ "All Years (EM)"
+    )
+  )
+
+# 2. Then, calculate your summary statistics from that filtered data
+plot_summary_data <- raw_filtered_data %>%
+  group_by(frequency, om_name, em_name, year) %>%
+  reframe(
+    med_val = mean(.data[[col_name]], na.rm = TRUE),
+    low  = Hmisc::smedian.hilow(.data[[col_name]], conf.int = 0.95)[2],
+    high = Hmisc::smedian.hilow(.data[[col_name]], conf.int = 0.95)[3],
+    .groups = "drop" 
+  )
+
+new_labels <- c("young" = "True: Young Selectivity", 
+                "mid" = "True: Middle Selectivity",
+                "old" = "True: Old Selectivity", 
+                "flat" = "True: 17 Red Tides (OM)", 
+                "no_rt" = "True: No Red Tide (OM)")
+
+# 3. Plotting
+ggplot() +
+  # --- NEW: Individual iteration lines ---
+  # We use the raw data here. 
+  geom_line(data = filter(raw_filtered_data, iteration %in% c(1:5)), 
+            aes(x = year, y = .data[[col_name]], color = frequency, group = interaction(iteration, frequency, om_name, em_name)), 
+            alpha = 0.2) + # Low alpha to keep it in the background
+  
+  # --- Your original summary layers (using the summary dataset) ---
+  geom_ribbon(data = plot_summary_data, 
+              aes(x = year, ymin = low, ymax = high, fill = frequency), alpha = 0.1) +
+  geom_line(data = plot_summary_data, 
+            aes(x = year, y = med_val, color = frequency), linewidth = 1) + # Slightly thicker to pop out
+  # --- Formatting layers ---
+  ggtitle(paste0("Achieved ", col_name, " over time")) + 
+  facet_wrap(~om_name, labeller = labeller(om_name = new_labels) ) +
+  ylab(paste0(col_name, " (MT)")) + 
+  labs(color = "Frequency (EM)", fill = "Frequency (EM)") + 
+  xlab("Year") + geom_hline(yintercept = 0.3, linetype = "dashed") +
+  ylab("SSB Ratio") + ggtitle("Achieved SSB Ratio over time") + 
+  theme_bw() + scale_color_viridis_d() + scale_fill_viridis_d()  +
+  theme(
+    text = element_text(size = 14),    
+    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)
+  ) 
+
+if(save == TRUE){
+  ggsave(file.path(run_SSMSE_dir,plot_folder, "just_flat_bratios.png"),
+         width = 7, height = 4, units = "in", device = "png")
+}
+
+# 1. Separate summary data by facet groupings
+sum_em <- filter(plot_summary_data, frequency %in% c("All Years (EM)", "17 Red Tides (EM)"))
+sum_om <- filter(plot_summary_data, frequency == "No Red Tide (EM)")
+
+# Separate raw iterations data by facet groupings
+raw_em <- filter(raw_filtered_data, frequency %in% c("All Years (EM)", "17 Red Tides (EM)"), iteration %in% 1:5)
+raw_om <- filter(raw_filtered_data, frequency == "No Red Tide (EM)", iteration %in% 1:5)
+
+# 2. Build plot with split layers
+p <- ggplot() +
+  
+  # --- FACETS 1 & 2: Color mapped to em_name ---
+  geom_line(
+    data = raw_em,
+    aes(x = year, y = .data[[col_name]], color = em_name, group = interaction(iteration, frequency, om_name, em_name)),
+    alpha = 0.2
+  ) +
+  geom_ribbon(
+    data = sum_em,
+    aes(x = year, ymin = low, ymax = high, fill = em_name),
+    alpha = 0.1
+  ) +
+  geom_line(
+    data = sum_em,
+    aes(x = year, y = med_val, color = em_name),
+    linewidth = 1
+  ) +
+  
+  # --- FACET 3: Color mapped to om_name ---
+  geom_line(
+    data = raw_om,
+    aes(x = year, y = .data[[col_name]], color = om_name, group = interaction(iteration, frequency, om_name, em_name)),
+    alpha = 0.2
+  ) +
+  geom_ribbon(
+    data = sum_om,
+    aes(x = year, ymin = low, ymax = high, fill = om_name),
+    alpha = 0.1
+  ) +
+  geom_line(
+    data = sum_om,
+    aes(x = year, y = med_val, color = om_name),
+    linewidth = 1
+  ) +
+  
+  # --- Formatting & Faceting ---
+  geom_hline(yintercept = 0.3, linetype = "dashed") +
+  facet_grid(~frequency) +
+  labs(
+    title = paste0("Achieved SSB Ratio over time - No red tides"),
+    x = "Year",
+    y = "SSB Ratio",
+    color = "Selectivity \nAssumption",
+    fill  = "Selectivity \nAssumption"
+  ) +
+  scale_color_viridis_d() +
+  scale_fill_viridis_d() +
+  theme_bw() +
+  theme(
+    text = element_text(size = 14),
+    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)
+  )
+
+print(p)
+
+if(save == TRUE){
+  ggsave(file.path(run_SSMSE_dir,plot_folder, "no_rt_em_all_bratios.png"),
+         width = 9, height = 4, units = "in", device = "png")
+}
+
+
+
 # New Plots --------------------------------------------------
 
 ###### Gradients ###### 
@@ -1137,3 +1205,104 @@ ggplot() +
   ) +
   facet_wrap( ~ scenario, ncol = 1) +
   theme_bw()
+
+
+# Comparison Plots --------------------------------------------------
+
+# Load other set of results for comparison plot
+
+summary_rec_devs <- readRDS(file = file.path(run_SSMSE_dir, paste0("results_summary_new_rec_dev_fix_backup.rda")))
+
+summary_rec_devs$ts <- summary_rec_devs$ts %>%
+  filter(model_run != "", !str_detect(model_run, "Base")) %>% #remove "Base" model 
+  mutate(end_year = as.numeric(str_extract(model_run, "\\d{4}$")) + 3, 
+         years_until_terminal = end_year - year) %>%
+  filter(case_when(
+    str_detect(model_run, "_EM") ~ years_until_terminal > 2,
+    TRUE ~ TRUE # Keep all other rows if no _EM
+  )) %>%
+  filter(!is.na(scenario)) %>%
+  separate_wider_regex(
+    cols = scenario,
+    patterns = c(
+      om_name  = "^(?:old|mid|young|flat|no_rt)", # Added ?: here
+      "_x_", 
+      em_name  = "(?:old|mid|young|flat|no_rt)",  # Added ?: here
+      exp_type = ".*"
+    ),
+    too_few = "align_start",
+    cols_remove = FALSE
+  ) %>%
+  # --- CLEANUP EXP_TYPE ---
+  mutate(
+    exp_type = str_remove(exp_type, "^_"),
+    exp_type = if_else(str_detect(exp_type, "^\\d+$"), str_c("rt_", exp_type), exp_type)
+  ) %>%
+  mutate(Commercial = deadB_1 + deadB_2, Recreational = deadB_4)
+
+summary_rec_devs$dq <- summary_rec_devs$dq %>%
+  filter(model_run != "", !str_detect(model_run, "Base")) %>%
+  mutate(end_year = as.numeric(str_extract(model_run, "\\d{4}$")) + 3,
+         years_until_terminal = end_year - year) %>%
+  filter(case_when(
+    str_detect(model_run, "_EM") ~ years_until_terminal > 2,
+    TRUE ~ TRUE # Keep all other rows if no _EM
+  )) %>%
+  mutate(
+    scenario = factor(scenario, scen_list)
+  ) %>%
+  filter(!is.na(scenario)) %>%
+  separate_wider_regex(
+    cols = scenario,
+    patterns = c(
+      om_name  = "^(?:old|mid|young|flat|no_rt)", # Added ?: here
+      "_x_", 
+      em_name  = "(?:old|mid|young|flat|no_rt)",  # Added ?: here
+      exp_type = ".*"
+    ),
+    too_few = "align_start",
+    cols_remove = FALSE
+  ) %>%
+  # --- CLEANUP EXP_TYPE ---
+  mutate(
+    exp_type = str_remove(exp_type, "^_"),
+    exp_type = if_else(str_detect(exp_type, "^\\d+$"), str_c("rt_", exp_type), exp_type)
+  )
+
+
+summary_rec_devs$scalar <- summary_rec_devs$scalar %>%
+  filter(model_run != "", !str_detect(model_run, "Base")) %>%
+  filter(!is.na(scenario)) %>%
+  separate_wider_regex(
+    cols = scenario,
+    patterns = c(
+      om_name  = "^(?:old|mid|young|flat|no_rt)", # Added ?: here
+      "_x_", 
+      em_name  = "(?:old|mid|young|flat|no_rt)",  # Added ?: here
+      exp_type = ".*"
+    ),
+    too_few = "align_start",
+    cols_remove = FALSE
+  ) %>%
+  # --- CLEANUP EXP_TYPE ---
+  mutate(
+    exp_type = str_remove(exp_type, "^_"),
+    exp_type = if_else(str_detect(exp_type, "^\\d+$"), str_c("rt_", exp_type), exp_type)
+  ) 
+
+#OM Data
+plot_median_ts_om_lines(summary_rec_devs$dq, min_yr = 2017, max_yr = 2068, col_name = "Value.Bratio", scenario_list = c(selectivity_rt_2, "no_rt_x_flat_rt_17", "no_rt_x_old_rt_17", "no_rt_x_young_rt_17", "no_rt_x_mid_rt_17", "no_rt_x_no_rt","flat_x_no_rt", "young_x_no_rt", "mid_x_no_rt", "old_x_no_rt"), experiment_type = "Correct Years") + geom_hline(yintercept = 0.3, linetype = "dashed")+ geom_hline(yintercept = 0.3, linetype = "dashed") +
+  ylab("SSB Ratio") + ggtitle("Achieved SSB Ratio over time - Known Years") + 
+  theme_bw() + scale_color_viridis_d() + scale_fill_viridis_d()  +
+  theme(
+    text = element_text(size = 14),    
+    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)
+  ) 
+plot_median_ts_om_lines(summary_rec_devs$dq, min_yr = 2017, max_yr = 2068, col_name = "Value.Bratio", scenario_list = c(selectivity_all_yrs, "no_rt_x_flat_all_yrs", "no_rt_x_old_all_yrs", "no_rt_x_young_all_yrs", "no_rt_x_mid_all_yrs", "no_rt_x_no_rt","flat_x_no_rt", "young_x_no_rt", "mid_x_no_rt", "old_x_no_rt"), experiment_type = "All Years") + geom_hline(yintercept = 0.3, linetype = "dashed")+ geom_hline(yintercept = 0.3, linetype = "dashed") +
+  ylab("SSB Ratio") + ggtitle("Achieved SSB Ratio over time - All Years") + 
+  theme_bw() + scale_color_viridis_d() + scale_fill_viridis_d()  +
+  theme(
+    text = element_text(size = 14),    
+    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)
+  ) 
+
