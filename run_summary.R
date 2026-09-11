@@ -3,7 +3,7 @@
 results_name <- "supplemental"
 
 run_SSMSE_dir <- "bucket/"
-run_res_path <- paste0("bucket/", results_name)
+run_res_path <- paste0("bucket/results_", results_name)
 
 start_time <- Sys.time()
 

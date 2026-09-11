@@ -265,36 +265,36 @@ sample_struct_list_all <- list(
 
 young_multiplier <- 21/9
 sample_struct_young_rt_2 <- add_sample_struct_FixedCatches(sample_struct,
-                                                      rt_mortality_om = 0.1*young_multiplier,
-                                                      rt_mortality_em = 0.1*young_multiplier)
-sample_struct_young_all_yrs <- add_sample_struct_FixedCatches(sample_struct,
                                                            rt_mortality_om = 0.1*young_multiplier,
-                                                           rt_mortality_em = 0.1*young_multiplier,
-                                                           rt_year_em = seq(from = 2018, to = 2017+projyrs, by = 1))
+                                                           rt_mortality_em = 0.1*young_multiplier)
+sample_struct_young_all_yrs <- add_sample_struct_FixedCatches(sample_struct,
+                                                              rt_mortality_om = 0.1*young_multiplier,
+                                                              rt_mortality_em = 0.1*young_multiplier,
+                                                              rt_year_em = seq(from = 2018, to = 2017+projyrs, by = 1))
 old_multiplier <- 21/17.25
 sample_struct_old_rt_2 <- add_sample_struct_FixedCatches(sample_struct,
-                                                      rt_mortality_om = 0.1*old_multiplier,
-                                                      rt_mortality_em = 0.1*old_multiplier)
-sample_struct_old_all_yrs <- add_sample_struct_FixedCatches(sample_struct,
                                                          rt_mortality_om = 0.1*old_multiplier,
-                                                         rt_mortality_em = 0.1*old_multiplier,
-                                                         rt_year_em = seq(from = 2018, to = 2017+projyrs, by = 1))
+                                                         rt_mortality_em = 0.1*old_multiplier)
+sample_struct_old_all_yrs <- add_sample_struct_FixedCatches(sample_struct,
+                                                            rt_mortality_om = 0.1*old_multiplier,
+                                                            rt_mortality_em = 0.1*old_multiplier,
+                                                            rt_year_em = seq(from = 2018, to = 2017+projyrs, by = 1))
 mid_multiplier <- 21/16.75
 sample_struct_mid_rt_2 <- add_sample_struct_FixedCatches(sample_struct,
-                                                      rt_mortality_om = 0.1*mid_multiplier,
-                                                      rt_mortality_em = 0.1*mid_multiplier)
-sample_struct_mid_all_yrs <- add_sample_struct_FixedCatches(sample_struct,
                                                          rt_mortality_om = 0.1*mid_multiplier,
-                                                         rt_mortality_em = 0.1*mid_multiplier,
-                                                         rt_year_em = seq(from = 2018, to = 2017+projyrs, by = 1))
+                                                         rt_mortality_em = 0.1*mid_multiplier)
+sample_struct_mid_all_yrs <- add_sample_struct_FixedCatches(sample_struct,
+                                                            rt_mortality_om = 0.1*mid_multiplier,
+                                                            rt_mortality_em = 0.1*mid_multiplier,
+                                                            rt_year_em = seq(from = 2018, to = 2017+projyrs, by = 1))
 flat_multiplier <- 21/21
 sample_struct_flat_rt_2 <- add_sample_struct_FixedCatches(sample_struct,
-                                                      rt_mortality_om = 0.1*flat_multiplier,
-                                                      rt_mortality_em = 0.1*flat_multiplier)
-sample_struct_flat_all_yrs <- add_sample_struct_FixedCatches(sample_struct,
                                                           rt_mortality_om = 0.1*flat_multiplier,
-                                                          rt_mortality_em = 0.1*flat_multiplier,
-                                                          rt_year_em = seq(from = 2018, to = 2017+projyrs, by = 1))
+                                                          rt_mortality_em = 0.1*flat_multiplier)
+sample_struct_flat_all_yrs <- add_sample_struct_FixedCatches(sample_struct,
+                                                             rt_mortality_om = 0.1*flat_multiplier,
+                                                             rt_mortality_em = 0.1*flat_multiplier,
+                                                             rt_year_em = seq(from = 2018, to = 2017+projyrs, by = 1))
 
 ##### Scenario Selection #####
 # global settings for all SSMSE runs
@@ -416,23 +416,23 @@ create_RandomFixedCatch <- function (my_niter,
   FixedCatch <- FixedCatch %>% filter(FltSvy == rt_fleet)
   RandomFixedCatch <- list()
   rt_year_om = sample(1:length(FixedCatch[, 1]), length(FixedCatch[, 1])) # random years
-#  if (projyrs <= n_rt_years*my_niter){
-    for (i in 1:my_niter) {
-      this_iter_rt <- rt_year_om[1:n_rt_years]
-      rt_year_om <- rt_year_om[-c(1:n_rt_years)]
-      
-      if(length(rt_year_om) < n_rt_years ){
-        rt_year_om <- c(rt_year_om, sample(c(1:length(FixedCatch[,1]))[which(!is.element(1:length(FixedCatch[,1]),rt_year_om))], length(c(1:length(FixedCatch[,1]))[which(!is.element(1:length(FixedCatch[,1]),rt_year_om))])))
-      }
-      
-      RandomFixedCatch[[i]] <- FixedCatch
-      
-      rt_mortality_om = runif(n_rt_years, min_mortality, max_mortality) # random mortality
-      rt_mortality_om = rt_mortality_om * (mean_mortality / mean(rt_mortality_om)) # rescale to the mean
-      
-      RandomFixedCatch[[i]][this_iter_rt, "Catch"] <- rt_mortality_om
+  #  if (projyrs <= n_rt_years*my_niter){
+  for (i in 1:my_niter) {
+    this_iter_rt <- rt_year_om[1:n_rt_years]
+    rt_year_om <- rt_year_om[-c(1:n_rt_years)]
+    
+    if(length(rt_year_om) < n_rt_years ){
+      rt_year_om <- c(rt_year_om, sample(c(1:length(FixedCatch[,1]))[which(!is.element(1:length(FixedCatch[,1]),rt_year_om))], length(c(1:length(FixedCatch[,1]))[which(!is.element(1:length(FixedCatch[,1]),rt_year_om))])))
     }
-#  } else { print("There are not enough iterations or years for this method")  }
+    
+    RandomFixedCatch[[i]] <- FixedCatch
+    
+    rt_mortality_om = runif(n_rt_years, min_mortality, max_mortality) # random mortality
+    rt_mortality_om = rt_mortality_om * (mean_mortality / mean(rt_mortality_om)) # rescale to the mean
+    
+    RandomFixedCatch[[i]][this_iter_rt, "Catch"] <- rt_mortality_om
+  }
+  #  } else { print("There are not enough iterations or years for this method")  }
   return(RandomFixedCatch)
 }
 
@@ -513,12 +513,12 @@ extras_base$RandomFixedCatch <- create_RandomFixedCatch(
 
 extras_base$RandomFixedCatchEM <- extras_base$RandomFixedCatch
 
-  for (i in 1:my_niter) {
-    names(extras_base$RandomFixedCatchEM[[i]])[5] <- "catch_se"
-    rt_catch_se <- rep(0.01, length = nrow(extras_base$RandomFixedCatchEM[[i]]))
-    extras_base$RandomFixedCatchEM[[i]]$catch_se <- rt_catch_se
-    extras_base$RandomFixedCatchEM[[i]]$fixed <- rep(0, length = nrow(extras_base$RandomFixedCatchEM[[i]])) # a new column that indicates if the EM's catch is estimated or not.
-  }
+for (i in 1:my_niter) {
+  names(extras_base$RandomFixedCatchEM[[i]])[5] <- "catch_se"
+  rt_catch_se <- rep(0.01, length = nrow(extras_base$RandomFixedCatchEM[[i]]))
+  extras_base$RandomFixedCatchEM[[i]]$catch_se <- rt_catch_se
+  extras_base$RandomFixedCatchEM[[i]]$fixed <- rep(0, length = nrow(extras_base$RandomFixedCatchEM[[i]])) # a new column that indicates if the EM's catch is estimated or not.
+}
 
 all_yrs_scenarios_extra <- scenario_factorial(model_names = model_names, type_name = type_name, varied_mortality = TRUE, base_extras = extras_base[-2])    
 rt_2_scenarios_extra <- scenario_factorial(model_names = model_names, type_name = "_rt_2", varied_mortality = TRUE, base_extras = extras_base) 
@@ -565,19 +565,19 @@ sample_struct_rt_17_x_no_rt <- add_sample_struct_FixedCatches(sample_struct, om_
 make_rt_17_no_model <- function(OM_name = "flat") {
   
   scen_name <- paste0(OM_name,"_x_no_rt")
-
-    multiplier_name <- paste0(OM_name, "_multiplier")
-    # Use a local copy to modify
-    new_extras <- extras_base
+  
+  multiplier_name <- paste0(OM_name, "_multiplier")
+  # Use a local copy to modify
+  new_extras <- extras_base
+  
+  # Ensure my_niter exists or use seq_along
+  for(iters in seq_along(new_extras$RandomFixedCatch)){ 
+    multiplier_val <- get(multiplier_name)
     
-    # Ensure my_niter exists or use seq_along
-    for(iters in seq_along(new_extras$RandomFixedCatch)){ 
-      multiplier_val <- get(multiplier_name)
-      
-      # Perform the multiplication and assign it back to the local object
-      new_extras$RandomFixedCatch[[iters]]$Catch <- 
-        extras_base$RandomFixedCatch[[iters]]$Catch * multiplier_val
-    }
+    # Perform the multiplication and assign it back to the local object
+    new_extras$RandomFixedCatch[[iters]]$Catch <- 
+      extras_base$RandomFixedCatch[[iters]]$Catch * multiplier_val
+  }
   
   no_rt_all_yrs_model <- modifyList(
     base_params,
@@ -683,21 +683,21 @@ run_summary_SSMSE <- function(...) {
   
   # Capture the directory path from the passed arguments
   args <- list(...)
-  dir_path <- paste0(args$out_dir_scen_vec, args$scen_name_vec)  # Ensure 'dir' matches your scenario path parameter name
-  
-  # Generate summary results for this specific scenario location
-  get_results_scenario(dir_path)
+  dir_path <- paste0(args$out_dir_scen_vec, "/", args$scen_name_vec)  # Ensure 'dir' matches your scenario path parameter name
   
   # move the scenario to the bucket
   # Extract the scenario to build the target cloud path
   scenario_name  <- args$scen_name_vec
-
+  
+  # Generate summary results for this specific scenario location
+  ss3sim:::get_results_scenario(scenario_name, run_res_path)
+  
+  
   # Construct the target cloud URI 
-  # Example: gs://my-bucket/scenario_abc/iteration_1
-  target_cloud_iteration_dir <- file.path(cloud_bucket, scenario_name)
+  target_cloud_iteration_dir <- file.path(bucket_path, scenario_name)
   
   # The local directory we want to copy everything from
-  local_iteration_dir <- dirname(dir_path)
+  local_iteration_dir <- dir_path
   
   message("Starting sync from local: ", local_iteration_dir, " to cloud: ", target_cloud_iteration_dir)
   
