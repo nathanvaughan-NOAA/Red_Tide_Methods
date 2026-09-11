@@ -17,13 +17,13 @@ packageVersion("ss3sim")
 packageVersion("SSMSE")
 
 # Create a folder for the output in the working directory.
-results_name <- "optimal_method"
+results_name <- "supplemental"
 run_SSMSE_dir <- file.path("./runs_output")
 run_res_path <- file.path(run_SSMSE_dir, paste0("results_", results_name))
 if (!dir.exists(run_res_path)) {
   dir.create(run_res_path, recursive = TRUE)
 }
-bucket_path <- normalizePath(paste0("gs://ecsai-red-tide-simulation-project/2026_07_20_optimal_method/results_", results_name)) 
+bucket_path <- normalizePath(paste0("gs://ecsai-red-tide-simulation-project/2026_09_11_supplemental/results_", results_name)) 
 mount_path <- file.path("./bucket")
 
 # OM locations
@@ -307,11 +307,12 @@ base_params <- list(
   nyrs_assess_vec = 3,
   future_om_list  = future_OM_list_recdevs,
   run_parallel    = TRUE,
-  n_cores         = 4,
+  n_cores         = 100,
   seed            = 12345,
   # Normalize these once here
   OM_in_dir_vec   = normalizePath(default),
-  EM_in_dir_vec   = normalizePath(default)
+  EM_in_dir_vec   = normalizePath(default), 
+  file_removal    = TRUE
 )
 
 # use modifyList() to adjust the run_SSMSE parameters
@@ -376,7 +377,7 @@ scenario_factorial <- function(model_names = c("flat", "young"), type_name = NUL
         scen_name_vec = scen_name,
         sample_struct_list = setNames(list(struct_obj), scen_name),
         OM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, combo$OM)),
-        EM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, paste0(combo$EM, "_adj"))), 
+        EM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, paste0(combo$EM, ""))), 
         extra = list(new_extras)
       )))
     } else {
@@ -385,7 +386,7 @@ scenario_factorial <- function(model_names = c("flat", "young"), type_name = NUL
         scen_name_vec = scen_name,
         sample_struct_list = setNames(list(struct_obj), scen_name),
         OM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, combo$OM)),
-        EM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, paste0(combo$EM, "_adj")))
+        EM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, paste0(combo$EM, "")))
       ))
     }
   }
@@ -532,7 +533,7 @@ make_no_rt_all_yrs_model <- function(EM_name = "flat", EM_type = "all_yrs"){
       scen_name_vec = paste0("no_rt_x_", EM_name,"_", EM_type),
       sample_struct_list = setNames(list(sample_struct_no_rt_x_all_yrs), paste0("no_rt_x_", EM_name,"_", EM_type)),
       OM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, "none")),
-      EM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, paste0(EM_name, "_adj")))))
+      EM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, paste0(EM_name, "")))))
 }
 
 
@@ -549,7 +550,7 @@ make_no_rt_17_model <- function(EM_name = "flat", EM_type = "rt_17"){
       scen_name_vec = paste0("no_rt_x_", EM_name,"_", EM_type),
       sample_struct_list = setNames(list(sample_struct_no_rt_x_rt_17), paste0("no_rt_x_", EM_name,"_", EM_type)),
       OM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, "none")),
-      EM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, paste0(EM_name, "_adj"))), 
+      EM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, paste0(EM_name, ""))), 
       extra = list(extras_base[-1])
     ))
 }
@@ -675,48 +676,84 @@ scen_list_str <- all_scenarios %>%
 ##### RUN SSMSE #####
 
 # walk through the scenario list and run_SSMSE
-#walk(all_scenarios, ~exec(run_SSMSE, !!!.x))  # !!! makes the scenario list into arguments that can be used by a function
 
-# Split runs across multiple clusters and cores to maximize cores.  
+run_summary_SSMSE <- function(...) {
+  # Pass all scenario arguments to run_SSMSE
+  run_SSMSE(...)
+  
+  # Capture the directory path from the passed arguments
+  args <- list(...)
+  dir_path <- paste0(args$out_dir_scen_vec, args$scen_name_vec)  # Ensure 'dir' matches your scenario path parameter name
+  
+  # Generate summary results for this specific scenario location
+  get_results_scenario(dir_path)
+  
+  # move the scenario to the bucket
+  # Extract the scenario to build the target cloud path
+  scenario_name  <- args$scen_name_vec
 
-library(foreach)
-library(doParallel)
-
-# 1. Set up a standard socket cluster with 45 workers
-# (Since SSMSE uses foreach internally, this cluster handles both layers)
-cl <- makeCluster(45)
-registerDoParallel(cl)
-
-# 2. Run the 45 scenarios using %dopar%
-results <- foreach(
-  scenario = all_scenarios,
-  .packages = c("SSMSE") # Ensures SSMSE is loaded on all 45 workers
-) %dopar% {
-
-  # Inside each worker, run the scenario.
-  # Note: If run_SSMSE has an 'ncores' or 'parallel' argument,
-  # set it to 1 or FALSE here so the 45 workers don't try to split further.
-  do.call(run_SSMSE, scenario)
-
+  # Construct the target cloud URI 
+  # Example: gs://my-bucket/scenario_abc/iteration_1
+  target_cloud_iteration_dir <- file.path(cloud_bucket, scenario_name)
+  
+  # The local directory we want to copy everything from
+  local_iteration_dir <- dirname(dir_path)
+  
+  message("Starting sync from local: ", local_iteration_dir, " to cloud: ", target_cloud_iteration_dir)
+  
+  # --- Perform the rsync Operation ---
+  # -r: recursive (includes all subfolders like om/em)
+  rsync_cmd <- paste(
+    "gcloud storage rsync",
+    shQuote(local_iteration_dir),
+    shQuote(target_cloud_iteration_dir),
+    "-r"
+  )
+  
+  # Run the system command and capture the exit status (0 means success)
+  status <- system(rsync_cmd)
+  
+  if (status == 0) {
+    message("Success! The iteration folder and all its subfolders/contents were synced to the cloud.\n")
+    contents <- list.files(local_iteration_dir, full.names = TRUE, all.files = TRUE, no.. = TRUE)
+    unlink(contents, recursive = TRUE)
+  } else {
+    warning("gcloud storage rsync failed. Please check your gcloud authentication, bucket permissions, or network connection.\n")
+  }
 }
 
-# 3. Clean up the cluster when finished
-stopCluster(cl)
-registerDoSEQ()
+walk(all_scenarios, ~exec(run_summary_SSMSE, !!!.x))  # !!! makes the scenario list into arguments that can be used by a function
 
-# make a summary with all the outputs in the same folder
-summary <- SSMSE::SSMSE_summary_all(file.path(run_SSMSE_dir, paste0("results_", results_name)), n_cores = 120, run_parallel = TRUE)
-saveRDS(summary, file = file.path(run_SSMSE_dir, paste0("results_summary_", results_name, ".rda")))
+# # Split runs across multiple clusters and cores to maximize cores.  
+# 
+# library(foreach)
+# library(doParallel)
+# 
+# # 1. Set up a standard socket cluster with 45 workers
+# # (Since SSMSE uses foreach internally, this cluster handles both layers)
+# cl <- makeCluster(45)
+# registerDoParallel(cl)
+# 
+# # 2. Run the 45 scenarios using %dopar%
+# results <- foreach(
+#   scenario = all_scenarios,
+#   .packages = c("SSMSE") # Ensures SSMSE is loaded on all 45 workers
+# ) %dopar% {
+# 
+#   # Inside each worker, run the scenario.
+#   # Note: If run_SSMSE has an 'ncores' or 'parallel' argument,
+#   # set it to 1 or FALSE here so the 45 workers don't try to split further.
+#   do.call(run_SSMSE, scenario)
+# 
+# }
+# 
+# # 3. Clean up the cluster when finished
+# stopCluster(cl)
+# registerDoSEQ()
 
-rsync_cmd <- paste(
-  "gcloud storage rsync",
-  shQuote(run_SSMSE_dir),
-  shQuote(bucket_path),
-  "-r"
-)
-
-# Run the system command and capture the exit status (0 means success)
-system(rsync_cmd)
+# # make a summary with all the outputs in the same folder
+# summary <- SSMSE::SSMSE_summary_all(file.path(run_SSMSE_dir, paste0("results_", results_name)), n_cores = 120, run_parallel = TRUE)
+# saveRDS(summary, file = file.path(run_SSMSE_dir, paste0("results_summary_", results_name, ".rda")))
 
 # end timer
 end_time <- Sys.time()

@@ -1,9 +1,6 @@
+# Runs the summary file after all of scenarios finish.  
 
-
-PASSWORD <- 
-email_address <- 
-
-results_name <- "selectivity_100_redo"
+results_name <- "supplemental"
 
 run_SSMSE_dir <- "bucket/"
 run_res_path <- paste0("bucket/", results_name)
@@ -18,26 +15,16 @@ saveRDS(summary, file = file.path(run_SSMSE_dir, paste0("results_summary_", resu
 end_time <- Sys.time()
 time_dif <- end_time - start_time
 
-# send email to indicate the run is done
-library(blastula)
+saveRDS(time_dif, file = "timer_save_summary.rda")
 
-# Create the email
-email <- compose_email(
-  body = md(glue::glue("Your R job is **complete!** It took {time_dif} to run."))
-)
+##### END PROCESS #####
 
-Sys.setenv(SMTP_PASSWORD = PASSWORD)
+# create a unique tag name using the current timestamp
+tag_name <- paste0("alert-", time_dif)
 
-# Send via SMTP (Gmail)
-smtp_send(
-  email,
-  from = email_address,
-  to = email_address,
-  subject = "R Script Complete",
-  credentials = creds_envvar(
-    user = email_address,
-    provider = "gmail",
-    pass_envvar = "SMTP_PASSWORD",
-    use_ssl = TRUE
-  )
-)
+# create and push the tag locally pointing to your current commit
+system(paste("git tag", tag_name))
+system(paste("git push origin", tag_name)) # this will send email
+
+# remove the tag so it doesn't clutter the repo
+system(paste("git tag -d", tag_name))
