@@ -17,13 +17,13 @@ packageVersion("ss3sim")
 packageVersion("SSMSE")
 
 # Create a folder for the output in the working directory.
-results_name <- "supplemental"
+results_name <- "supplemental_redo"
 run_SSMSE_dir <- file.path("./runs_output")
 run_res_path <- file.path(run_SSMSE_dir, paste0("results_", results_name))
 if (!dir.exists(run_res_path)) {
   dir.create(run_res_path, recursive = TRUE)
 }
-bucket_path <- normalizePath(paste0("gs://ecsai-red-tide-simulation-project/2026_09_11_supplemental/results_", results_name)) 
+bucket_path <- normalizePath(paste0("gs://ecsai-red-tide-simulation-project/2026_09_23_supplemental_redo/results_", results_name)) 
 mount_path <- file.path("./bucket")
 
 # OM locations
@@ -668,6 +668,9 @@ all_scenarios <- c(
   rt_2_scenarios_extra,
   all_yrs_scenarios_extra
 )
+
+#all_scenarios <- all_scenarios[1:30]
+#all_scenarios <- all_scenarios[31:45]
 
 scen_list_str <- all_scenarios %>%
   map_chr(\(x) x$scen_name_vec) %>%

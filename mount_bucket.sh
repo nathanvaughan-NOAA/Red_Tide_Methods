@@ -9,7 +9,7 @@
 # create the folder at /home/your_username/my_gcs_bucket.
 BUCKET_NAME="ecsai-red-tide-simulation-project"
 MOUNT_POINT="$HOME/Red_Tide_Methods/bucket"
-FOLDER_NAME="2026_09_11_supplemental/"
+FOLDER_NAME="2026_09_23_supplemental_redo/"
 
 # --- Authentication ---
 # This command authenticates your user account with Google Cloud.
