@@ -681,47 +681,45 @@ scen_list_str <- all_scenarios %>%
 # walk through the scenario list and run_SSMSE
 
 run_summary_SSMSE <- function(...) {
-  # Pass all scenario arguments to run_SSMSE
-  run_SSMSE(...)
-  
-  # Capture the directory path from the passed arguments
   args <- list(...)
-  dir_path <- paste0(args$out_dir_scen_vec, "/", args$scen_name_vec)  # Ensure 'dir' matches your scenario path parameter name
+  dir_path <- file.path(args$out_dir_scen_vec, args$scen_name_vec)
+  scenario_name <- args$scen_name_vec
   
-  # move the scenario to the bucket
-  # Extract the scenario to build the target cloud path
-  scenario_name  <- args$scen_name_vec
+  # Run SSMSE with error handling so execution doesn't halt abruptly
+  tryCatch({
+    run_SSMSE(...)
+  }, error = function(e) {
+    warning("run_SSMSE threw an error for scenario ", scenario_name, ": ", e$message)
+  })
   
-  # Generate summary results for this specific scenario location
-  ss3sim:::get_results_scenario(scenario_name, run_res_path)
+  # Try collecting summary results
+  tryCatch({
+    ss3sim:::get_results_scenario(scenario_name, run_res_path)
+  }, error = function(e) {
+    warning("get_results_scenario failed for ", scenario_name, ": ", e$message)
+  })
   
-  
-  # Construct the target cloud URI 
+  # Construct target cloud URI
   target_cloud_iteration_dir <- file.path(bucket_path, scenario_name)
   
-  # The local directory we want to copy everything from
-  local_iteration_dir <- dir_path
+  message("Starting sync from local: ", dir_path, " to cloud: ", target_cloud_iteration_dir)
   
-  message("Starting sync from local: ", local_iteration_dir, " to cloud: ", target_cloud_iteration_dir)
-  
-  # --- Perform the rsync Operation ---
-  # -r: recursive (includes all subfolders like om/em)
+  # Sync command
   rsync_cmd <- paste(
     "gcloud storage rsync",
-    shQuote(local_iteration_dir),
+    shQuote(dir_path),
     shQuote(target_cloud_iteration_dir),
     "-r"
   )
   
-  # Run the system command and capture the exit status (0 means success)
   status <- system(rsync_cmd)
   
   if (status == 0) {
-    message("Success! The iteration folder and all its subfolders/contents were synced to the cloud.\n")
-    contents <- list.files(local_iteration_dir, full.names = TRUE, all.files = TRUE, no.. = TRUE)
+    message("Success! Synced contents to cloud.\n")
+    contents <- list.files(dir_path, full.names = TRUE, all.files = TRUE, no.. = TRUE)
     unlink(contents, recursive = TRUE)
   } else {
-    warning("gcloud storage rsync failed. Please check your gcloud authentication, bucket permissions, or network connection.\n")
+    warning("gcloud storage rsync failed for scenario ", scenario_name, ".\n")
   }
 }
 
