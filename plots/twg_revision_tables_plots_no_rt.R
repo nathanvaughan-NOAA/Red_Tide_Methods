@@ -13,10 +13,10 @@ library(kableExtra)
 #location of the inputs
 model_SSMSE_dir <- file.path("base_models")
 run_SSMSE_dir <- file.path("runs_output")
-plot_folder <- "red_tide_no_rt_fix_final"
+plot_folder <- "supplemental_redo"
 
 #name of the results files and input settings
-results_name <- "_red_tide_no_rt_fix"
+results_name <- "_supplemental_redo"
 n_iterations <- 100
 min_year <- 2018
 max_year <- 2068
@@ -86,6 +86,84 @@ summary <- readRDS(file = file.path(run_SSMSE_dir, paste0("results_summary", res
 #         om_name (no_rt, flat, young, old, mid), 
 #         em_name (no_rt, flat, young, old, mid), 
 #         exp_type (all_yrs, rt_34, no_rt)
+
+summary$ts <- summary$ts %>%
+  filter(model_run != "", !str_detect(model_run, "Base")) %>% #remove "Base" model 
+  mutate(end_year = as.numeric(str_extract(model_run, "\\d{4}$")) + 3, 
+         years_until_terminal = end_year - year) %>%
+  filter(case_when(
+    str_detect(model_run, "_EM") ~ years_until_terminal > 2,
+    TRUE ~ TRUE # Keep all other rows if no _EM
+  )) %>%
+  filter(!is.na(scenario)) %>%
+  separate_wider_regex(
+    cols = scenario,
+    patterns = c(
+      om_name  = "^(?:old|mid|young|flat|no_rt)", # Added ?: here
+      "_x_", 
+      em_name  = "(?:old|mid|young|flat|no_rt)",  # Added ?: here
+      exp_type = ".*"
+    ),
+    too_few = "align_start",
+    cols_remove = FALSE
+  ) %>%
+  # --- CLEANUP EXP_TYPE ---
+  mutate(
+    exp_type = str_remove(exp_type, "^_"),
+    exp_type = if_else(str_detect(exp_type, "^\\d+$"), str_c("rt_", exp_type), exp_type)
+  ) %>%
+  mutate(Commercial = deadB_1 + deadB_2, Recreational = deadB_4)
+
+summary$dq <- summary$dq %>%
+  filter(model_run != "", !str_detect(model_run, "Base")) %>%
+  mutate(end_year = as.numeric(str_extract(model_run, "\\d{4}$")) + 3,
+         years_until_terminal = end_year - year) %>%
+  filter(case_when(
+    str_detect(model_run, "_EM") ~ years_until_terminal > 2,
+    TRUE ~ TRUE # Keep all other rows if no _EM
+  )) %>%
+  mutate(
+    scenario = factor(scenario, scen_list)
+  ) %>%
+  filter(!is.na(scenario)) %>%
+  separate_wider_regex(
+    cols = scenario,
+    patterns = c(
+      om_name  = "^(?:old|mid|young|flat|no_rt)", # Added ?: here
+      "_x_", 
+      em_name  = "(?:old|mid|young|flat|no_rt)",  # Added ?: here
+      exp_type = ".*"
+    ),
+    too_few = "align_start",
+    cols_remove = FALSE
+  ) %>%
+  # --- CLEANUP EXP_TYPE ---
+  mutate(
+    exp_type = str_remove(exp_type, "^_"),
+    exp_type = if_else(str_detect(exp_type, "^\\d+$"), str_c("rt_", exp_type), exp_type)
+  )
+
+
+summary$scalar <- summary$scalar %>%
+  filter(model_run != "", !str_detect(model_run, "Base")) %>%
+  filter(!is.na(scenario)) %>%
+  separate_wider_regex(
+    cols = scenario,
+    patterns = c(
+      om_name  = "^(?:old|mid|young|flat|no_rt)", # Added ?: here
+      "_x_", 
+      em_name  = "(?:old|mid|young|flat|no_rt)",  # Added ?: here
+      exp_type = ".*"
+    ),
+    too_few = "align_start",
+    cols_remove = FALSE
+  ) %>%
+  # --- CLEANUP EXP_TYPE ---
+  mutate(
+    exp_type = str_remove(exp_type, "^_"),
+    exp_type = if_else(str_detect(exp_type, "^\\d+$"), str_c("rt_", exp_type), exp_type)
+  ) 
+
 # Remove bad gradients
 
 bad_runs <- summary$scalar %>% 
@@ -312,6 +390,18 @@ if(save == TRUE){
   ggsave(file.path(run_SSMSE_dir,plot_folder, "ts_mean_F_5_core_wide_not_matching.png"),
          width = 6, height = 4, units = "in", device = "png")
 }
+
+combined_lines %>%
+  filter(scenario %in% c("flat_x_flat_rt_2", "flat_x_flat_all_yrs")) %>%
+  plot_variable_ts(data = ., variable = "F_5", stat_type = "mean") +
+  ggtitle("Matching") +
+  theme_bw() +
+  xlab("Year") + ylab("Average Red Tide Mortality") +
+  facet_grid(~scenario, labeller = labeller(scenario = new_labels)) +
+  theme(
+    text = element_text(size = 16),    
+    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)
+  )
 
 # #### All Years
 
@@ -1211,7 +1301,7 @@ ggplot() +
 
 # Load other set of results for comparison plot
 
-summary_rec_devs <- readRDS(file = file.path(run_SSMSE_dir, paste0("results_summary_new_rec_dev_fix_backup.rda")))
+summary_rec_devs <- readRDS(file = file.path(run_SSMSE_dir, paste0("results_summary_adjusted_red_tide_em.rda")))
 
 summary_rec_devs$ts <- summary_rec_devs$ts %>%
   filter(model_run != "", !str_detect(model_run, "Base")) %>% #remove "Base" model 
