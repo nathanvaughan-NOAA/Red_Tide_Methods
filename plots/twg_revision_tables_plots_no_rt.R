@@ -1170,3 +1170,216 @@ if(save == TRUE){
          width = 140, height = 120, units = "mm", dpi = 300)
 }
 
+# New table visualization --------------------------------------------------
+
+scenario_list <- unique(summary$ts$scenario)
+em_run_year <- 2068
+residual_runs_prop <- EM_runs %>%
+  filter(
+    str_detect(model_run, as.character(em_run_year))) %>%
+  rowwise()%>%
+  mutate(commercial = sum(deadB_1, deadB_2), recreational = deadB_4) %>%
+  left_join(OM_runs, by = c("year", "scenario", "iteration"), suffix = c("_em", "_om")) %>%
+  group_by(scenario, iteration, year) %>%
+  mutate(
+    res_Recruit_0 = Recruit_0_em-Recruit_0_om,
+    res_F_5 = F_5_em-F_5_om,
+    res_SpawnBio = SpawnBio_em-SpawnBio_om,
+    com_om = sum(deadB_1_om, deadB_2_om),
+    res_com = commercial-com_om,
+    res_rec = recreational-deadB_4_om,
+    res_dead_5 = deadB_5_em-deadB_5_om,
+    res_abundance = Bio_smry_em-Bio_smry_om
+  )
+
+all_errors <- residual_runs_prop %>% 
+  filter(year %in% seq(min_year, max_year_short_term, 1), scenario %in% scenario_list) %>%
+  group_by(scenario) %>%
+  reframe(
+    prop_com = (sum(res_com) / sum(com_om))*100,
+    prop_rec = (sum(res_rec) / sum(deadB_4_om))*100,
+    prop_red = (sum(res_dead_5) /  sum(deadB_5_om))*100,
+    raw_total = (sum(res_com)/n_iterations+sum(res_rec)/n_iterations+sum(res_dead_5)/n_iterations),
+    raw_prop = (sum(res_com)+sum(res_rec)+sum(res_dead_5)) /  (sum(com_om)+sum(deadB_4_om) + sum(deadB_5_om)) *100
+  )
+
+all_errors <- all_errors %>%
+  separate_wider_regex(
+    cols = scenario,
+    patterns = c(
+      om_name  = "^(?:old|mid|young|flat|no_rt)", # Added ?: here
+      "_x_", 
+      em_name  = "(?:old|mid|young|flat|no_rt)",  # Added ?: here
+      exp_type = ".*"
+    ),
+    too_few = "align_start",
+    cols_remove = FALSE
+  ) %>%
+  mutate(
+    exp_type = str_remove(exp_type, "^_"),
+    exp_type = if_else(str_detect(exp_type, "^\\d+$"), str_c("rt_", exp_type), exp_type), 
+    exp_type = if_else(is.na(exp_type) | exp_type == "" | str_detect(exp_type, "^\\s*$"), "no_rt", exp_type))
+
+all_errors <- all_errors %>%
+  mutate(joined_name = paste0(om_name, "_x_", em_name))
+
+# Define color-blind friendly palette (Okabe-Ito)
+cb_palette <- c("#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+
+# Prepare base dataset (excluding no_rt from the main faceted data)
+plot_data <- all_errors %>%
+  pivot_longer(
+    cols = c(prop_rec, prop_com, prop_red), 
+    names_to = "error_type", 
+    values_to = "error"
+  ) %>%
+  filter(!(om_name == "no_rt" & error_type == "prop_red")) %>%
+  mutate(
+    exp_type = if_else(exp_type == "rt_2", "rt_17", exp_type),
+    error_type = case_when(
+      error_type == "prop_rec" ~ "Recreational Removals",
+      error_type == "prop_com" ~ "Commercial Removals",
+      error_type == "prop_red" ~ "Red Tide Removals",
+      TRUE ~ error_type
+    ),
+    # Force no_rt to the bottom row of om_name axis
+    om_name = factor(om_name, levels = c(setdiff(unique(om_name), "no_rt"), "no_rt"))
+  )
+
+# Extract no_rt data specifically and remove 'em_name' so it repeats across all facets
+no_rt_data_flat <- plot_data %>%
+  filter(em_name == "no_rt", om_name != c("no_rt")) %>%
+  mutate(em_name = "flat") 
+
+no_rt_data_mid <- plot_data %>%
+  filter(em_name == "no_rt", om_name != c("no_rt")) %>%
+  mutate(em_name = "mid")
+
+no_rt_data_old <- plot_data %>%
+  filter(em_name == "no_rt", om_name != c("no_rt")) %>%
+  mutate(em_name = "old")
+
+no_rt_data_young <- plot_data %>%
+  filter(em_name == "no_rt", om_name != c("no_rt")) %>%
+  mutate(em_name = "young")
+
+no_rt_data_no_rt <- plot_data %>%
+  filter(em_name == "no_rt", om_name == "no_rt") %>%
+  select(-om_name) %>%
+  cross_join(tibble(om_name = c("young", "mid", "flat", "old"))) %>%
+  mutate(joined_name = paste0(em_name, "_x_", om_name))
+
+no_rt_data <- rbind(no_rt_data_flat, no_rt_data_mid, no_rt_data_old, no_rt_data_young)
+no_rt_data <- no_rt_data %>%
+  mutate(joined_name = paste0(om_name, "_x_", em_name)) %>%
+  rbind(no_rt_data_no_rt)
+
+y_order <- c("young_x_young", 
+             "young_x_mid", 
+             "young_x_flat", 
+             "young_x_old",
+             "mid_x_young", 
+             "mid_x_mid", 
+             "mid_x_flat", 
+             "mid_x_old",
+             "flat_x_young", 
+             "flat_x_mid", 
+             "flat_x_flat", 
+             "flat_x_old",
+             "old_x_young", 
+             "old_x_mid", 
+             "old_x_flat", 
+             "old_x_old",
+             "no_rt_x_young", 
+             "no_rt_x_mid", 
+             "no_rt_x_flat", 
+             "no_rt_x_old") # Customize to your order
+
+
+# Main dataset without the standalone no_rt em_name panel
+main_data <- plot_data %>%
+  filter(em_name != "no_rt")
+
+main_data <- main_data %>%
+  mutate(joined_name = factor(joined_name, levels = rev(y_order))) # rev() puts the 1st item at top
+
+no_rt_data <- no_rt_data %>%
+  mutate(joined_name = factor(joined_name, levels = rev(y_order)))
+
+#option 1: free scaling
+ggplot() +
+  # 1. Reference line at 0
+  geom_vline(xintercept = 0, linetype = "dashed", color = "grey50", linewidth = 0.5) +
+  
+  # 2. Overlay no_rt points across ALL facets as background/reference points
+  # (Optional: shape = 17 or distinct styling makes them easy to distinguish)
+  geom_point(
+    data = no_rt_data,
+    aes(x = error, y = joined_name, color = exp_type),
+    size = 2,
+    alpha = 0.5
+  ) +
+  
+  # 3. Main facet points
+  geom_point(
+    data = main_data,
+    aes(x = error, y = joined_name, color = exp_type),
+    size = 2,
+    alpha = 0.85
+  ) +
+  
+  # 4. Facet using only the remaining estimation models
+  facet_grid( ~ error_type, scales = "free") +
+  scale_color_manual(values = cb_palette, name = "Frequency Type (EM)") +
+  labs(
+    x = "Proportional Error",
+    y = "Operating Model"
+  ) +
+  theme_bw(base_size = 11, base_family = "sans") +
+  theme(
+    panel.grid.minor = element_blank(),
+    panel.grid.major.y = element_line(linewidth = 0.3, color = "grey90"),
+    strip.background = element_rect(fill = "grey95", color = "black"),
+    strip.text = element_text(face = "bold", size = 10),
+    legend.position = "top",
+    legend.title = element_text(face = "bold"),
+    axis.title = element_text(face = "bold")
+  )
+
+# Option 2: same scale
+ggplot() +
+  # Reference line at 0
+  geom_vline(xintercept = 0, linetype = "dashed", color = "grey50", linewidth = 0.5) +
+  # Overlay no_rt points across ALL facets as background/reference points
+  geom_point(
+    data = no_rt_data,
+    aes(x = error, y = joined_name, color = exp_type),
+    size = 2,
+    alpha = 0.5
+  ) +
+  
+  # 3. Main facet points
+  geom_point(
+    data = main_data,
+    aes(x = error, y = joined_name, color = exp_type),
+    size = 2,
+    alpha = 0.85
+  ) +
+  
+  # 4. Facet using only the remaining estimation models
+  facet_grid( ~ error_type) +
+  scale_color_manual(values = cb_palette, name = "Frequency Type (EM)") +
+  labs(
+    x = "Proportional Error",
+    y = "Scenario"
+  ) +
+  theme_bw(base_size = 11, base_family = "sans") +
+  theme(
+    panel.grid.minor = element_blank(),
+    panel.grid.major.y = element_line(linewidth = 0.3, color = "grey90"),
+    strip.background = element_rect(fill = "grey95", color = "black"),
+    strip.text = element_text(face = "bold", size = 10),
+    legend.position = "top",
+    legend.title = element_text(face = "bold"),
+    axis.title = element_text(face = "bold")
+  )
