@@ -5,27 +5,28 @@
 
 # Set-up and get data -----------------------------------------------------
 
+#load packages 
 library(tidyverse)
 library(patchwork)
 library(knitr)
 library(kableExtra)
 library(viridis)
 
-#location of the inputs
-model_SSMSE_dir <- file.path("base_models")
+#location of the runs_output folder that will contain the .rda and folder for 
+#plots to be saved to.  
 run_SSMSE_dir <- file.path("runs_output")
-plot_folder <- "red_tide_no_rt_fix_final_9_30"
+plot_folder <- "red_tide_no_rt_fix_final_9_30" # save the plots
 
 #name of the results files and input settings
-results_name <- "_red_tide_no_rt_fix"
-n_iterations <- 100
-min_year <- 2018
+results_name <- "_red_tide_no_rt_fix"  #.rda file name without "results_summary"
+n_iterations <- 100 #number of iterations
+min_year <- 2018 
 max_year <- 2068
-model_run_selection <- 2068
-max_year_short_term <- min_year+4
+model_run_selection <- 2068 #the model_run year you want to use for plots, typically the last year
+max_year_short_term <- min_year + 4 
 save <- TRUE
+plot_type <- ".png"  #.pdf, etc.  
 
-#create a list of scenarios for plot generation, usually the default order is fine.  
 #scen_list <- unique(summary$ts$scenario)
 #hard coded in a specific order.  
 scen_list <- c(
@@ -562,45 +563,6 @@ kable_sel_all_yrs
 if(save == TRUE){
   save_kable(kable_sel_all_yrs, file = file.path(run_SSMSE_dir,plot_folder,"sel_all_yrs_kable.html"))
 }
-
-# # Long Term Error Tables --------------------------------------------------
-# We did not use these for the manuscript.  I will delete it if they are not in the final copy.  
-# 
-# # #### Core 4
-# 
-# kable_core <- create_residual_kable(min_year, max_year, core_4, max_year)
-# kable_core
-# 
-# if(save == TRUE){
-#   save_kable(kable_core, file = file.path(run_SSMSE_dir,plot_folder,"core_longterm_kable.html"))
-# }
-# 
-# # #### All Years
-# 
-# kable_all_yrs <- create_residual_kable(min_year, max_year, all_years, max_year)
-# kable_all_yrs
-# 
-# if(save == TRUE){
-#   save_kable(kable_all_yrs, file = file.path(run_SSMSE_dir,plot_folder,"all_years_longterm_kable.html"))
-# }
-# 
-# #### Selectivity rt_2
-# 
-# kable_sel_rt_2 <- create_residual_kable(min_year, max_year, selectivity_rt_2, max_year)
-# kable_sel_rt_2
-# 
-# if(save == TRUE){
-#   save_kable(kable_sel_rt_2, file = file.path(run_SSMSE_dir,plot_folder,"sel_rt_2_longterm_kable.html"))
-# }
-# 
-# #### Selectivity all_yrs
-# 
-# kable_sel_all_yrs <- create_residual_kable(min_year, max_year, selectivity_all_yrs, max_year)
-# kable_sel_all_yrs
-# 
-# if(save == TRUE){
-#   save_kable(kable_sel_all_yrs, file = file.path(run_SSMSE_dir,plot_folder,"sel_all_yrs_longterm_kable.html"))
-# }
 
 #  Median time series plots -------------------------------
 
@@ -1203,6 +1165,9 @@ all_errors <- residual_runs_prop %>%
     raw_prop = (sum(res_com)+sum(res_rec)+sum(res_dead_5)) /  (sum(com_om)+sum(deadB_4_om) + sum(deadB_5_om)) *100
   )
 
+
+
+
 all_errors <- all_errors %>%
   separate_wider_regex(
     cols = scenario,
@@ -1220,12 +1185,6 @@ all_errors <- all_errors %>%
     exp_type = if_else(str_detect(exp_type, "^\\d+$"), str_c("rt_", exp_type), exp_type), 
     exp_type = if_else(is.na(exp_type) | exp_type == "" | str_detect(exp_type, "^\\s*$"), "no_rt", exp_type))
 
-all_errors <- all_errors %>%
-  mutate(joined_name = paste0(om_name, "_x_", em_name))
-
-# Define color-blind friendly palette (Okabe-Ito)
-cb_palette <- c("#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
-
 # Prepare base dataset (excluding no_rt from the main faceted data)
 plot_data <- all_errors %>%
   pivot_longer(
@@ -1233,7 +1192,7 @@ plot_data <- all_errors %>%
     names_to = "error_type", 
     values_to = "error"
   ) %>%
-  filter(!(om_name == "no_rt" & error_type == "prop_red")) %>%
+  #filter(!(om_name == "no_rt" & error_type == "prop_red")) %>%
   mutate(
     exp_type = if_else(exp_type == "rt_2", "rt_17", exp_type),
     error_type = case_when(
@@ -1272,68 +1231,35 @@ no_rt_data_no_rt <- plot_data %>%
 no_rt_data <- rbind(no_rt_data_flat, no_rt_data_mid, no_rt_data_old, no_rt_data_young)
 no_rt_data <- no_rt_data %>%
   mutate(joined_name = paste0(om_name, "_x_", em_name)) %>%
-  rbind(no_rt_data_no_rt)
-
-y_order <- c("young_x_young", 
-             "young_x_mid", 
-             "young_x_flat", 
-             "young_x_old",
-             "mid_x_young", 
-             "mid_x_mid", 
-             "mid_x_flat", 
-             "mid_x_old",
-             "flat_x_young", 
-             "flat_x_mid", 
-             "flat_x_flat", 
-             "flat_x_old",
-             "old_x_young", 
-             "old_x_mid", 
-             "old_x_flat", 
-             "old_x_old",
-             "no_rt_x_young", 
-             "no_rt_x_mid", 
-             "no_rt_x_flat", 
-             "no_rt_x_old") # Customize to your order
-
+  rbind(no_rt_data_no_rt) %>%
+  select(-joined_name)
 
 # Main dataset without the standalone no_rt em_name panel
-main_data <- plot_data %>%
-  filter(em_name != "no_rt")
+main_data <- plot_data 
 
-main_data <- main_data %>%
-  mutate(joined_name = factor(joined_name, levels = rev(y_order))) # rev() puts the 1st item at top
-
-no_rt_data <- no_rt_data %>%
-  mutate(joined_name = factor(joined_name, levels = rev(y_order)))
+test <- rbind(main_data, no_rt_data)
 
 #option 1: free scaling
-ggplot() +
+test %>% ggplot() +
   # 1. Reference line at 0
   geom_vline(xintercept = 0, linetype = "dashed", color = "grey50", linewidth = 0.5) +
   
   # 2. Overlay no_rt points across ALL facets as background/reference points
   # (Optional: shape = 17 or distinct styling makes them easy to distinguish)
-  geom_point(
-    data = no_rt_data,
-    aes(x = error, y = joined_name, color = exp_type),
-    size = 2,
-    alpha = 0.5
-  ) +
   
   # 3. Main facet points
   geom_point(
     data = main_data,
-    aes(x = error, y = joined_name, color = exp_type),
+    aes(x = error, y = em_name, shape = exp_type),
     size = 2,
     alpha = 0.85
   ) +
   
   # 4. Facet using only the remaining estimation models
-  facet_grid( ~ error_type, scales = "free") +
-  scale_color_manual(values = cb_palette, name = "Frequency Type (EM)") +
+  facet_grid(om_name ~ error_type, scales = "free") +
   labs(
     x = "Proportional Error",
-    y = "Operating Model"
+    y = "Estimation Model"
   ) +
   theme_bw(base_size = 11, base_family = "sans") +
   theme(
@@ -1344,7 +1270,7 @@ ggplot() +
     legend.position = "top",
     legend.title = element_text(face = "bold"),
     axis.title = element_text(face = "bold")
-  )
+  ) + labs(shape = "Frequency Assumption (EM)")
 
 # Option 2: same scale
 ggplot() +
