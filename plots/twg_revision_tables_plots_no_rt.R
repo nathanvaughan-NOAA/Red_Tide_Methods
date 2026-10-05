@@ -5,90 +5,42 @@
 
 # Set-up and get data -----------------------------------------------------
 
-#load packages 
+# Load packages 
 library(tidyverse)
 library(patchwork)
 library(knitr)
 library(kableExtra)
 library(viridis)
 
-#location of the runs_output folder that will contain the .rda and folder for 
-#plots to be saved to.  
+# Location of the runs_output folder that will contain the .rda and folder for 
+# plots to be saved to.  
 run_SSMSE_dir <- file.path("runs_output")
 plot_folder <- "red_tide_no_rt_fix_final_9_30" # save the plots
 
-#name of the results files and input settings
-results_name <- "_red_tide_no_rt_fix"  #.rda file name without "results_summary"
-n_iterations <- 100 #number of iterations
-min_year <- 2018 
-max_year <- 2068
-model_run_selection <- 2068 #the model_run year you want to use for plots, typically the last year
-max_year_short_term <- min_year + 4 
-save <- TRUE
-plot_type <- ".png"  #.pdf, etc.  
+# Name of the results files and input settings
+results_name <- "_red_tide_no_rt_fix"  # .rda file name without "results_summary"
+n_iterations <- 100 # number of iterations
+min_year <- 2018 #min year analyzed (inclusive)
+max_year <- 2068 #max year analyzed (inclusive)
+model_run_selection <- 2068 # the model_run year you want to use for plots, typically the last year
+max_year_short_term <- min_year + 4 # our shorter time period for error calculations
+save <- TRUE # if you want to save the plots
+plot_type <- ".png"  # the format of the saved plots: .pdf, etc.  
 
-#scen_list <- unique(summary$ts$scenario)
-#hard coded in a specific order.  
-scen_list <- c(
-  "no_rt_x_no_rt",
-  "no_rt_x_flat_all_yrs",
-  "no_rt_x_young_all_yrs",
-  "no_rt_x_mid_all_yrs",
-  "no_rt_x_old_all_yrs",
-  "no_rt_x_flat_rt_17",
-  "no_rt_x_young_rt_17",
-  "no_rt_x_mid_rt_17",
-  "no_rt_x_old_rt_17",
-  "flat_x_no_rt",
-  "young_x_no_rt",
-  "mid_x_no_rt",
-  "old_x_no_rt",
-  "flat_x_flat_rt_2",
-  "young_x_young_rt_2",
-  "old_x_old_rt_2",
-  "mid_x_mid_rt_2",
-  "flat_x_young_rt_2",
-  "flat_x_old_rt_2",
-  "flat_x_mid_rt_2",
-  "young_x_flat_rt_2",
-  "young_x_old_rt_2",
-  "young_x_mid_rt_2",
-  "old_x_flat_rt_2",
-  "old_x_young_rt_2",
-  "old_x_mid_rt_2",
-  "mid_x_flat_rt_2",
-  "mid_x_young_rt_2",
-  "mid_x_old_rt_2",
-  "flat_x_flat_all_yrs",
-  "young_x_young_all_yrs",
-  "old_x_old_all_yrs",
-  "mid_x_mid_all_yrs",
-  "flat_x_young_all_yrs",
-  "flat_x_old_all_yrs",
-  "flat_x_mid_all_yrs",
-  "young_x_flat_all_yrs",
-  "young_x_old_all_yrs",
-  "young_x_mid_all_yrs",
-  "old_x_flat_all_yrs",
-  "old_x_young_all_yrs",
-  "old_x_mid_all_yrs",
-  "mid_x_flat_all_yrs",
-  "mid_x_young_all_yrs",
-  "mid_x_old_all_yrs"
-)
-
-
-#pull the summary files, the dat file isn't actually that important.  
+#pull the summary files, takes a few seconds.   
 summary <- readRDS(file = file.path(run_SSMSE_dir, paste0("results_summary", results_name, ".rda")))
 
-# Filter the summary data
+#get a list of the scenarios and reorder if desired.  
+scen_list <- unique(summary$ts$scenario)
+
+# Filter the summary data -----------------------------------------------------
 #   Remove "Base" model runs, remove the last 3 years of data of each model_run, 
 #   remove any NA scenarios that aren't in the list above.  
 #   Break up the scenario names in the following format:  
 #         om_name (no_rt, flat, young, old, mid), 
 #         em_name (no_rt, flat, young, old, mid), 
 #         exp_type (all_yrs, rt_34, no_rt)
-
+#   Add deadB_1 to deadB_2 to get Commercial DeadB, and relabel Recreational.   
 summary$ts <- summary$ts %>%
   filter(model_run != "", !str_detect(model_run, "Base")) %>% #remove "Base" model 
   mutate(end_year = as.numeric(str_extract(model_run, "\\d{4}$")) + 3, 
@@ -101,18 +53,19 @@ summary$ts <- summary$ts %>%
   separate_wider_regex(
     cols = scenario,
     patterns = c(
-      om_name  = "^(?:old|mid|young|flat|no_rt)", # Added ?: here
+      om_name  = "^(?:old|mid|young|flat|no_rt)", # pull these strings before _x_
       "_x_", 
-      em_name  = "(?:old|mid|young|flat|no_rt)",  # Added ?: here
-      exp_type = ".*"
+      em_name  = "(?:old|mid|young|flat|no_rt)",  # pull these strings after _x_
+      exp_type = ".*" # pull everything else (rt_, all_yrs, etc.)
     ),
     too_few = "align_start",
     cols_remove = FALSE
   ) %>%
-  # --- CLEANUP EXP_TYPE ---
-  mutate(
-    exp_type = str_remove(exp_type, "^_"),
-    exp_type = if_else(str_detect(exp_type, "^\\d+$"), str_c("rt_", exp_type), exp_type)
+  mutate(  # Clean exp_type
+    exp_type = str_remove(exp_type, "^_"), # get rid of the leading _
+    exp_type = if_else(str_detect(exp_type, "rt"), "Known", exp_type),
+    exp_type = if_else(exp_type == "", "No Years", exp_type),
+    exp_type = if_else(exp_type %in% "all_yrs", "All Years", exp_type)
   ) %>%
   mutate(Commercial = deadB_1 + deadB_2, Recreational = deadB_4)
 
@@ -139,10 +92,11 @@ summary$dq <- summary$dq %>%
     too_few = "align_start",
     cols_remove = FALSE
   ) %>%
-  # --- CLEANUP EXP_TYPE ---
-  mutate(
-    exp_type = str_remove(exp_type, "^_"),
-    exp_type = if_else(str_detect(exp_type, "^\\d+$"), str_c("rt_", exp_type), exp_type)
+  mutate(  # Clean exp_type
+    exp_type = str_remove(exp_type, "^_"), # get rid of the leading _
+    exp_type = if_else(str_detect(exp_type, "rt"), "Known", exp_type),
+    exp_type = if_else(exp_type == "", "No Years", exp_type),
+    exp_type = if_else(exp_type %in% "all_yrs", "All Years", exp_type)
   )
 
 
@@ -160,11 +114,12 @@ summary$scalar <- summary$scalar %>%
     too_few = "align_start",
     cols_remove = FALSE
   ) %>%
-  # --- CLEANUP EXP_TYPE ---
-  mutate(
-    exp_type = str_remove(exp_type, "^_"),
-    exp_type = if_else(str_detect(exp_type, "^\\d+$"), str_c("rt_", exp_type), exp_type)
-  ) 
+  mutate(  # Clean exp_type
+    exp_type = str_remove(exp_type, "^_"), # get rid of the leading _
+    exp_type = if_else(str_detect(exp_type, "rt"), "Known", exp_type),
+    exp_type = if_else(exp_type == "", "No Years", exp_type),
+    exp_type = if_else(exp_type %in% "all_yrs", "All Years", exp_type)
+  )
 
 # Remove bad gradients
 
@@ -230,6 +185,7 @@ selectivity_all_yrs <- c(
   "mid_x_old_all_yrs"
 )
 
+# filtered summary with just the OM or EM runs from the ts or dq.  
 OM_runs <- summary$ts %>%
   filter(str_detect(model_run, "OM"))
 
@@ -242,7 +198,7 @@ OM_runs_dq <- summary$dq %>%
 EM_runs_dq <- summary$dq %>%
   filter(str_detect(model_run, "EM"))
 
-# Average Timeseries plots --------------------------------------------------------
+# Figure X. Average red tide mortality over time -----------------------------
 
 ## mean F_5 over time
 
@@ -252,7 +208,8 @@ OM_lines <- OM_runs %>%
   filter(
     str_detect(model_run, as.character(model_run_selection)) | 
       str_detect(model_run, "_OM")
-  ) %>%  group_by(year, scenario) %>%
+  ) %>%  
+  group_by(year, scenario) %>%
   summarise(
     across(
       .cols = where(is.numeric), # Selects all numeric columns
@@ -265,15 +222,16 @@ OM_lines <- OM_runs %>%
       .names = "{.col}_{.fn}" 
     ),
     .groups = "drop" # Drops the grouping structure
-  ) %>% mutate(model_type = "OM")
+  ) %>% 
+  mutate(model_type = "OM")
 
 # create a data frame of EM means, medians, and sds by year and scenario
-# this currently uses all model_runs, should it just be the last model_run?  
 EM_lines <- EM_runs %>%
   filter(
     str_detect(model_run, as.character(model_run_selection)) | 
       str_detect(model_run, "_OM")
-  ) %>%  group_by(year, scenario) %>%
+  ) %>%  
+  group_by(year, scenario) %>%
   summarise(
     across(
       .cols = where(is.numeric), # Selects all numeric columns
@@ -286,7 +244,8 @@ EM_lines <- EM_runs %>%
       .names = "{.col}_{.fn}" 
     ),
     .groups = "drop" # Drops the grouping structure
-  ) %>% mutate(model_type = "EM")
+  ) %>% 
+  mutate(model_type = "EM")
 
 combined_lines <- rbind(OM_lines, EM_lines)
 
@@ -296,25 +255,33 @@ combined_lines$model_type <- factor(
   levels = c("OM", "EM") 
 )
 
-plot_variable_ts <- function(data = combined_lines, variable = "deadB_5", stat_type = "median", years = c(2004,2025)){
+plot_variable_ts <- function(data = combined_lines,
+                             variable = "deadB_5",
+                             stat_type = "median",
+                             years = c(2004, 2025)) {
+  #combine the variable and stat_type names together for the y variable
   y_var_sym = sym(paste0(variable, "_", stat_type))
   
-  ggplot(data, aes(x = year, y = !!y_var_sym, color = model_type)) +
+  ggplot(data, aes(
+    x = year,
+    y = !!y_var_sym,
+    color = model_type
+  )) +
     geom_line(aes(linetype = model_type)) +
-    facet_wrap(~scenario) +
+    facet_wrap( ~ scenario) +
     ggtitle(paste(stat_type, variable, "over time")) +
     scale_color_manual(
       name = "Model",
-      values = c("OM" = "#D65F00", "EM" = "black"), 
+      values = c("OM" = "#D65F00", "EM" = "black"),
       labels = c("OM" = "OM", "EM" = "EM"),
-      breaks = c("OM", "EM") 
+      breaks = c("OM", "EM")
     ) +
     scale_linetype_manual(
-      name = "Model", 
+      name = "Model",
       values = c("OM" = "solid", "EM" = "dashed"),
       labels = c("OM" = "OM", "EM" = "EM"),
-      breaks = c("OM", "EM") 
-    ) + 
+      breaks = c("OM", "EM")
+    ) +
     coord_cartesian(xlim = years)
 }
 
