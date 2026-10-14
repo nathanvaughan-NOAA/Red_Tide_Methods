@@ -1,7 +1,7 @@
-# This script was used to test generating plots for the SEDAR105 TWG
-# This version uses the _merged_no_rt data with all new scenarios
-# Many boxplots were eliminated in favor of time series.  
-
+# This script was used to generate plots for the Red Tide SSMSE Manuscript
+# This version uses 45 scenarios, from 2026_07_01_red_tide_no_rt_fix
+#  
+# Script run time: ~4 minutes
 
 # Set-up and get data -----------------------------------------------------
 
@@ -16,7 +16,11 @@ library(grid)
 # Location of the runs_output folder that will contain the .rda and folder for 
 # plots to be saved to.  
 run_SSMSE_dir <- file.path("runs_output")
-plot_folder <- "red_tide_no_rt_fix_manuscript_options" # save the plots to this folder
+plot_folder <- "red_tide_no_rt_fix_manuscript" # save the plots to this folder
+# create the plot folder if it doesn't exist
+if (!dir.exists(file.path(run_SSMSE_dir, plot_folder))) {
+  dir.create(file.path(run_SSMSE_dir, plot_folder), recursive = TRUE)
+}
 
 # Name of the results files and input settings
 results_name <- "_red_tide_no_rt_fix"  # .rda file name without "results_summary"
@@ -28,6 +32,7 @@ max_year_short_term <- min_year + 4 # our shorter time period for error calculat
 save <- TRUE # if you want to save the plots
 plot_type <- ".png"  # the format of the saved plots: .pdf, etc.  
 font_size <- 10
+
 #pull the summary files, takes a few seconds.   
 summary <- readRDS(file = file.path(run_SSMSE_dir, paste0("results_summary", results_name, ".rda")))
 
@@ -36,7 +41,7 @@ scen_list <- unique(summary$ts$scenario)
 
 # Establish overall theme
 # Original from: https://fishr-core-team.github.io/fishR/blog/posts/2022-12-22_AFS_Style_Figures/index.html
-theme_AFS <- function(base_size=10) {
+theme_AFS <- function(base_size=font_size) {
   theme_classic(base_size=base_size) +
     theme(
       # modify plot title,the B in this case
@@ -58,7 +63,7 @@ theme_AFS <- function(base_size=10) {
       # set the axis size,color,and end shape
       axis.line=element_line(colour="black",linewidth=0.5,lineend="square"),
       # adjust size of text for legend
-      legend.text=element_text(size=10)
+      legend.text=element_text(size=font_size)
     )
 }
 
@@ -150,7 +155,8 @@ summary$scalar <- summary$scalar %>%
     exp_type = if_else(exp_type %in% "all_yrs", "All Years", exp_type)
   )
 
-# Remove bad gradients
+# Remove gradients > 1
+# This is used later to make the supplemental table. 
 
 bad_runs <- summary$scalar %>% 
   filter(max_grad > 1) %>%
@@ -252,12 +258,11 @@ base_selectivities %>%
   ggplot(aes((age-1), log_selectivity)) +
   geom_line() +
   geom_point() +
-  theme_bw() +
   facet_wrap(~model_run) + xlab("Age") + ylab("Selectivity") +
   theme_AFS()
 
 if(save == TRUE){
-  ggsave(file.path(run_SSMSE_dir,plot_folder, "Figure_x_selectivity.png"),
+  ggsave(file.path(run_SSMSE_dir,plot_folder, "Figure_2_selectivity.png"),
          width = 90, height = 90, units = "mm", dpi = 300)
 }
 
@@ -318,6 +323,9 @@ combined_lines$model_type <- factor(
   levels = c("OM", "EM") 
 )
 
+# Plot function that can take any ts variable and make an mean or median
+# time series plot, for any time range. 
+
 plot_variable_ts <- function(data = combined_lines,
                              variable = "deadB_5",
                              stat_type = "median",
@@ -331,6 +339,7 @@ plot_variable_ts <- function(data = combined_lines,
     color = model_type
   )) +
     geom_line(aes(linetype = model_type)) +
+    geom_vline(xintercept = 2017, color = "grey") + 
     facet_wrap( ~ scenario) +
     scale_color_manual(
       name = "Model",
@@ -347,7 +356,7 @@ plot_variable_ts <- function(data = combined_lines,
     coord_cartesian(xlim = years)
 }
 
-
+# adjust facet labels
 new_labels <- c("flat_x_flat_rt_2" = "flat x flat - known", 
                 "flat_x_no_rt" = "flat x no rt",
                 "no_rt_x_flat_rt_17" = "no rt x flat - known", 
@@ -359,15 +368,13 @@ combined_lines %>%
   filter(scenario %in% c("flat_x_flat_rt_2", "no_rt_x_no_rt", "flat_x_no_rt", "no_rt_x_flat_rt_17", "flat_x_flat_all_yrs", "no_rt_x_flat_all_yrs")) %>%
   mutate(scenario = factor(scenario, levels = c("no_rt_x_no_rt", "no_rt_x_flat_rt_17", "no_rt_x_flat_all_yrs", "flat_x_no_rt", "flat_x_flat_rt_2", "flat_x_flat_all_yrs"))) %>%
   plot_variable_ts(data = ., variable = "F_5", stat_type = "mean") +
-  theme_bw() +
   xlab("Year") + ylab("Average Red Tide Mortality") +
   facet_wrap(~scenario, labeller = labeller(scenario = new_labels)) +
   theme_AFS() +
   theme(axis.text.x = element_text(angle = 45, vjust = 1.25, hjust = 1))
 
-
 if(save == TRUE){
-  ggsave(file.path(run_SSMSE_dir,plot_folder, "Figure_x_average_red_tide_mortality_flat.png"),
+  ggsave(file.path(run_SSMSE_dir,plot_folder, "Figure_3_average_red_tide_mortality_flat.png"),
          width = 6, height = 4, units = "in", device = "png")
 }
 
@@ -392,6 +399,7 @@ residual_runs_prop <- EM_runs %>%
     res_dead_5 = deadB_5_em-deadB_5_om,
     res_abundance = Bio_smry_em-Bio_smry_om
   )
+
 # Calculate the proportion error for each error type
 all_errors <- residual_runs_prop %>% 
   filter(year %in% seq(min_year, max_year_short_term, 1)) %>%
@@ -528,7 +536,7 @@ right_label <- wrap_elements(
 p + right_label + plot_layout(widths = c(20, 1))
 
 if(save == TRUE){
-  ggsave(file.path(run_SSMSE_dir,plot_folder, "Figure_x_Error_by_removal_type.png"),
+  ggsave(file.path(run_SSMSE_dir,plot_folder, "Figure_4_Error_by_removal_type.png"),
          width = 140, height = 120, units = "mm", dpi = 300)
 }
 
@@ -538,6 +546,7 @@ if(save == TRUE){
 # Achieved SSB Ratio over time when the OM or EM is no red tide.  
 # True: No Red Tide (OM) for Known and All years, No Red Tide (EM) for No Years
 # Legend: Selectivity
+
 plot_median_ts_om_lines_exp <- function(summary_data = summary$ts, 
                                         scenario_list, 
                                         min_yr = min_year, 
@@ -545,14 +554,14 @@ plot_median_ts_om_lines_exp <- function(summary_data = summary$ts,
                                         col_name = "Recreational", 
                                         experiment_type, baseline_scenario = "no_rt_x_no_rt") {
   
-  # 1. Filter raw iteration-level data
+  # Filter raw iteration-level OM data
   raw_filtered_data <- summary_data %>%
     filter(
       scenario %in% scenario_list,
       str_detect(model_run, "OM"),
       year >= min_yr,
       year <= max_yr
-    )
+    ) 
   
   if (baseline_scenario %in% raw_filtered_data$scenario) {
     # Get all target exp_type values excluding NA/baseline
@@ -572,7 +581,7 @@ plot_median_ts_om_lines_exp <- function(summary_data = summary$ts,
       )
   }
   
-  # 2. Calculate summary statistics (include exp_type in group_by)
+  # Calculate median and confidence interval for em/om/exp_type/year groups
   plot_summary_data <- raw_filtered_data %>%
     group_by(om_name, em_name, exp_type, year) %>%
     reframe(
@@ -580,15 +589,16 @@ plot_median_ts_om_lines_exp <- function(summary_data = summary$ts,
       low  = Hmisc::smedian.hilow(.data[[col_name]], conf.int = 0.95)[2],
       high = Hmisc::smedian.hilow(.data[[col_name]], conf.int = 0.95)[3],
       .groups = "drop" 
-    )
+    ) 
   
-  new_labels <- c("all_yrs" = "All Years", 
-                  "rt_17"   = "17 Years",
-                  "old"   = "True: Old Selectivity", 
-                  "flat"  = "True: Flat Selectivity", 
-                  "no_rt" = "True: No Red Tide (OM)")
+  # Reorder Known and All Years facets
+  raw_filtered_data <- raw_filtered_data %>%
+    mutate(exp_type = factor(exp_type, levels = c("Known", "All Years")))
   
-  # 3. Plotting
+  plot_summary_data <- plot_summary_data %>%
+    mutate(exp_type = factor(exp_type, levels =  c("Known", "All Years")))
+  
+  # Plotting
   ggplot() +
     geom_hline(yintercept = 0.3, linetype = "dashed") +
     geom_line(data = filter(raw_filtered_data, iteration %in% 1:5), 
@@ -610,6 +620,7 @@ plot_median_ts_om_lines_exp <- function(summary_data = summary$ts,
     xlab("Year")
 }
 
+# list scenarios for this plot
 no_rt_scenarios <- c(
   "no_rt_x_flat_rt_17", "no_rt_x_old_rt_17", "no_rt_x_young_rt_17", "no_rt_x_mid_rt_17", "no_rt_x_no_rt",
   "no_rt_x_flat_all_yrs", "no_rt_x_old_all_yrs", "no_rt_x_young_all_yrs", "no_rt_x_mid_all_yrs"
@@ -624,7 +635,6 @@ all_plot <- plot_median_ts_om_lines_exp(
   experiment_type = "Correct Years"
 ) + 
   ylab("SSB Ratio") + 
-  theme_bw() + 
   scale_color_viridis_d() + 
   scale_fill_viridis_d() +
   theme(
@@ -653,18 +663,17 @@ all_plot +
 
 
 if(save == TRUE){
-  ggsave(file.path(run_SSMSE_dir,plot_folder, "Op_2_Figure_x_no_rt_bratio.pdf"),
+  ggsave(file.path(run_SSMSE_dir,plot_folder, "Figure_5_no_rt_bratio.pdf"),
          width = 140, height = 70, units = "mm", dpi = 300)
-  ggsave(file.path(run_SSMSE_dir,plot_folder, "Op_2_Figure_x_no_rt_bratio.png"),
+  ggsave(file.path(run_SSMSE_dir,plot_folder, "Figure_5_no_rt_bratio.png"),
          width = 140, height = 70, units = "mm", dpi = 300)
 }
 
 ## Figure 6: Known SSB over time --------
 
-
 plot_median_ts_om_lines <- function (summary_data = summary$ts, scenario_list, min_yr = min_year, max_yr = max_year, col_name = "Recreational", experiment_type) {
   
-  # 1. First, get the filtered, raw iteration-level data
+  # Filter raw iteration-level OM data
   raw_filtered_data <- summary_data %>%
     filter(
       scenario %in% c(scenario_list),
@@ -673,7 +682,7 @@ plot_median_ts_om_lines <- function (summary_data = summary$ts, scenario_list, m
       year <= max_yr
     )
   
-  # 2. Then, calculate your summary statistics from that filtered data
+  # Calculate median and confidence interval for em/om/exp_type/year groups
   plot_summary_data <- raw_filtered_data %>%
     group_by(om_name, em_name, year) %>%
     reframe(
@@ -689,22 +698,19 @@ plot_median_ts_om_lines <- function (summary_data = summary$ts, scenario_list, m
                   "flat" = "True: Flat Selectivity", 
                   "no_rt" = "True: No Red Tide (OM)")
   
-  # 3. Plotting
+  # Plotting
   ggplot() +
-    # --- NEW: Individual iteration lines ---
-    # We use the raw data here. 
+    # Individual iteration lines
     geom_line(data = filter(raw_filtered_data, iteration %in% c(1:5)), 
               aes(x = year, y = .data[[col_name]], color = em_name, group = interaction(iteration, om_name, em_name)), 
               alpha = 0.2) + # Low alpha to keep it in the background
-    
-    # --- Your original summary layers (using the summary dataset) ---
+    # Summary confidence intervals and median lines
     geom_ribbon(data = plot_summary_data, 
                 aes(x = year, ymin = low, ymax = high, fill = em_name), alpha = 0.1) +
     geom_line(data = plot_summary_data, 
               aes(x = year, y = med_val, color = em_name), linewidth = .5) + # Slightly thicker to pop out
     
-    # --- Formatting layers ---
-    #ggtitle(paste0("Achieved ", col_name, " over time - ", experiment_type)) + 
+    # Formatting layers
     ylab(paste0(col_name, " (MT)")) + 
     facet_wrap(~om_name, labeller = labeller(om_name = new_labels)) + 
     labs(color = "Assumed\nSelectivity (EM)", fill = "Assumed\nSelectivity (EM)") + 
@@ -713,14 +719,15 @@ plot_median_ts_om_lines <- function (summary_data = summary$ts, scenario_list, m
 
 plot_median_ts_om_lines(summary$dq, min_yr = 2017, max_yr = 2068, col_name = "Value.Bratio", scenario_list = c(selectivity_rt_2, "flat_x_no_rt", "young_x_no_rt", "mid_x_no_rt", "old_x_no_rt"), experiment_type = "Correct Years") + geom_hline(yintercept = 0.3, linetype = "dashed") +
   ylab("SSB Ratio") + 
-  theme_bw() + scale_color_viridis_d() + scale_fill_viridis_d()  +
+  scale_color_viridis_d() + 
+  scale_fill_viridis_d() +
   theme_AFS() + 
   theme(
     axis.text.x = element_text(angle = 45, vjust = 1.25, hjust = 1)
   )
 
 if(save == TRUE){
-  ggsave(file.path(run_SSMSE_dir,plot_folder, "Op_2_Figure_x_rt_17_bratio.png"),
+  ggsave(file.path(run_SSMSE_dir,plot_folder, "Figure_6_known_bratio.png"),
          width = 140, height = 120, units = "mm", dpi = 300)
 }
 
@@ -728,13 +735,15 @@ if(save == TRUE){
 
 plot_median_ts_om_lines(summary$dq, min_yr = 2017, max_yr = 2068, col_name = "Value.Bratio", scenario_list = c(selectivity_all_yrs, "flat_x_no_rt", "young_x_no_rt", "mid_x_no_rt", "old_x_no_rt"), experiment_type = "Correct Years") + geom_hline(yintercept = 0.3, linetype = "dashed") +
   ylab("SSB Ratio") + 
-  theme_bw() + scale_color_viridis_d() + scale_fill_viridis_d()  +
+  scale_color_viridis_d() + 
+  scale_fill_viridis_d() +
   theme_AFS() + 
   theme(
-    axis.text.x = element_text(angle = 45, vjust = 1.25, hjust = 1))
+    axis.text.x = element_text(angle = 45, vjust = 1.25, hjust = 1)
+  )
 
 if(save == TRUE){
-  ggsave(file.path(run_SSMSE_dir,plot_folder, "Op_2_Figure_x_all_yrs_bratio.png"),
+  ggsave(file.path(run_SSMSE_dir,plot_folder, "Figure_7_all_yrs_bratio.png"),
          width = 140, height = 120, units = "mm", dpi = 300)
 }
 
@@ -745,12 +754,10 @@ if(save == TRUE){
 # These tables were reconfigured as a plot.  The numbers are frequently
 # referenced in the text.  
 
-## error table - for all 4 experiments separately
-
 create_residual_kable <- function(min_year, max_year, scenario_list, em_run_year) {
   residual_runs_prop <- EM_runs %>%
     filter(
-      str_detect(model_run, as.character(em_run_year))) %>%
+      str_detect(model_run, as.character(em_run_year)), scenario %in% scenario_list) %>%
     rowwise()%>%
     mutate(commercial = sum(deadB_1, deadB_2), recreational = deadB_4) %>%
     left_join(OM_runs, by = c("year", "scenario", "iteration"), suffix = c("_em", "_om")) %>%
@@ -764,10 +771,12 @@ create_residual_kable <- function(min_year, max_year, scenario_list, em_run_year
       res_rec = recreational-deadB_4_om,
       res_dead_5 = deadB_5_em-deadB_5_om,
       res_abundance = Bio_smry_em-Bio_smry_om
-    )
+    ) %>%
+    # Update scenario names for this table
+    mutate(scenario = str_replace_all(scenario, "rt_17|rt_2", "known"))
   
   residual_runs_prop %>% 
-    filter(year %in% seq(min_year, max_year, 1), scenario %in% scenario_list) %>%
+    filter(year %in% seq(min_year, max_year, 1)) %>%
     group_by(scenario) %>%
     reframe(
       prop_com = (sum(res_com) / sum(com_om))*100,
@@ -794,43 +803,7 @@ kable_all <- create_residual_kable(min_year, max_year_short_term, scen_list, max
 kable_all
 
 if(save == TRUE){
-  save_kable(kable_all, file = file.path(run_SSMSE_dir, plot_folder,"all_kable.html"))
-}
-
-#### Core 4
-
-kable_core <- create_residual_kable(min_year, max_year_short_term, core_4, max_year)
-kable_core
-
-if(save == TRUE){
-  save_kable(kable_core, file = file.path(run_SSMSE_dir, plot_folder,"core_kable.html"))
-}
-
-#### All Years
-
-kable_all_yrs <- create_residual_kable(min_year, max_year_short_term, all_years, max_year)
-kable_all_yrs
-
-if(save == TRUE){
-  save_kable(kable_all_yrs, file = file.path(run_SSMSE_dir,plot_folder,"all_years_kable.html"))
-}
-
-#### Selectivity rt_2
-
-kable_sel_rt_2 <- create_residual_kable(min_year, max_year_short_term, selectivity_rt_2, max_year)
-kable_sel_rt_2
-
-if(save == TRUE){
-  save_kable(kable_sel_rt_2, file = file.path(run_SSMSE_dir,plot_folder,"sel_rt_2_kable.html"))
-}
-
-#### Selectivity all_yrs
-
-kable_sel_all_yrs <- create_residual_kable(min_year, max_year_short_term, selectivity_all_yrs, max_year)
-kable_sel_all_yrs
-
-if(save == TRUE){
-  save_kable(kable_sel_all_yrs, file = file.path(run_SSMSE_dir,plot_folder,"sel_all_yrs_kable.html"))
+  save_kable(kable_all, file = file.path(run_SSMSE_dir, plot_folder,"In_text_Error_values_Supp_Table_2.html"))
 }
 
 
@@ -840,22 +813,24 @@ if(save == TRUE){
 
 # plot of raw gradients 
 
-# uncomment if you want to check
-summary$scalar %>%
-  mutate(model_run_year = str_extract(model_run, "\\d+")) %>% #extract year from model_run
-  ggplot(aes(model_run_year, max_grad))+
-  geom_point() +
-  facet_wrap(~scenario) +
-  theme_bw() +
-  theme(
-    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)
-  )
+# uncomment if you want to check gradients
+# summary$scalar %>%
+#   mutate(model_run_year = str_extract(model_run, "\\d+")) %>% #extract year from model_run
+#   ggplot(aes(model_run_year, max_grad))+
+#   geom_point() +
+#   facet_wrap(~scenario) +
+#   theme_bw() +
+#   theme(
+#     axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)
+#   )
 
 # List of iterations that have max_grad > 1 in any model_run.  
 
 ### Supp. Table 1. Removed Runs #######
 
 bad_grad <- bad_runs %>%
+  # Update scenario names for this table
+  mutate(scenario = str_replace_all(scenario, "rt_17|rt_2", "known")) %>%
   count(scenario) %>% 
   arrange(desc(n)) %>%  
   kable(
@@ -871,18 +846,19 @@ bad_grad <- bad_runs %>%
 bad_grad
 
 if(save == TRUE){
-  save_kable(bad_grad, file = file.path(run_SSMSE_dir, plot_folder,"supplemental_table_x_bad_gradients.html"))
+  save_kable(bad_grad, file = file.path(run_SSMSE_dir, plot_folder,"supplemental_table_1_bad_gradients.html"))
 }
 
 ## R0 ##### 
 
-summary$scalar %>% 
-  ggplot(aes(scenario, SR_LN_R0)) + 
-  geom_boxplot() +
-  theme_bw() +
-  theme(
-    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)
-  )
+#uncomment if you want to check R0
+# summary$scalar %>% 
+#   ggplot(aes(scenario, SR_LN_R0)) + 
+#   geom_boxplot() +
+#   theme_bw() +
+#   theme(
+#     axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)
+#   )
 
 ## Supplemental Figures --------------------------------------------------
 
@@ -890,33 +866,6 @@ summary$scalar %>%
 # This run does not include the adjusted base_models so red tide does not 
 # exist in the forecast years.  
 summary_rec_devs <- readRDS(file = file.path(run_SSMSE_dir, paste0("results_summary_supplemental_redo.rda")))
-
-summary_rec_devs$ts <- summary_rec_devs$ts %>%
-  filter(model_run != "", !str_detect(model_run, "Base")) %>% #remove "Base" model 
-  mutate(end_year = as.numeric(str_extract(model_run, "\\d{4}$")) + 3, 
-         years_until_terminal = end_year - year) %>%
-  filter(case_when(
-    str_detect(model_run, "_EM") ~ years_until_terminal > 2,
-    TRUE ~ TRUE # Keep all other rows if no _EM
-  )) %>%
-  filter(!is.na(scenario)) %>%
-  separate_wider_regex(
-    cols = scenario,
-    patterns = c(
-      om_name  = "^(?:old|mid|young|flat|no_rt)", # Added ?: here
-      "_x_", 
-      em_name  = "(?:old|mid|young|flat|no_rt)",  # Added ?: here
-      exp_type = ".*"
-    ),
-    too_few = "align_start",
-    cols_remove = FALSE
-  ) %>%
-  # --- CLEANUP EXP_TYPE ---
-  mutate(
-    exp_type = str_remove(exp_type, "^_"),
-    exp_type = if_else(str_detect(exp_type, "^\\d+$"), str_c("rt_", exp_type), exp_type)
-  ) %>%
-  mutate(Commercial = deadB_1 + deadB_2, Recreational = deadB_4)
 
 summary_rec_devs$dq <- summary_rec_devs$dq %>%
   filter(model_run != "", !str_detect(model_run, "Base")) %>%
@@ -941,39 +890,21 @@ summary_rec_devs$dq <- summary_rec_devs$dq %>%
     too_few = "align_start",
     cols_remove = FALSE
   ) %>%
-  # --- CLEANUP EXP_TYPE ---
-  mutate(
-    exp_type = str_remove(exp_type, "^_"),
-    exp_type = if_else(str_detect(exp_type, "^\\d+$"), str_c("rt_", exp_type), exp_type)
+  mutate(  # Clean exp_type
+    exp_type = str_remove(exp_type, "^_"), # get rid of the leading _
+    exp_type = if_else(str_detect(exp_type, "rt"), "Known", exp_type),
+    exp_type = if_else(exp_type == "", "No Years", exp_type),
+    exp_type = if_else(exp_type %in% "all_yrs", "All Years", exp_type)
   )
 
-
-summary_rec_devs$scalar <- summary_rec_devs$scalar %>%
-  filter(model_run != "", !str_detect(model_run, "Base")) %>%
-  filter(!is.na(scenario)) %>%
-  separate_wider_regex(
-    cols = scenario,
-    patterns = c(
-      om_name  = "^(?:old|mid|young|flat|no_rt)", # Added ?: here
-      "_x_", 
-      em_name  = "(?:old|mid|young|flat|no_rt)",  # Added ?: here
-      exp_type = ".*"
-    ),
-    too_few = "align_start",
-    cols_remove = FALSE
-  ) %>%
-  # --- CLEANUP EXP_TYPE ---
-  mutate(
-    exp_type = str_remove(exp_type, "^_"),
-    exp_type = if_else(str_detect(exp_type, "^\\d+$"), str_c("rt_", exp_type), exp_type)
-  ) 
 
 ### Supp. Figure 1. Known SSB Ratio  -----------
 
 #OM Data
 plot_median_ts_om_lines(summary_rec_devs$dq, min_yr = 2017, max_yr = 2068, col_name = "Value.Bratio", scenario_list = c(selectivity_rt_2, "no_rt_x_flat_rt_17", "no_rt_x_old_rt_17", "no_rt_x_young_rt_17", "no_rt_x_mid_rt_17", "no_rt_x_no_rt","flat_x_no_rt", "young_x_no_rt", "mid_x_no_rt", "old_x_no_rt"), experiment_type = "Correct Years") + geom_hline(yintercept = 0.3, linetype = "dashed")+ geom_hline(yintercept = 0.3, linetype = "dashed") +
-  ylab("SSB Ratio") + ggtitle("Achieved SSB Ratio over time - Known Years") + 
-  theme_bw() + scale_color_viridis_d() + scale_fill_viridis_d()  +
+  ylab("SSB Ratio") + 
+  scale_color_viridis_d() + 
+  scale_fill_viridis_d() +
   theme_AFS() + 
   theme(
     axis.text.x = element_text(angle = 45, vjust = 1.25, hjust = 1),
@@ -983,7 +914,7 @@ plot_median_ts_om_lines(summary_rec_devs$dq, min_yr = 2017, max_yr = 2068, col_n
   )
 
 if(save == TRUE){
-  ggsave(file.path(run_SSMSE_dir,plot_folder, "Supp_Figure_x_rt_17_bratio_supplemental.png"),
+  ggsave(file.path(run_SSMSE_dir,plot_folder, "Supp_Figure_1_rt_17_bratio_supplemental.png"),
          width = 140, height = 120, units = "mm", dpi = 300)
 }
 
@@ -991,7 +922,8 @@ if(save == TRUE){
 
 plot_median_ts_om_lines(summary_rec_devs$dq, min_yr = 2017, max_yr = 2068, col_name = "Value.Bratio", scenario_list = c(selectivity_all_yrs, "no_rt_x_flat_all_yrs", "no_rt_x_old_all_yrs", "no_rt_x_young_all_yrs", "no_rt_x_mid_all_yrs", "no_rt_x_no_rt","flat_x_no_rt", "young_x_no_rt", "mid_x_no_rt", "old_x_no_rt"), experiment_type = "All Years") + geom_hline(yintercept = 0.3, linetype = "dashed")+ geom_hline(yintercept = 0.3, linetype = "dashed") +
   ylab("SSB Ratio") + 
-  theme_bw() + scale_color_viridis_d() + scale_fill_viridis_d()  +
+  scale_color_viridis_d() + 
+  scale_fill_viridis_d() +
   theme_AFS() + 
   theme(
     axis.text.x = element_text(angle = 45, vjust = 1.25, hjust = 1),
@@ -1001,6 +933,6 @@ plot_median_ts_om_lines(summary_rec_devs$dq, min_yr = 2017, max_yr = 2068, col_n
   )
 
 if(save == TRUE){
-  ggsave(file.path(run_SSMSE_dir,plot_folder, "Supp_Figure_x_all_yrs_bratio_supplemental.png"),
+  ggsave(file.path(run_SSMSE_dir,plot_folder, "Supp_Figure_2_all_yrs_bratio_supplemental.png"),
          width = 140, height = 120, units = "mm", dpi = 300)
 }
