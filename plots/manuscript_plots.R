@@ -809,20 +809,7 @@ if(save == TRUE){
 
 # Supplemental Materials --------------------------------------------------
 
-## Gradients ###### 
-
-# plot of raw gradients 
-
-# uncomment if you want to check gradients
-# summary$scalar %>%
-#   mutate(model_run_year = str_extract(model_run, "\\d+")) %>% #extract year from model_run
-#   ggplot(aes(model_run_year, max_grad))+
-#   geom_point() +
-#   facet_wrap(~scenario) +
-#   theme_bw() +
-#   theme(
-#     axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)
-#   )
+## Supplemental Tables ###### 
 
 # List of iterations that have max_grad > 1 in any model_run.  
 
@@ -848,17 +835,6 @@ bad_grad
 if(save == TRUE){
   save_kable(bad_grad, file = file.path(run_SSMSE_dir, plot_folder,"supplemental_table_1_bad_gradients.html"))
 }
-
-## R0 ##### 
-
-#uncomment if you want to check R0
-# summary$scalar %>% 
-#   ggplot(aes(scenario, SR_LN_R0)) + 
-#   geom_boxplot() +
-#   theme_bw() +
-#   theme(
-#     axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)
-#   )
 
 ## Supplemental Figures --------------------------------------------------
 
