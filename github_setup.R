@@ -20,3 +20,5 @@ system("git config --list")  #check that the info is correct
 cred_line <- "https://USER_NAME:TOKEN@github.com"
 writeLines(cred_line, "~/.git-credentials")
 system('git config --global credential.helper store')
+
+system('git clone https://github.com/nathanvaughan-NOAA/Red_Tide_Methods.git')
