@@ -18,9 +18,4 @@ dir.create(run_SSMSE_dir)
 bucket_dir <- file.path("bucket")
 dir.create(bucket_dir)
 
-# Base OM folder
-# this is where you will upload the stock assessment you are working with
-model_SSMSE_dir <- file.path("base_models")
-dir.create(model_SSMSE_dir)
-
 # If you have more than one OM/EM to upload, add the folders here.  
