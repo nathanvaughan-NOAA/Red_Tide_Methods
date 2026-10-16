@@ -1,13 +1,18 @@
-# Using the cloud computing test as a template to explore a few different Red Tide Scenarios
+# SSMSE Red Grouper Starter File
+# Updated version of OMvsEM_complex_example.R
+# Major updates:
+#   1. Uses Tidyverse for setting up sample_struct
+#   2. All data and results are stored in relative paths (base_models, runs_output)
+#   3. Compatible with Google Cloud Workstations and Buckets 
 
 # start timer
 start_time <- Sys.time()
 
+# For Debugging
+#devtools::load_all("/SSMSE")  # path to cloned SSMSE repo
+#debug(EnvirEM) # frequently debugged SSMSE function
+
 # Load packages
-
-#devtools::load_all("C:/Users/apn26/Documents/SSMSE")  # needs to be the cloned SSMSE repo
-#debug(EnvirEM)
-
 library(tidyverse)
 library(SSMSE)
 
@@ -17,23 +22,38 @@ packageVersion("ss3sim")
 packageVersion("SSMSE")
 
 # Create a folder for the output in the working directory.
-results_name <- "supplemental_redo"
+results_name <- "red_tide_cleaning_starter"
 run_SSMSE_dir <- file.path("./runs_output")
 run_res_path <- file.path(run_SSMSE_dir, paste0("results_", results_name))
 if (!dir.exists(run_res_path)) {
   dir.create(run_res_path, recursive = TRUE)
 }
-bucket_path <- normalizePath(paste0("gs://ecsai-red-tide-simulation-project/2026_09_23_supplemental_redo/results_", results_name)) 
+
+# Update BUCKET_ADDRESS here or in personal .Renviron
+# Only used if cloud_use <- TRUE 
+# Moves data from workstation to bucket at the end of each scenario
+cloud_use <- FALSE
+BUCKET_ADDRESS <- "gs://"
+bucket_path <- normalizePath(paste0(BUCKET_ADDRESS, "/results_", results_name)) 
 mount_path <- file.path("./bucket")
 
-# OM locations
+# OM locations and default model used for sourcing parameter names and model structure
 model_SSMSE_dir <- file.path("base_models")
 default <- file.path(model_SSMSE_dir, "default_sigmaR")
 
-# number of simulation years
-projyrs <- 51
-rt_yrs <- 17
-my_niter <- 100
+# Update key numbers
+projyrs <- 51 # Projected Years
+rt_yrs <- 17 # Number of red tide events
+my_niter <- 100 # Number of iterations per scenario
+n_cores_run <- 100 # Number of cores to use per scenario
+nyrs_assess <- 3 # Number of years between stock assessments
+# Selectivity Multipliers
+# These were calculated by Total ages affected/Ages affected by selectivity type
+# used to even out the mortality under different selectivity assumptions.  
+young_multiplier <- 21/9
+old_multiplier <- 21/17.25
+mid_multiplier <- 21/16.75
+flat_multiplier <- 21/21
 
 # to get the names of parameter values
 ctl <- r4ss::SS_readctl(file.path(default, "red_grouper_1986_2017_RedTideFleet.ctl"), 
@@ -42,7 +62,7 @@ ctl <- r4ss::SS_readctl(file.path(default, "red_grouper_1986_2017_RedTideFleet.c
                         datlist = file.path(default, "data.ss_new"))
 dat <- r4ss::SS_readdat(file.path(default, "red_grouper_1986_2017_RedTideFleet.dat"))
 
-##### Add process error through rec devs #####
+# Add process error through rec devs #####
 # start from a list created by a helper function
 template_mod_change<-SSMSE::create_future_om_list()
 # add rec devs
@@ -61,7 +81,9 @@ rec_dev_specify$input$value<-NA
 # future OM list
 future_OM_list_recdevs<-list(rec_dev_specify)
 
-##### sample structure #####
+# Update sample structure #####
+# This section updates the sample structure to work for Red Grouper.  
+
 datfile<-dat
 #sample_struct<-create_sample_struct(dat=datfile, nyrs=projyrs)
 sample_struct<-SSMSE:::create_sample_struct_envir(dat=datfile, nyrs=projyrs)
@@ -239,10 +261,16 @@ sample_struct$meanbodywt
 
 sample_struct$MeanSize_at_Age_obs
 
-##### Sample Structure Changes ####
+# Red Tide Sample Structure Changes ####
 
 # Adjusting sample structure to include future red tide events
+# This manipulates Fixed Catch and Fixed Catch EM values in sample_struct
+# Uses SSMSE::add_sample_struct_FixedCatches()
 
+
+### Base red tide sample_struct's ####
+
+# This chunk generates the frequency scenarios used as base sample_struct later 
 sample_struct_no_rt_x_rt_2 <- add_sample_struct_FixedCatches(sample_struct, om_on = FALSE)
 sample_struct_rt_2_x_no_rt <- add_sample_struct_FixedCatches(sample_struct, em_on = FALSE)
 sample_struct_rt_2_x_rt_2 <- add_sample_struct_FixedCatches(sample_struct)
@@ -251,19 +279,7 @@ sample_struct_rt_2_x_all_yrs <- add_sample_struct_FixedCatches(sample_struct, rt
 sample_struct_rep_3_x_all_yrs <- add_sample_struct_FixedCatches(sample_struct, rt_year_om = seq(from = 2018, to = 2017+projyrs, by = 3), rt_year_em = seq(from = 2018, to = 2017+projyrs, by = 1))
 sample_struct_rt_2_x_rt_2_fixed <- add_sample_struct_FixedCatches(sample_struct, em_fixed = 1)
 
-# create a list of sample structures for each OM/MP run. 
-sample_struct_list_all <- list(
-  "no_rt" = sample_struct,
-  "no_rt_x_rt_2" = sample_struct_no_rt_x_rt_2,
-  "rt_2_x_no_rt" = sample_struct_rt_2_x_no_rt,
-  "rt_2_x_rt_2" = sample_struct_rt_2_x_rt_2,
-  "no_rt_x_all_yrs" = sample_struct_no_rt_x_all_yrs,
-  "rt_2_x_all_yrs" = sample_struct_rt_2_x_all_yrs, 
-  "rep_3_x_all_yrs" = sample_struct_rep_3_x_all_yrs, 
-  "rt_2_x_rt_2_fixed" = sample_struct_rt_2_x_rt_2_fixed
-)
-
-young_multiplier <- 21/9
+# This chunk generates the selectivity scenarios used as base sample_struct later 
 sample_struct_young_rt_2 <- add_sample_struct_FixedCatches(sample_struct,
                                                            rt_mortality_om = 0.1*young_multiplier,
                                                            rt_mortality_em = 0.1*young_multiplier)
@@ -271,7 +287,6 @@ sample_struct_young_all_yrs <- add_sample_struct_FixedCatches(sample_struct,
                                                               rt_mortality_om = 0.1*young_multiplier,
                                                               rt_mortality_em = 0.1*young_multiplier,
                                                               rt_year_em = seq(from = 2018, to = 2017+projyrs, by = 1))
-old_multiplier <- 21/17.25
 sample_struct_old_rt_2 <- add_sample_struct_FixedCatches(sample_struct,
                                                          rt_mortality_om = 0.1*old_multiplier,
                                                          rt_mortality_em = 0.1*old_multiplier)
@@ -279,7 +294,6 @@ sample_struct_old_all_yrs <- add_sample_struct_FixedCatches(sample_struct,
                                                             rt_mortality_om = 0.1*old_multiplier,
                                                             rt_mortality_em = 0.1*old_multiplier,
                                                             rt_year_em = seq(from = 2018, to = 2017+projyrs, by = 1))
-mid_multiplier <- 21/16.75
 sample_struct_mid_rt_2 <- add_sample_struct_FixedCatches(sample_struct,
                                                          rt_mortality_om = 0.1*mid_multiplier,
                                                          rt_mortality_em = 0.1*mid_multiplier)
@@ -287,7 +301,6 @@ sample_struct_mid_all_yrs <- add_sample_struct_FixedCatches(sample_struct,
                                                             rt_mortality_om = 0.1*mid_multiplier,
                                                             rt_mortality_em = 0.1*mid_multiplier,
                                                             rt_year_em = seq(from = 2018, to = 2017+projyrs, by = 1))
-flat_multiplier <- 21/21
 sample_struct_flat_rt_2 <- add_sample_struct_FixedCatches(sample_struct,
                                                           rt_mortality_om = 0.1*flat_multiplier,
                                                           rt_mortality_em = 0.1*flat_multiplier)
@@ -296,7 +309,7 @@ sample_struct_flat_all_yrs <- add_sample_struct_FixedCatches(sample_struct,
                                                              rt_mortality_em = 0.1*flat_multiplier,
                                                              rt_year_em = seq(from = 2018, to = 2017+projyrs, by = 1))
 
-##### Scenario Selection #####
+### Global run_SSMSE settings ####
 # global settings for all SSMSE runs
 base_params <- list(
   iter_vec        = my_niter,
@@ -304,35 +317,63 @@ base_params <- list(
   run_EM_last_yr  = TRUE,
   MS_vec          = "EnvirEM",
   nyrs_vec        = projyrs,
-  nyrs_assess_vec = 3,
+  nyrs_assess_vec = nyrs_assess,
   future_om_list  = future_OM_list_recdevs,
   run_parallel    = TRUE,
-  n_cores         = 100,
+  n_cores         = n_cores_run,
   seed            = 12345,
   # Normalize these once here
   OM_in_dir_vec   = normalizePath(default),
   EM_in_dir_vec   = normalizePath(default), 
-  file_removal    = TRUE
+  file_removal    = TRUE #deletes files not needed for summarizing
 )
 
+### Specific scenario run_SSMSE settings ####
 # use modifyList() to adjust the run_SSMSE parameters
 
-# Core 4
+###### Core 4 ####
+# The original core 4 models with just 2 red tide events in 2018 and 2021
 no_rt <- modifyList(base_params, list(scen_name_vec = "no_rt", sample_struct_list = list("no_rt" = sample_struct)))
 no_rt_x_rt_2 <- modifyList(base_params, list(scen_name_vec = "no_rt_x_rt_2", sample_struct_list = list("no_rt_x_rt_2" = sample_struct_no_rt_x_rt_2)))
 rt_2_x_no_rt <- modifyList(base_params, list(scen_name_vec = "rt_2_x_no_rt", sample_struct_list = list("rt_2_x_no_rt" = sample_struct_rt_2_x_no_rt)))
 rt_2_x_rt_2 <- modifyList(base_params, list(scen_name_vec = "rt_2_x_rt_2", sample_struct_list = list("rt_2_x_rt_2" = sample_struct_rt_2_x_rt_2)))
 
-# All years
+###### All years ####
+# The original all_yrs models with just 2 red tide events in 2018 and 2021
+# or repeating every 3 years starting in 2018
 no_rt_x_all_yrs <- modifyList(base_params, list(scen_name_vec = "no_rt_x_all_yrs", sample_struct_list = list("no_rt_x_all_yrs" = sample_struct_no_rt_x_all_yrs)))
 rt_2_x_all_yrs <- modifyList(base_params, list(scen_name_vec = "rt_2_x_all_yrs", sample_struct_list = list("rt_2_x_all_yrs" = sample_struct_rt_2_x_all_yrs)))
 rep_3_x_all_yrs <- modifyList(base_params, list(scen_name_vec = "rep_3_x_all_yrs", sample_struct_list = list("rep_3_x_all_yrs" = sample_struct_rep_3_x_all_yrs)))
 
-# Fixed EM
+###### Fixed EM ####
+# the fixed EM where red tide mortality was fixed at 0.1 magnitude and not estimated
 rt_2_x_rt_2_fixed <- modifyList(base_params, list(scen_name_vec = "rt_2_x_rt_2_fixed", sample_struct_list = list("rt_2_x_rt_2_fixed" = sample_struct_rt_2_x_rt_2_fixed)))
 
-# Selectivity
+###### Orginal Selectivity ####
+# the selectivity factorial automatically creates scenarios with every combination
+# of selectivity paired, as provided in model_names.  
+# There should be an existing base sample_struct above for this to pull from.  
 
+#' Generate Factorial Combinations of Model Scenarios
+#'
+#' Constructs a grid or list of factorial scenario combinations based on model 
+#' structures, structural types, and mortality variations, typically used to set up 
+#' simulation experiments or sensitivity analyses.
+#'
+#' @param model_names Character vector. Names of the model structures to evaluate. 
+#'   Defaults to `c("flat", "young")`.
+#' @param type_name Character or Character vector, optional. Name(s) identifying specific 
+#'   scenario types or classifications. Defaults to `NULL`.
+#' @param type_struct List or Vector, optional. Structural settings or configurations 
+#'   associated with each scenario type. Defaults to `NULL`.
+#' @param varied_mortality Logical. Whether to apply varying mortality rates across 
+#'   scenarios (`TRUE`) or keep them constant (`FALSE`). Defaults to `FALSE`.
+#' @param base_extras List, optional. Additional baseline parameters or metadata to 
+#'   append to each scenario context. Defaults to `NULL`.
+#'
+#' @return A `data.frame` or `list` containing all factorial combinations of the specified scenario parameters.
+#' @export
+#'
 scenario_factorial <- function(model_names = c("flat", "young"), type_name = NULL, type_struct = NULL, varied_mortality = FALSE, base_extras = NULL) {
   
   # create a grid of all model combos
@@ -377,7 +418,7 @@ scenario_factorial <- function(model_names = c("flat", "young"), type_name = NUL
         scen_name_vec = scen_name,
         sample_struct_list = setNames(list(struct_obj), scen_name),
         OM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, combo$OM)),
-        EM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, paste0(combo$EM, ""))), 
+        EM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, paste0(combo$EM, "_adj"))), 
         extra = list(new_extras)
       )))
     } else {
@@ -386,23 +427,49 @@ scenario_factorial <- function(model_names = c("flat", "young"), type_name = NUL
         scen_name_vec = scen_name,
         sample_struct_list = setNames(list(struct_obj), scen_name),
         OM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, combo$OM)),
-        EM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, paste0(combo$EM, "")))
+        EM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, paste0(combo$EM, "_adj")))
       ))
     }
   }
   )
 }
 
+# The selectivity curve names and types of structures used.  
 model_names = c("flat", "young", "old", "mid")
 type_name = "_all_yrs"
 type_struct = sample_struct_rt_2_x_all_yrs
+
+# The original selectivity scenarios without extras
+# extras introduced random red tide events for each iteration
+# these scenarios would have only 2 red tide events.  
 all_yrs_scenarios <- scenario_factorial(model_names = model_names, type_name = type_name, type_struct = sample_struct_rt_2_x_all_yrs)    
 rt_2_scenarios <- scenario_factorial(model_names = model_names, type_name = "_rt_2", type_struct = sample_struct_rt_2_x_rt_2)    
+# varied allowed the red tide mortality to be different in specific scenarios.
 all_yrs_scenarios_varied <- scenario_factorial(model_names = model_names, type_name = type_name, varied_mortality = TRUE)    
 rt_2_scenarios_varied <- scenario_factorial(model_names = model_names, type_name = "_rt_2", varied_mortality = TRUE)   
 
-# Random OM 
+###### Add random red tides ####
 
+# Random OM 
+#' Create a Random Fixed Catch Matrix Across Iterations
+#'
+#' Generates a matrix or array of random mortality values drawn from a uniform 
+#' distribution bounded by specified minimum and maximum mortality limits, 
+#' typically used in fisheries management strategy evaluation (MSE) or 
+#' population modeling.
+#'
+#' @param my_niter Integer. The number of iterations/simulations to generate.
+#' @param FixedCatch Numeric/Matrix. Baseline input structure.
+#' @param rt_fleet Integer or Character vector. Fleet identifier(s) subject to 
+#'   random mortality/catch adjustments.
+#' @param n_rt_years Integer. The number of years in the projection.
+#' @param min_mortality Numeric. The minimum bound for the uniformly distributed random mortality rate.
+#' @param max_mortality Numeric. The maximum bound for the uniformly distributed random mortality rate.
+#' @param mean_mortality Numeric. Target or baseline mean mortality rate (if used for scaling or reference).
+#' @param set_seed Integer, optional. Seed number for random number generation to ensure reproducibility. Default is `NULL`.
+#'
+#' @return A matrix containing iteration-specific random mortality/catch values across years and fleets.
+#' @export
 create_RandomFixedCatch <- function (my_niter,
                                      FixedCatch,
                                      rt_fleet,
@@ -436,69 +503,15 @@ create_RandomFixedCatch <- function (my_niter,
   return(RandomFixedCatch)
 }
 
+# make a blank copy of sample struct with FixedCatches and FixedCatchesEM
 sample_struct_fc <- SSMSE::create_sample_struct_envir(
   dat = datfile,
   nyrs = projyrs,
   FixedCatches = TRUE,
   FixedCatchesEM = TRUE
 )
-extras <- list()
-extras$RandomFixedCatch <- create_RandomFixedCatch(
-  my_niter = my_niter,
-  FixedCatch = sample_struct_fc$FixedCatch,
-  rt_fleet = 5,
-  n_rt_years = rt_yrs,
-  min_mortality = 0.05,
-  max_mortality = 0.25,
-  mean_mortality = 0.1, 
-  set_seed = 12345
-)
 
-# use RandomFixedCatch to fill in the numbers for RandomFixedCatchEM
-# start by making a perfect copy
-
-extras$RandomFixedCatchEM <- extras$RandomFixedCatch
-if (projyrs <= my_niter){
-  for (i in 1:my_niter) {
-    names(extras$RandomFixedCatchEM[[i]])[5] <- "catch_se"
-    rt_catch_se <- rep(0.01, length = nrow(extras$RandomFixedCatchEM[[i]]))
-    extras$RandomFixedCatchEM[[i]]$catch_se <- rt_catch_se
-    extras$RandomFixedCatchEM[[i]]$fixed <- rep(0, length = nrow(extras$RandomFixedCatchEM[[i]])) # a new column that indicates if the EM's catch is estimated or not.
-  }
-} else {
-  print("There are not enough iterations or years for this method")
-}
-
-random_10_x_random_10 <- modifyList(base_params, list(scen_name_vec = "random_10_x_random_10", sample_struct_list = list("random_10_x_random_10" = sample_struct_rt_2_x_rt_2), extras = list(extras)))
-random_10_x_all_years <- modifyList(base_params, list(scen_name_vec = "random_10_x_all_years", sample_struct_list = list("random_10_x_all_years" = sample_struct_rt_2_x_all_yrs), extras = list(extras[-2])))
-
-extras_fixed <- extras
-if (my_niter >= my_niter * projyrs) {
-  for (i in 1:my_niter) {
-    extras_fixed$RandomFixedCatchEM[[i]]$fixed <- rep(1, length = nrow(extras_fixed$RandomFixedCatchEM[[i]])) # a new column that indicates if the EM's catch is estimated or not.
-  }
-} else {
-  print("There are not enough iterations or years for this method")
-}
-random_10_x_fixed <- modifyList(base_params, list(scen_name_vec = "random_10_x_fixed", sample_struct_list = list("random_10_x_fixed" = sample_struct_rt_2_x_rt_2_fixed), extras = list(extras_fixed)))
-
-
-extras_fixed_with_se <- extras_fixed
-if (my_niter >= my_niter * projyrs) {
-  for (i in 1:my_niter) {
-    rt_catch_se <- rep(0.5, length = nrow(extras_fixed_with_se$RandomFixedCatchEM[[i]]))
-    extras_fixed_with_se$RandomFixedCatchEM[[i]]$catch_se <- rt_catch_se
-  }
-} else {
-  print("There are not enough iterations or years for this method")
-}
-
-random_10_x_fixed_with_se <- modifyList(base_params, list(scen_name_vec = "random_10_x_fixed_with_se", sample_struct_list = list("random_10_x_fixed_with_se" = sample_struct_rt_2_x_rt_2_fixed), extras = list(extras_fixed_with_se)))
-
-# Future Idea: then maybe have some wrong years
-
-# Random Selectivity
-
+# Create extras_base to provide all random red tide mortalities
 extras_base <- list()
 extras_base$RandomFixedCatch <- create_RandomFixedCatch(
   my_niter = my_niter,
@@ -520,10 +533,17 @@ for (i in 1:my_niter) {
   extras_base$RandomFixedCatchEM[[i]]$fixed <- rep(0, length = nrow(extras_base$RandomFixedCatchEM[[i]])) # a new column that indicates if the EM's catch is estimated or not.
 }
 
+###### Selectivity with random red tides ####
+# Combines the selectivity factorial with added extras data frame for randomness
+# These were the selectivity scenarios used for the manuscript
+
 all_yrs_scenarios_extra <- scenario_factorial(model_names = model_names, type_name = type_name, varied_mortality = TRUE, base_extras = extras_base[-2])    
 rt_2_scenarios_extra <- scenario_factorial(model_names = model_names, type_name = "_rt_2", varied_mortality = TRUE, base_extras = extras_base) 
 
-# add no_rt to the 34 random models
+
+###### No Red Tide in OM ####
+
+# Create sample_struct with no red tide in the OM
 sample_struct_no_rt_x_all_yrs <- add_sample_struct_FixedCatches(sample_struct, om_on = TRUE, rt_year_om = NULL, rt_year_em = seq(from = 2018, to = 2017+projyrs, by = 1))
 
 make_no_rt_all_yrs_model <- function(EM_name = "flat", EM_type = "all_yrs"){
@@ -533,7 +553,7 @@ make_no_rt_all_yrs_model <- function(EM_name = "flat", EM_type = "all_yrs"){
       scen_name_vec = paste0("no_rt_x_", EM_name,"_", EM_type),
       sample_struct_list = setNames(list(sample_struct_no_rt_x_all_yrs), paste0("no_rt_x_", EM_name,"_", EM_type)),
       OM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, "none")),
-      EM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, paste0(EM_name, "")))))
+      EM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, paste0(EM_name, "_adj")))))
 }
 
 
@@ -550,7 +570,7 @@ make_no_rt_17_model <- function(EM_name = "flat", EM_type = "rt_17"){
       scen_name_vec = paste0("no_rt_x_", EM_name,"_", EM_type),
       sample_struct_list = setNames(list(sample_struct_no_rt_x_rt_17), paste0("no_rt_x_", EM_name,"_", EM_type)),
       OM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, "none")),
-      EM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, paste0(EM_name, ""))), 
+      EM_in_dir_vec   = normalizePath(file.path(model_SSMSE_dir, paste0(EM_name, "_adj"))), 
       extra = list(extras_base[-1])
     ))
 }
@@ -559,6 +579,8 @@ no_rt_x_flat_rt_17 <- make_no_rt_17_model("flat")
 no_rt_x_young_rt_17 <- make_no_rt_17_model("young")
 no_rt_x_mid_rt_17 <- make_no_rt_17_model("mid")
 no_rt_x_old_rt_17 <- make_no_rt_17_model("old")
+
+###### No Red Tide in EM ####
 
 sample_struct_rt_17_x_no_rt <- add_sample_struct_FixedCatches(sample_struct, om_on = TRUE, em_on = FALSE)
 
@@ -595,15 +617,20 @@ young_x_no_rt <- make_rt_17_no_model("young")
 mid_x_no_rt <- make_rt_17_no_model("mid")
 old_x_no_rt <- make_rt_17_no_model("old")
 
-#redo no_rt
+###### No Red Tide in OM and EM ####
+
+#redo no_rt_x_no_rt
 no_rt_x_no_rt <- flat_x_no_rt
 no_rt_x_no_rt$extra <- NULL
 no_rt_x_no_rt$sample_struct_list$flat_x_no_rt$FixedCatch <- NULL
 names(no_rt_x_no_rt$sample_struct_list)[1] <- "no_rt_x_no_rt"
 no_rt_x_no_rt$scen_name_vec <- "no_rt_x_no_rt"
 
+# List all Scenarios ####
+
 # put the scenarios you want to run into a list
 
+# Original scenarios
 # 4 core, all_years, fixed
 # all_scenarios <- list(
 #   no_rt, 
@@ -616,37 +643,25 @@ no_rt_x_no_rt$scen_name_vec <- "no_rt_x_no_rt"
 #   rt_2_x_rt_2_fixed
 # )
 
-# selectivity
+# Original selectivity Scenarios
 # all_scenarios <- c(
 #   rt_2_scenarios,
-#   list(rt_2_x_rt_2)
-# )
-
-# all_scenarios <- c(
+#   list(rt_2_x_rt_2),
 #   all_yrs_scenarios, 
 #   list(rt_2_x_all_yrs)
 # )
 
-# 4 core, all_years, fixed
-# all_scenarios <- list(
-#   random_2_x_random_2,
-#   random_2_x_all_years
-# )
-
-# selectivity varied mortality
+# Selectivity varied mortality
 # all_scenarios <- c(
 #   rt_2_scenarios_varied,
-#   list(rt_2_x_rt_2)
-# )
-
-# all_scenarios <- c(
+#   list(rt_2_x_rt_2),
 #   all_yrs_scenarios_varied, 
 #   list(rt_2_x_all_yrs)
 # )
 
-# no_rt runs with varying all years selectivities.  
+# no_rt scenarios  
 
-all_scenarios <- list(
+no_rt_scenarios <- list(
   no_rt_x_no_rt,
   no_rt_x_flat_all_yrs,
   no_rt_x_young_all_yrs,
@@ -662,24 +677,29 @@ all_scenarios <- list(
   old_x_no_rt
 )
 
-# selectivity varied mortality in fixed years
+# All 45 scenarios listed together
 all_scenarios <- c(
-  all_scenarios,
+  no_rt_scenarios,
   rt_2_scenarios_extra,
   all_yrs_scenarios_extra
 )
 
+# Dividing All scenarios for multiple background processes for 
+# cloud computing.  
+# Background process 1: 100 cores, 30 scenarios
 #all_scenarios <- all_scenarios[1:30]
+# Backgound process 2: 50 cores, 15 scenarios
 #all_scenarios <- all_scenarios[31:45]
 
+# creates a list of all the scenario names
 scen_list_str <- all_scenarios %>%
   map_chr(\(x) x$scen_name_vec) %>%
   str_flatten(collapse = ", ", last = ", and ")
 
-##### RUN SSMSE #####
+# RUN SSMSE #####
 
-# walk through the scenario list and run_SSMSE
-
+# Function that takes in a listed base_params, an input to run_SSMSE()
+# Runs run_SSMSE, summarizes scenarios, and transfers to the cloud
 run_summary_SSMSE <- function(...) {
   args <- list(...)
   dir_path <- file.path(args$out_dir_scen_vec, args$scen_name_vec)
@@ -692,84 +712,71 @@ run_summary_SSMSE <- function(...) {
     warning("run_SSMSE threw an error for scenario ", scenario_name, ": ", e$message)
   })
   
-  # Try collecting summary results
+  # Try collecting scenario summary results
   tryCatch({
     ss3sim:::get_results_scenario(scenario_name, run_res_path)
   }, error = function(e) {
     warning("get_results_scenario failed for ", scenario_name, ": ", e$message)
   })
   
-  # Construct target cloud URI
-  target_cloud_iteration_dir <- file.path(bucket_path, scenario_name)
-  
-  message("Starting sync from local: ", dir_path, " to cloud: ", target_cloud_iteration_dir)
-  
-  # Sync command
-  rsync_cmd <- paste(
-    "gcloud storage rsync",
-    shQuote(dir_path),
-    shQuote(target_cloud_iteration_dir),
-    "-r"
-  )
-  
-  status <- system(rsync_cmd)
-  
-  if (status == 0) {
-    message("Success! Synced contents to cloud.\n")
-    contents <- list.files(dir_path, full.names = TRUE, all.files = TRUE, no.. = TRUE)
-    unlink(contents, recursive = TRUE)
-  } else {
-    warning("gcloud storage rsync failed for scenario ", scenario_name, ".\n")
+  # Transfer data to a google cloud bucket after each scenario
+  if(cloud_use == TRUE) {
+    # Construct target cloud URI
+    target_cloud_iteration_dir <- file.path(bucket_path, scenario_name)
+    
+    message("Starting sync from local: ", dir_path, " to cloud: ", target_cloud_iteration_dir)
+    
+    # Sync command
+    rsync_cmd <- paste(
+      "gcloud storage rsync",
+      shQuote(dir_path),
+      shQuote(target_cloud_iteration_dir),
+      "-r"
+    )
+    status <- system(rsync_cmd)
+    
+    if (status == 0) {
+      message("Success! Synced contents to cloud.\n")
+      contents <- list.files(dir_path, full.names = TRUE, all.files = TRUE, no.. = TRUE)
+      unlink(contents, recursive = TRUE)
+    } else {
+      warning("gcloud storage rsync failed for scenario ", scenario_name, ".\n")
+    }
   }
 }
 
+# walk through the scenario list 1 scenario at a time
 walk(all_scenarios, ~exec(run_summary_SSMSE, !!!.x))  # !!! makes the scenario list into arguments that can be used by a function
 
-# # Split runs across multiple clusters and cores to maximize cores.  
-# 
-# library(foreach)
-# library(doParallel)
-# 
-# # 1. Set up a standard socket cluster with 45 workers
-# # (Since SSMSE uses foreach internally, this cluster handles both layers)
-# cl <- makeCluster(45)
-# registerDoParallel(cl)
-# 
-# # 2. Run the 45 scenarios using %dopar%
-# results <- foreach(
-#   scenario = all_scenarios,
-#   .packages = c("SSMSE") # Ensures SSMSE is loaded on all 45 workers
-# ) %dopar% {
-# 
-#   # Inside each worker, run the scenario.
-#   # Note: If run_SSMSE has an 'ncores' or 'parallel' argument,
-#   # set it to 1 or FALSE here so the 45 workers don't try to split further.
-#   do.call(run_SSMSE, scenario)
-# 
-# }
-# 
-# # 3. Clean up the cluster when finished
-# stopCluster(cl)
-# registerDoSEQ()
-
-# # make a summary with all the outputs in the same folder
-# summary <- SSMSE::SSMSE_summary_all(file.path(run_SSMSE_dir, paste0("results_", results_name)), n_cores = 120, run_parallel = TRUE)
-# saveRDS(summary, file = file.path(run_SSMSE_dir, paste0("results_summary_", results_name, ".rda")))
+# Summarize all of the results if not using cloud computing
+if(cloud_use == FALSE) {
+  summary <- SSMSE::SSMSE_summary_all(file.path(run_SSMSE_dir, paste0("results_", results_name)))
+  saveRDS(summary, file = file.path(
+    run_SSMSE_dir,
+    paste0("results_summary_", results_name, ".rda")
+  ))
+}
 
 # end timer
 end_time <- Sys.time()
 time_dif <- end_time - start_time
 
+# save the time value so you know how long the process took.  
 saveRDS(time_dif, file = "timer_save.rda")
 
 ##### END PROCESS #####
 
-# create a unique tag name using the current timestamp
-tag_name <- paste0("alert-", time_dif)
+# Optional: Email notification to self #####
 
-# create and push the tag locally pointing to your current commit
-system(paste("git tag", tag_name))
-system(paste("git push origin", tag_name)) # this will send email
-
-# remove the tag so it doesn't clutter the repo
-system(paste("git tag -d", tag_name))
+# # Send email notification with Github Actions
+# # Change the tag name on the github repo and trigger an email notification,  
+# # then delete the tag so that the repo isn't cluttered.  
+# # create a unique tag name using the current timestamp
+# tag_name <- paste0("alert-", time_dif)
+# 
+# # create and push the tag locally pointing to your current commit
+# system(paste("git tag", tag_name))
+# system(paste("git push origin", tag_name)) # this will send email
+# 
+# # remove the tag so it doesn't clutter the repo
+# system(paste("git tag -d", tag_name))
