@@ -6,8 +6,17 @@ This repository was made to store the scripts used for testing the implementatio
 
 The base model was SEDAR 66 Gulf Red Grouper (SEDAR 2020).  The sigmaR was fixed after testing to reduce modeling error (Previous Runs/2025_07_03).  There were 3 additional OM's where the base model was re-run with a red tide bycatch fleet that had selectivity curves targeting young, middle, or old fish (Figure 1).  Each OM had an adjusted version with different forecast settings in the EM to account for red tide mortality in the forecasted years (e.g. mid_adj).  
 
-*Insert note about why the data is not stored here, and where it is stored*  The data should be unzipped and stored in the base_model folder created by the install_packages.R script.  
+Data is stored in the ECSAI Archive shared folder on google drive.  The data should be unzipped and stored in the base_model folder created by the package_install_cloud.R or package_install_easy.R script.  
 
+## Scenarios
+
+We ran 45 scenarios with a matrix of 3 frequency assumptions (no RT, Known RT, and All Years) and 4 selectivity assumptions (young, mid, flat, old) applied to the Operating and Estimation Models (OM and EM).  "no RT" can be in the OM or EM.  
+
+Scenario names consist of: ```om_selectivity``` _x_ ```em_selectivity``` _ ```em_frequency```
+
+Example: young_x_old_known = young selectivity in OM, old selectivity in EM, both with the known 17 years of red tide.  
+
+![alt text](/images/scenario_matrix.png)
 ## Methods
 
 This workflow was run in the Google Cloud Workstations, so some of the methods are specific to Google Cloud Workstations, but this can be adapted to run locally.  
@@ -24,13 +33,15 @@ Change the username, email, and Personal Access Token (PAT) entries in the scrip
 
 #### 2. Install packages and create folders
 
-Script: package_install_cloud.R
 
-Run this script to install the nessecary packages and create the empty base_model, runs_output, and bucket folders.  base_models will be used to store all of the input data.  runs_output will store the output of the SSMSE model.  bucket is used if a bucket is mounted to the workstation.  
+```package_install_cloud.R``` Only installs SSMSE and was made for pre-configured workstations that already installed all other nessecary packages including r4ss v1.49.3.  
+
+```package_install_easy``` Installs all required packages, and can be used on an empty workstation or for first time use locally.  Also includes code to make GCW RStudio install packages faster with posit's package manager. 
+
+After installation, these scripts create the empty base_model, runs_output, and bucket folders.  base_models will be used to store all of the input data.  runs_output will store the output of the SSMSE model.  bucket is used if a bucket is mounted to the workstation.  
 
 Since this workflow only requires SSMSE, a specific version of r4ss, and some tidyverse packages, I decided against using renv.  
 
-*Note:* The current version does not include the r4ss install because it is already installed on the large workstations.  Should I add that back in as commented code?  
 
 #### 3. Import base model 
 
@@ -40,42 +51,47 @@ Manually upload the base stock assessment in the base_model folder.  I currently
 
 #### Optional: Create adjusted copies of models
 
-Scripts: misc/create_models_from_default.R and misc/adjust_base_models_bycatch_fleet.R
+```misc/create_models_from_default.R``` 
 
+If you only have the original SEDAR 61 model, you can use this to generate the 3 models with different selectivity curves.  
 
-If you only have the original SEDAR 61 model, you can use .R to generate the 3 models with different selectivity curves.  
+```misc/adjust_base_models_bycatch_fleet.R``` 
 
 If you are running scenarios that require the "_adj" base models they can be generated with .R if the varying selectivity base models exist.  
 
 #### 4. Connect to bucket
 
-Script: mount_bucket.sh
+```mount_bucket.sh ```
 
-Run "bash mount_bucket.sh" in the terminal to link the bucket to the bucket folder and authenticate google cloud SDK for gcloud functions and file transfers.  
+Links the bucket to the bucket folder and authenticate google cloud SDK for gcloud functions and file transfers.  
+
+Run in the terminal :
+``` bash 
+bash mount_bucket.sh
+```
+
+The terminal will provide a link to varify your google account twice, you will need to log in two times.  First to connect to the bucket, a second time to connect to the google cloud SDK for file transfers.  
+
+*WARNING:* These authentications are not persistent, cannot be cloned with the workstation, and expire.  If a bucket is no longer connected or files stop transfering you may need to redo this step.  
 
 ### Step 2: Run SSMSE Scenarios
 
-Script: SSMSE_red_grouper_starter.R
+```SSMSE_red_grouper_starter.R```
 
-This is the full starter file that walks through all 45 scenarios designed for this project.  
+This is the full starter file that walks through all 45 scenarios designed for this project.  The script is extensively commented and outlined for easy navigation.  
 
 ### Step 3: Review Outputs
 
-Scripts: red_tide_2_years_results_review.qmd, misc/check_random_year_red_tide_events.R  
+```red_tide_2_years_results_review.qmd``` 
+```misc/check_random_year_red_tide_events.R ```
 
 These are the 2 most used scripts for checking trends before moving on to official plots.  
 
 ### Step 4: Official Outputs
 
-plots/twg_revision_tables_plots_no_rt.R
+```plots/twg_revision_tables_plots_no_rt.R```
 
 This script generates the final plots used in the working papers and publications.  
-
-## Deliverables
-
-
-
-Previous runs houses all of the html files of previous runs we chose to highlight throughout the process. For example, the 2025_07_03 runs titled SigmaR, r0_SigmaR, and 2025_07_07_r0 were tests with either SigmaR, R0, or both fixed.
 
 ## Disclaimer:
 
