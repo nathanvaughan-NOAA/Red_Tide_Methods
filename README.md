@@ -2,13 +2,13 @@
 
 This repository was made to store the scripts used for testing the implementation of red tide mortality in the Red Grouper stock assessment using SSMSE and Google Cloud Workstations.  Below is a walkthrough of the methods and a breakdown of the deliverables of this project.  
 
-## Data
+# Data
 
 The base model was SEDAR 66 Gulf Red Grouper (SEDAR 2020).  The sigmaR was fixed after testing to reduce modeling error (Previous Runs/2025_07_03).  There were 3 additional OM's where the base model was re-run with a red tide bycatch fleet that had selectivity curves targeting young, middle, or old fish (Figure 1).  Each OM had an adjusted version with different forecast settings in the EM to account for red tide mortality in the forecasted years (e.g. mid_adj).  
 
 Data is stored in the ECSAI Archive shared folder on google drive.  The data should be unzipped and stored in the base_model folder created by the package_install_cloud.R or package_install_easy.R script.  
 
-## Scenarios
+# Scenarios
 
 We ran 45 scenarios with a matrix of 3 frequency assumptions (no RT, Known RT, and All Years) and 4 selectivity assumptions (young, mid, flat, old) applied to the Operating and Estimation Models (OM and EM).  "no RT" can be in the OM or EM.  
 
@@ -17,13 +17,11 @@ Scenario names consist of: ```om_selectivity``` _x_ ```em_selectivity``` _ ```em
 Example: young_x_old_known = young selectivity in OM, old selectivity in EM, both with the known 17 years of red tide.  
 
 ![alt text](/images/scenario_matrix.png)
-## Methods
+# Methods
 
 This workflow was run in the Google Cloud Workstations, so some of the methods are specific to Google Cloud Workstations, but this can be adapted to run locally.  
 
-### Set-up Environment 
-
-#### 1. Log into GitHub and clone repository
+## 1. Log into GitHub and clone repository
 
 Script: github_setup.R
 
@@ -31,7 +29,7 @@ Change the username, email, and Personal Access Token (PAT) entries in the scrip
 
 *WARNING*: Do not save and push your PAT to this repositiory.  It needs to be confidential.  If you do not like filling out the entries everytime, you can save a copy of this script locally with your confidential infromation, but keep it secure.  
 
-#### 2. Install packages and create folders
+## 2. Install packages and create folders
 
 
 ```package_install_cloud.R``` Only installs SSMSE and was made for pre-configured workstations that already installed all other nessecary packages including r4ss v1.49.3.  
@@ -43,13 +41,13 @@ After installation, these scripts create the empty base_model, runs_output, and 
 Since this workflow only requires SSMSE, a specific version of r4ss, and some tidyverse packages, I decided against using renv.  
 
 
-#### 3. Import base model 
+## 3. Import base model 
 
 No script.  
 
 Manually upload the base stock assessment in the base_model folder.  I currently keep a .zip folder with all of the base models, including the "_adj" models that I upload everytime using RStudios "upload" button under the files tab.  
 
-#### Optional: Create adjusted copies of models
+### Optional: Create adjusted copies of models
 
 ```misc/create_models_from_default.R``` 
 
@@ -59,7 +57,7 @@ If you only have the original SEDAR 61 model, you can use this to generate the 3
 
 If you are running scenarios that require the "_adj" base models they can be generated with .R if the varying selectivity base models exist.  
 
-#### 4. Connect to bucket
+## 4. Connect to bucket
 
 ```mount_bucket.sh ```
 
@@ -74,20 +72,22 @@ The terminal will provide a link to varify your google account twice, you will n
 
 *WARNING:* These authentications are not persistent, cannot be cloned with the workstation, and expire.  If a bucket is no longer connected or files stop transfering you may need to redo this step.  
 
-### Step 2: Run SSMSE Scenarios
+## 5. Run SSMSE Scenarios
 
 ```SSMSE_red_grouper_starter.R```
 
-This is the full starter file that walks through all 45 scenarios designed for this project.  The script is extensively commented and outlined for easy navigation.  
+This is the full starter file that walks through all 45 scenarios designed for this project.  The script is extensively commented and outlined for easy navigation.  The script takes ~40 hours to run across 150 cores, so it should be run as a background job.  
 
-### Step 3: Review Outputs
+
+
+## 6. Review Outputs
 
 ```red_tide_2_years_results_review.qmd``` 
 ```misc/check_random_year_red_tide_events.R ```
 
 These are the 2 most used scripts for checking trends before moving on to official plots.  
 
-### Step 4: Official Outputs
+## 7. Official Outputs
 
 ```plots/twg_revision_tables_plots_no_rt.R```
 
