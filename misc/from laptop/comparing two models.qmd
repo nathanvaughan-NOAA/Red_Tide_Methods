@@ -1,0 +1,76 @@
+---
+title: "Compare two models"
+format: html
+editor: source
+execute:
+  echo: false
+---
+
+## get the two models
+
+```{r, include = FALSE}
+library(tidyverse)
+library("nmfspalette")
+library(patchwork)
+
+run_SSMSE_dir <- file.path("/testing_cloud")
+default <- file.path(run_SSMSE_dir, "default")
+default_cv <- file.path(run_SSMSE_dir, "default_lowcv")
+
+res <- readRDS(file = file.path("", "results_multirun_morality_cpuefix.rda"))
+summary <- readRDS(file = file.path("", "results_summary_multirun_morality_cpuefix.rda"))
+dat_cv <- r4ss::SS_readdat(file.path(default_cv, "red_grouper_1986_2017_RedTideFleet.dat"))
+
+res_cv <- readRDS(file = file.path("", "results_multirun_lowcvrt.rda"))
+summary_cv <- readRDS(file = file.path("", "results_summary_multirun_lowcvrt.rda"))
+dat <- r4ss::SS_readdat(file.path(default, "red_grouper_1986_2017_RedTideFleet.dat"))
+
+```
+
+```{r}
+
+summary$ts %>%
+  filter(scenario == "red_tide_regular_3", iteration == 1, model_run %in% c("default_EM_2062", "default_OM")) %>%
+  ggplot(aes(year, F_5)) +
+  geom_line(aes(color = model_run))
+
+summary_cv$ts %>%
+  filter(scenario == "red_tide_regular_3", iteration == 1, model_run %in% c("default_redtidecv_EM_2062", "default_redtidecv_OM")) %>%
+  ggplot(aes(year, F_5)) +
+  geom_line(aes(color = model_run))
+
+test_cv <- summary_cv$ts %>%
+  filter(scenario == "red_tide_regular_3", iteration == 1, model_run %in% c("default_redtidecv_EM_2062", "default_redtidecv_OM")) %>%
+  select(F_5)
+
+test <- summary$ts %>%
+  filter(scenario == "red_tide_regular_3", iteration == 1, model_run %in% c("default_EM_2062", "default_OM")) %>%
+  select(F_5)
+
+compare <- waldo::compare(test, test_cv)
+compare
+
+test_cv <- summary_cv$ts %>%
+  filter(scenario == "red_tide_random_10", iteration == 1, model_run %in% c("default_redtidecv_EM_2062", "default_redtidecv_OM")) %>%
+  select(F_5)
+
+test <- summary$ts %>%
+  filter(scenario == "red_tide_random_10", iteration == 1, model_run %in% c("default_EM_2062", "default_OM")) %>%
+  select(F_5)
+
+compare <- waldo::compare(test, test_cv)
+compare
+
+
+
+test_cv <- summary_cv$ts %>%
+  filter(scenario == "red_tide_regular_3", iteration == 11, model_run %in% c("default_redtidecv_EM_2062", "default_redtidecv_OM")) %>%
+  select(F_5)
+
+test <- summary$ts %>%
+  filter(scenario == "red_tide_regular_3", iteration == 11, model_run %in% c("default_EM_2062", "default_OM")) %>%
+  select(F_5)
+
+compare <- waldo::compare(test, test_cv)
+compare
+```

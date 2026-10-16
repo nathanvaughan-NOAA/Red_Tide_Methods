@@ -1,0 +1,196 @@
+---
+  title: "Compare two models"
+format: html
+editor: source
+execute:
+  echo: false
+---
+  
+  ## get the two models
+  
+  
+```{r, include = FALSE}
+library(tidyverse)
+library("nmfspalette")
+library(patchwork)
+
+run_SSMSE_dir <- file.path("")
+default <- file.path(run_SSMSE_dir, "default")
+
+res_sigma <- readRDS(file = file.path("results_SigmaR.rda"))
+summary_sigma <- readRDS(file = file.path("results_summary_SigmaR.rda"))
+
+res_r0 <- readRDS(file = file.path("results_R0.rda"))
+summary_r0 <- readRDS(file = file.path("results_summary_R0.rda"))
+
+res_sr <- readRDS(file = file.path("results_sigmaR_r0.rda"))
+summary_sr <- readRDS(file = file.path("results_summary_sigmaR_r0.rda"))
+
+res <- readRDS(file = file.path("results_multirun_cpuefix_clean.rda"))
+summary <- readRDS(file = file.path("results_summary_multirun_cpuefix_clean.rda"))
+
+```
+
+```{r}
+
+plot_sigma <- summary_sigma$ts %>%
+  filter(scenario == "red_tide_regular_3", iteration == 1, model_run %in% c("default_sigmaR_EM_2062", "default_sigmaR_OM")) %>%
+  ggplot(aes(year, F_5)) +
+  geom_line(aes(color = model_run))+ theme(legend.position = "none")
+
+
+plot_r0 <- summary_r0$ts %>%
+  filter(scenario == "red_tide_regular_3", iteration == 1, model_run %in% c("default_r0_EM_2062", "default_r0_OM")) %>%
+  ggplot(aes(year, F_5)) +
+  geom_line(aes(color = model_run)) 
+
+  
+
+library(patchwork)
+
+plot_sigma+plot_r0
+
+test_cv <- summary_sigma$ts %>%
+  filter(scenario == "red_tide_regular_3", iteration == 1, model_run %in% c("default_sigmaR_EM_2062", "default_sigmaR_OM")) %>%
+  select(F_5)
+
+test <- summary_r0$ts %>%
+  filter(scenario == "red_tide_regular_3", iteration == 1, model_run %in% c("default_r0_EM_2062", "default_r0_OM")) %>%
+  select(F_5)
+
+compare <- waldo::compare(test, test_cv)
+compare
+
+test_cv <- summary_cv$ts %>%
+  filter(scenario == "red_tide_random_10", iteration == 1, model_run %in% c("default_redtidecv_EM_2062", "default_redtidecv_OM")) %>%
+  select(F_5)
+
+test <- summary$ts %>%
+  filter(scenario == "red_tide_random_10", iteration == 1, model_run %in% c("default_EM_2062", "default_OM")) %>%
+  select(F_5)
+
+compare <- waldo::compare(test, test_cv)
+compare
+
+
+
+test_cv <- summary_cv$ts %>%
+  filter(scenario == "red_tide_regular_3", iteration == 11, model_run %in% c("default_redtidecv_EM_2062", "default_redtidecv_OM")) %>%
+  select(F_5)
+
+test <- summary$ts %>%
+  filter(scenario == "red_tide_regular_3", iteration == 11, model_run %in% c("default_EM_2062", "default_OM")) %>%
+  select(F_5)
+
+compare <- waldo::compare(test, test_cv)
+compare
+```
+
+
+```{r}
+
+mean_f_5_model_runs_sigma <- summary_sigma$ts %>%
+  filter(scenario == "red_tide_regular_3") %>%
+  group_by(model_run) %>%
+  reframe(mean_F_5 = mean(F_5))
+
+mean_f_5_model_runs_r0 <- summary_r0$ts %>%
+  filter(scenario == "red_tide_regular_3") %>%
+  group_by(model_run) %>%
+  reframe(mean_F_5 = mean(F_5))
+
+waldo::compare(mean_f_5_model_runs_sigma, mean_f_5_model_runs_r0)
+
+sigma <- summary_sigma$ts %>%
+  mutate(type = "sigma")
+r0 <- summary_r0$ts %>%
+  mutate(type = "r0")
+sigma_r0 <- summary_sr$ts %>%
+  mutate(type = "both")
+og <- summary$ts %>%
+  mutate(type = "original")
+
+all <- rbind(sigma, r0, sigma_r0, og)
+
+all %>%
+  mutate(model_run = str_sub(model_run, -4)) %>%
+  filter(F_5 > 0) %>%
+  ggplot(aes(x = model_run, y = F_5, fill = type)) +
+  geom_boxplot(position = position_dodge())
+
+all %>%
+  mutate(model_run = str_sub(model_run, -2)) %>%
+  filter(F_5 > 0) %>%
+  mutate(F_5_ratio = F_5/0.2) %>%
+  ggplot(aes(x = model_run, y = F_5_ratio, fill = type)) +
+  geom_boxplot(position = position_dodge()) +
+  geom_hline(yintercept = 1, linetype = "dashed") + 
+  facet_wrap(~scenario)
+
+all %>%
+  mutate(model_run = str_sub(model_run, -2)) %>%
+  filter(F_5 > 0, model_run != "se", !str_detect(model_run, "OM")) %>%
+  mutate(F_5_ratio = F_5/0.2) %>%
+  ggplot(aes(y = F_5_ratio, fill = type)) +
+  geom_boxplot() +
+  geom_hline(yintercept = 1, linetype = "dashed") + ggtitle("just the EMs F_5 ratios") + 
+  facet_wrap(~scenario) + coord_cartesian(ylim = c(0.75,1.25))
+
+all %>%
+  filter("red_tide_random_10")
+
+```
+
+
+```{r}
+
+red_tide_years <- all %>%
+  filter(F_5 > 0) %>%
+  pull(year)
+
+sigma <- summary_sigma$dq %>%
+  mutate(type = "sigma")
+r0 <- summary_r0$dq %>%
+  mutate(type = "r0")
+sigma_r0 <- summary_sr$dq %>%
+  mutate(type = "both")
+og <- summary$dq %>%
+  mutate(type = "original")
+
+all <- rbind(sigma, r0, sigma_r0, og)
+
+
+mean_value.F<- all %>%
+  filter(str_detect(model_run, "OM")) %>%
+  reframe(mean_value = median(Value.F, na.rm = TRUE)) %>%
+  pull(mean_value)
+
+all %>%
+  mutate(model_run = str_sub(model_run, -2)) %>%
+  filter(year %in% red_tide_years) %>%
+  mutate(F_ratio = Value.F/mean_value.F) %>%
+  ggplot(aes(x = model_run, y = F_ratio, fill = type)) +
+  geom_boxplot(position = position_dodge())
+
+
+mean_value.recr<- all %>%
+  filter(str_detect(model_run, "OM")) %>%
+  reframe(mean_value = median(Value.Recr, na.rm = TRUE)) %>%
+  pull(mean_value)
+
+all %>%
+  mutate(model_run = str_sub(model_run, -2)) %>%
+  mutate(recruit_ratio = Value.Recr/mean_value.recr) %>%
+  ggplot(aes(x = model_run, y = recruit_ratio, fill = type)) +
+  geom_boxplot(position = position_dodge()) +
+  geom_hline(yintercept = 1, linetype = "dashed")
+
+all %>%
+  mutate(model_run = str_sub(model_run, -2)) %>%
+  filter(model_run != "se", !str_detect(model_run, "OM")) %>%
+  mutate(recruit_ratio = Value.Recr/mean_value.recr) %>%
+  ggplot(aes(y = recruit_ratio, fill = type)) +
+  geom_boxplot() +
+  geom_hline(yintercept = 1, linetype = "dashed") + ggtitle("just the EMs recruitment ratios") + ylim(c(0,5))
+
+```
