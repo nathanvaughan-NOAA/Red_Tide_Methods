@@ -1,6 +1,8 @@
 # This script was used to generate plots for the Red Tide SSMSE Manuscript
 # This version uses 45 scenarios, from 2026_07_01_red_tide_no_rt_fix
-#  
+# .Rda files stored in runs_output:
+# Results: results_summary_red_tide_no_rt_fix.rda
+# Supplemental: results_summary_supplemental_redo.rda
 # Script run time: ~4 minutes
 
 # Set-up and get data -----------------------------------------------------
@@ -264,6 +266,8 @@ base_selectivities %>%
 if(save == TRUE){
   ggsave(file.path(run_SSMSE_dir,plot_folder, "Figure_2_selectivity.png"),
          width = 90, height = 90, units = "mm", dpi = 300)
+  ggsave(file.path(run_SSMSE_dir,plot_folder, "Figure_2_selectivity.pdf"),
+         width = 90, height = 90, units = "mm", dpi = 300)
 }
 
 # Figure 3. Average red tide mortality over time -----------------------------
@@ -358,10 +362,10 @@ plot_variable_ts <- function(data = combined_lines,
 
 # adjust facet labels
 new_labels <- c("flat_x_flat_rt_2" = "flat x flat - known", 
-                "flat_x_no_rt" = "flat x no rt",
-                "no_rt_x_flat_rt_17" = "no rt x flat - known", 
-                "no_rt_x_no_rt" = "no rt x no rt", 
-                "no_rt_x_flat_all_yrs" = "no rt x flat - all", 
+                "flat_x_no_rt" = "flat x no RT",
+                "no_rt_x_flat_rt_17" = "no RT x flat - known", 
+                "no_rt_x_no_rt" = "no RT x no RT", 
+                "no_rt_x_flat_all_yrs" = "no RT x flat - all", 
                 "flat_x_flat_all_yrs" = "flat x flat - all")
 
 combined_lines %>%
@@ -375,7 +379,9 @@ combined_lines %>%
 
 if(save == TRUE){
   ggsave(file.path(run_SSMSE_dir,plot_folder, "Figure_3_average_red_tide_mortality_flat.png"),
-         width = 6, height = 4, units = "in", device = "png")
+         width = 140, height = 90, units = "mm", dpi = 300)
+  ggsave(file.path(run_SSMSE_dir,plot_folder, "Figure_3_average_red_tide_mortality_flat.pdf"),
+         width = 140, height = 90, units = "mm", dpi = 300)
 }
 
 # Figure 4. Error by removal type -----------------------------
@@ -481,10 +487,10 @@ main_data <- plot_data %>%
   filter(em_name != "no_rt") %>%
   rbind(no_rt_data) %>%
   filter(is.finite(error)) %>% 
-  mutate(om_name = if_else(om_name == "no_rt", "None", str_to_title(om_name)),
-         om_name = factor(om_name, levels = c("Young", "Mid", "Flat", "Old", "None")),
-         em_name = if_else(em_name == "no_rt", "None", str_to_title(em_name)),
-         em_name = factor(em_name, levels = c("Old", "Flat", "Mid", "Young")))
+  mutate(om_name = if_else(om_name == "no_rt", "No RT", str_to_title(om_name)),
+         om_name = factor(om_name, levels = c("Young", "Mid", "Flat", "Old", "No RT")),
+         em_name = if_else(em_name == "no_rt", "No RT", str_to_title(em_name)),
+         em_name = factor(em_name, levels = c("Old", "Flat", "Mid", "Young", "No RT")))
 
 # Create the plot
 p <- main_data %>% ggplot() +
@@ -511,13 +517,10 @@ p <- main_data %>% ggplot() +
   theme(
     panel.grid.minor = element_blank(),
     panel.grid.major.y = element_line(linewidth = 0.3, color = "grey90"),
-    strip.text = element_text(face = "bold"),
     legend.position = "top",
-    legend.title = element_text(face = "bold"),
-    axis.title = element_text(face = "bold"),
     axis.text.x = element_text(angle = 45, vjust = 1.25, hjust = 1)
   ) + 
-  labs(shape = "Frequency Assumption (EM)", color = "Frequency Assumption (EM)")
+  labs(shape = "Frequency Assumption (EM):", color = "Frequency Assumption (EM):")
 
 # Add a second axis label
 # Create the rotated, bold text label
@@ -525,7 +528,7 @@ right_label <- wrap_elements(
   panel = textGrob(
     "Operating Model", 
     rot = -90, 
-    gp = gpar(fontface = "bold", fontsize = font_size)
+    gp = gpar(fontsize = font_size)
   )
 ) & theme(
   plot.margin = margin(l = -30, r = 0, t = 0, b = 0) # Negative left margin pulls text left toward the plot
@@ -537,6 +540,8 @@ p + right_label + plot_layout(widths = c(20, 1))
 
 if(save == TRUE){
   ggsave(file.path(run_SSMSE_dir,plot_folder, "Figure_4_Error_by_removal_type.png"),
+         width = 140, height = 120, units = "mm", dpi = 300)
+  ggsave(file.path(run_SSMSE_dir,plot_folder, "Figure_4_Error_by_removal_type.pdf"),
          width = 140, height = 120, units = "mm", dpi = 300)
 }
 
@@ -593,10 +598,14 @@ plot_median_ts_om_lines_exp <- function(summary_data = summary$ts,
   
   # Reorder Known and All Years facets
   raw_filtered_data <- raw_filtered_data %>%
-    mutate(exp_type = factor(exp_type, levels = c("Known", "All Years")))
+    mutate(exp_type = factor(exp_type, levels = c("Known", "All Years"))) %>% 
+    mutate(om_name = if_else(om_name == "no_rt", "No RT", str_to_title(om_name)),
+           em_name = if_else(em_name == "no_rt", "No RT", str_to_title(em_name)))
   
   plot_summary_data <- plot_summary_data %>%
-    mutate(exp_type = factor(exp_type, levels =  c("Known", "All Years")))
+    mutate(exp_type = factor(exp_type, levels =  c("Known", "All Years"))) %>% 
+    mutate(om_name = if_else(om_name == "no_rt", "No RT", str_to_title(om_name)),
+           em_name = if_else(em_name == "no_rt", "No RT", str_to_title(em_name)))
   
   # Plotting
   ggplot() +
@@ -680,7 +689,10 @@ plot_median_ts_om_lines <- function (summary_data = summary$ts, scenario_list, m
       str_detect(model_run, "OM"),
       year >= min_yr,
       year <= max_yr
-    )
+    ) %>% 
+    mutate(om_name = if_else(om_name %in% "no_rt", "No RT", str_to_title(om_name)),
+           em_name = if_else(em_name %in% "no_rt", "No RT", str_to_title(em_name)))
+  
   
   # Calculate median and confidence interval for em/om/exp_type/year groups
   plot_summary_data <- raw_filtered_data %>%
@@ -690,13 +702,14 @@ plot_median_ts_om_lines <- function (summary_data = summary$ts, scenario_list, m
       low  = Hmisc::smedian.hilow(.data[[col_name]], conf.int = 0.95)[2],
       high = Hmisc::smedian.hilow(.data[[col_name]], conf.int = 0.95)[3],
       .groups = "drop" 
-    )
+    ) 
   
-  new_labels <- c("young" = "True: Young Selectivity", 
-                  "mid" = "True: Middle Selectivity",
-                  "old" = "True: Old Selectivity", 
-                  "flat" = "True: Flat Selectivity", 
-                  "no_rt" = "True: No Red Tide (OM)")
+  
+  new_labels <- c("Young" = "True: Young Selectivity", 
+                  "Mid" = "True: Middle Selectivity",
+                  "Old" = "True: Old Selectivity", 
+                  "Flat" = "True: Flat Selectivity", 
+                  "No RT" = "True: No Red Tide (OM)")
   
   # Plotting
   ggplot() +
@@ -729,6 +742,8 @@ plot_median_ts_om_lines(summary$dq, min_yr = 2017, max_yr = 2068, col_name = "Va
 if(save == TRUE){
   ggsave(file.path(run_SSMSE_dir,plot_folder, "Figure_6_known_bratio.png"),
          width = 140, height = 120, units = "mm", dpi = 300)
+  ggsave(file.path(run_SSMSE_dir,plot_folder, "Figure_6_known_bratio.pdf"),
+         width = 140, height = 120, units = "mm", dpi = 300)
 }
 
 ## Figure 7: All years SSB over time  ----
@@ -744,6 +759,8 @@ plot_median_ts_om_lines(summary$dq, min_yr = 2017, max_yr = 2068, col_name = "Va
 
 if(save == TRUE){
   ggsave(file.path(run_SSMSE_dir,plot_folder, "Figure_7_all_yrs_bratio.png"),
+         width = 140, height = 120, units = "mm", dpi = 300)
+  ggsave(file.path(run_SSMSE_dir,plot_folder, "Figure_7_all_yrs_bratio.pdf"),
          width = 140, height = 120, units = "mm", dpi = 300)
 }
 
@@ -871,7 +888,7 @@ summary_rec_devs$dq <- summary_rec_devs$dq %>%
     exp_type = if_else(str_detect(exp_type, "rt"), "Known", exp_type),
     exp_type = if_else(exp_type == "", "No Years", exp_type),
     exp_type = if_else(exp_type %in% "all_yrs", "All Years", exp_type)
-  )
+  ) 
 
 
 ### Supp. Figure 1. Known SSB Ratio  -----------
@@ -890,7 +907,9 @@ plot_median_ts_om_lines(summary_rec_devs$dq, min_yr = 2017, max_yr = 2068, col_n
   )
 
 if(save == TRUE){
-  ggsave(file.path(run_SSMSE_dir,plot_folder, "Supp_Figure_1_rt_17_bratio_supplemental.png"),
+  ggsave(file.path(run_SSMSE_dir,plot_folder, "Supp_Figure_1_known_bratio.png"),
+         width = 140, height = 120, units = "mm", dpi = 300)
+  ggsave(file.path(run_SSMSE_dir,plot_folder, "Supp_Figure_1_known_bratio.pdf"),
          width = 140, height = 120, units = "mm", dpi = 300)
 }
 
@@ -909,6 +928,8 @@ plot_median_ts_om_lines(summary_rec_devs$dq, min_yr = 2017, max_yr = 2068, col_n
   )
 
 if(save == TRUE){
-  ggsave(file.path(run_SSMSE_dir,plot_folder, "Supp_Figure_2_all_yrs_bratio_supplemental.png"),
+  ggsave(file.path(run_SSMSE_dir,plot_folder, "Supp_Figure_2_all_yrs_bratio.png"),
+         width = 140, height = 120, units = "mm", dpi = 300)
+  ggsave(file.path(run_SSMSE_dir,plot_folder, "Supp_Figure_2_all_yrs_bratio.pdf"),
          width = 140, height = 120, units = "mm", dpi = 300)
 }
